@@ -1,0 +1,34 @@
+# ---- Rust ----
+server/target/
+client_desktop/src-tauri/target/
+
+# ---- Node / Next.js ----
+client_web/node_modules/
+client_web/.next/
+client_web/out/
+
+# ---- Tauri / Desktop ----
+client_desktop/node_modules/
+
+# ---- Internationalisation (i18n) ----
+locales/.cache/
+
+# ---- Variables d'environnement ----
+.env
+.env.local
+.env.*.local
+
+# ---- Base de données locale ----
+*.sqlite
+*.sqlite3
+
+# ---- Coverage / tests ----
+coverage/
+tarpaulin-report.html
+lcov.info
+
+# ---- Éditeurs / OS ----
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
