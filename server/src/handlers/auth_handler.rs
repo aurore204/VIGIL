@@ -85,11 +85,22 @@ pub async fn me(
 }
 
 // POST /auth/logout
-pub async fn logout() -> impl IntoResponse {
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({
-            "message": "Déconnexion réussie"
-        })),
-    )
+pub async fn logout(
+    State(pool): State<PgPool>,
+    Extension(auth_user): Extension<AuthenticatedUser>,
+) -> impl IntoResponse {
+    match auth_service::logout(&pool, auth_user.id).await {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "message": "Déconnexion réussie"
+            })),
+        ),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "error": "Erreur lors de la déconnexion"
+            })),
+        ),
+    }
 }
