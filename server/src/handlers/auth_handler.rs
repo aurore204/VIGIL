@@ -1,3 +1,7 @@
+use axum::extract::Extension;
+use crate::middleware::auth_middleware::AuthenticatedUser;
+use crate::repositories::user_repository;
+
 use axum::{
     extract::State,
     http::StatusCode,
@@ -57,4 +61,35 @@ pub async fn login(
             })),
         ),
     }
+}
+
+pub async fn me(
+    State(pool): State<PgPool>,
+    Extension(auth_user): Extension<AuthenticatedUser>,
+) -> impl IntoResponse {
+    match user_repository::find_by_id(&pool, auth_user.id).await {
+        Ok(Some(user)) => (StatusCode::OK, Json(serde_json::json!(user))),
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "error": "Utilisateur non trouvé"
+            })),
+        ),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "error": "Erreur interne du serveur"
+            })),
+        ),
+    }
+}
+
+// POST /auth/logout
+pub async fn logout() -> impl IntoResponse {
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "message": "Déconnexion réussie"
+        })),
+    )
 }

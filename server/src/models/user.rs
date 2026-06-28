@@ -9,6 +9,7 @@ pub struct User {
     pub password_hash: Option<String>,
     pub username: String,
     pub language: String,
+    pub token_invalidated_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
