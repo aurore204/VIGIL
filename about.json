@@ -1,0 +1,10 @@
+{
+  "client": {
+    "host": "localhost"
+  },
+  "server": {
+    "current_time": 0,
+    "services": [],
+    "token": "d6d6ca2ec6a2382ef3913617246c235c6cbb488ed776598ebd80ccd87302197d"
+  }
+}
