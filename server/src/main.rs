@@ -1,11 +1,4 @@
-mod db;
-mod handlers;
-mod middleware;
-mod models;
-mod repositories;
-mod routes;
-mod services;
-mod websocket;
+use vigil_server::{db, routes};
 
 #[tokio::main]
 async fn main() {
