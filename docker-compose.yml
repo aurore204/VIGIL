@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: vigil-db
+    environment:
+      POSTGRES_USER: vigil
+      POSTGRES_PASSWORD: vigil_password
+      POSTGRES_DB: vigil
+    ports:
+      - "5433:5432"
+    volumes:
+      - vigil_db_data:/var/lib/postgresql/data
+
+volumes:
+  vigil_db_data:
