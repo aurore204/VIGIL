@@ -2,6 +2,7 @@ use axum::{middleware, Router};
 use sqlx::PgPool;
 
 mod auth_routes;
+mod team_routes;
 
 use crate::middleware::auth_middleware::require_auth;
 

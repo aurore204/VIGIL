@@ -83,3 +83,10 @@ pub struct TeamInvitation {
     pub expires_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
 }
+
+// Ce qu'on reçoit pour bannir un membre
+#[derive(Debug, Deserialize)]
+pub struct BanMemberRequest {
+    pub expires_at: Option<DateTime<Utc>>,
+    pub reason: Option<String>,
+}

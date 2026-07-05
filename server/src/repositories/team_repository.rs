@@ -282,3 +282,94 @@ fn generate_invitation_code() -> String {
     
     format!("{:08X}", hash & 0xFFFFFFFF)
 }
+
+// Vérifie si un utilisateur est banni d'une team
+pub async fn is_banned(
+    pool: &PgPool,
+    team_id: Uuid,
+    user_id: Uuid,
+) -> Result<bool, sqlx::Error> {
+    let result = sqlx::query!(
+        r#"
+        SELECT COUNT(*) as count
+        FROM team_bans
+        WHERE team_id = $1 
+        AND user_id = $2
+        AND (expires_at IS NULL OR expires_at > NOW())
+        "#,
+        team_id,
+        user_id
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(result.count.unwrap_or(0) > 0)
+}
+
+// Supprime un membre de la team (kick)
+pub async fn kick_member(
+    pool: &PgPool,
+    team_id: Uuid,
+    user_id: Uuid,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        DELETE FROM team_members
+        WHERE team_id = $1 AND user_id = $2
+        "#,
+        team_id,
+        user_id
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+// Bannit un membre de la team
+pub async fn ban_member(
+    pool: &PgPool,
+    team_id: Uuid,
+    banned_by: Uuid,
+    user_id: Uuid,
+    expires_at: Option<chrono::DateTime<chrono::Utc>>,
+    reason: Option<String>,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        INSERT INTO team_bans (team_id, user_id, banned_by, expires_at, reason)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (team_id, user_id)
+        DO UPDATE SET expires_at = $4, reason = $5, banned_by = $3
+        "#,
+        team_id,
+        user_id,
+        banned_by,
+        expires_at,
+        reason
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+// Lève un ban
+pub async fn unban_member(
+    pool: &PgPool,
+    team_id: Uuid,
+    user_id: Uuid,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        DELETE FROM team_bans
+        WHERE team_id = $1 AND user_id = $2
+        "#,
+        team_id,
+        user_id
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}

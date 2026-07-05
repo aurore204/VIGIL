@@ -6,7 +6,6 @@ use crate::models::team::{
 };
 use crate::repositories::team_repository;
 
-// Erreurs possibles du service team
 #[derive(Debug)]
 pub enum TeamError {
     TeamNotFound,
@@ -15,6 +14,7 @@ pub enum TeamError {
     InvalidInvitationCode,
     NotManager,
     CannotTargetSelf,
+    Banned,
     DatabaseError(sqlx::Error),
 }
 
@@ -53,7 +53,6 @@ pub async fn get_team(
     team_id: Uuid,
     user_id: Uuid,
 ) -> Result<TeamResponse, TeamError> {
-    // Vérifier que l'utilisateur est membre de la team
     let is_member = team_repository::is_member(pool, team_id, user_id)
         .await
         .map_err(TeamError::DatabaseError)?;
@@ -115,7 +114,6 @@ pub async fn generate_invitation(
     team_id: Uuid,
     user_id: Uuid,
 ) -> Result<String, TeamError> {
-    // Vérifier que l'utilisateur est Manager
     let role = team_repository::get_member_role(pool, team_id, user_id)
         .await
         .map_err(TeamError::DatabaseError)?
@@ -138,11 +136,19 @@ pub async fn join_team(
     req: JoinTeamRequest,
     user_id: Uuid,
 ) -> Result<TeamResponse, TeamError> {
-    // Vérifier que le code est valide
     let invitation = team_repository::find_invitation_by_code(pool, &req.code)
         .await
         .map_err(TeamError::DatabaseError)?
         .ok_or(TeamError::InvalidInvitationCode)?;
+
+    // Vérifier que l'utilisateur n'est pas banni (même avec un code valide)
+    let is_banned = team_repository::is_banned(pool, invitation.team_id, user_id)
+        .await
+        .map_err(TeamError::DatabaseError)?;
+
+    if is_banned {
+        return Err(TeamError::Banned);
+    }
 
     // Vérifier que l'utilisateur n'est pas déjà membre
     let is_member = team_repository::is_member(pool, invitation.team_id, user_id)
@@ -153,12 +159,10 @@ pub async fn join_team(
         return Err(TeamError::AlreadyMember);
     }
 
-    // Ajouter le membre avec le rôle Observer par défaut
     team_repository::add_member(pool, invitation.team_id, user_id, TeamRole::Observer)
         .await
         .map_err(TeamError::DatabaseError)?;
 
-    // Retourner la team complète
     let team = team_repository::find_by_id(pool, invitation.team_id)
         .await
         .map_err(TeamError::DatabaseError)?
@@ -185,7 +189,6 @@ pub async fn transfer_manager(
     current_manager_id: Uuid,
     req: TransferManagerRequest,
 ) -> Result<TeamResponse, TeamError> {
-    // Vérifier que l'utilisateur courant est Manager
     let role = team_repository::get_member_role(pool, team_id, current_manager_id)
         .await
         .map_err(TeamError::DatabaseError)?
@@ -195,12 +198,10 @@ pub async fn transfer_manager(
         return Err(TeamError::NotManager);
     }
 
-    // Le Manager ne peut pas se transférer le rôle à lui-même
     if current_manager_id == req.user_id {
         return Err(TeamError::CannotTargetSelf);
     }
 
-    // Vérifier que le nouveau manager est bien membre de la team
     let is_member = team_repository::is_member(pool, team_id, req.user_id)
         .await
         .map_err(TeamError::DatabaseError)?;
@@ -209,12 +210,10 @@ pub async fn transfer_manager(
         return Err(TeamError::NotMember);
     }
 
-    // Effectuer le transfert
     team_repository::transfer_manager(pool, team_id, current_manager_id, req.user_id)
         .await
         .map_err(TeamError::DatabaseError)?;
 
-    // Retourner la team mise à jour
     let team = team_repository::find_by_id(pool, team_id)
         .await
         .map_err(TeamError::DatabaseError)?
@@ -232,4 +231,112 @@ pub async fn transfer_manager(
         members,
         created_at: team.created_at,
     })
+}
+
+// Kick un membre de la team (Manager uniquement)
+pub async fn kick_member(
+    pool: &PgPool,
+    team_id: Uuid,
+    manager_id: Uuid,
+    target_user_id: Uuid,
+) -> Result<(), TeamError> {
+    // Vérifier que l'acteur est Manager
+    let role = team_repository::get_member_role(pool, team_id, manager_id)
+        .await
+        .map_err(TeamError::DatabaseError)?
+        .ok_or(TeamError::NotMember)?;
+
+    if role != TeamRole::Manager {
+        return Err(TeamError::NotManager);
+    }
+
+    // Le Manager ne peut pas se kicker lui-même
+    if manager_id == target_user_id {
+        return Err(TeamError::CannotTargetSelf);
+    }
+
+    // Vérifier que la cible est bien membre
+    let is_member = team_repository::is_member(pool, team_id, target_user_id)
+        .await
+        .map_err(TeamError::DatabaseError)?;
+
+    if !is_member {
+        return Err(TeamError::NotMember);
+    }
+
+    team_repository::kick_member(pool, team_id, target_user_id)
+        .await
+        .map_err(TeamError::DatabaseError)?;
+
+    Ok(())
+}
+
+// Ban temporaire ou permanent d'un membre (Manager uniquement)
+pub async fn ban_member(
+    pool: &PgPool,
+    team_id: Uuid,
+    manager_id: Uuid,
+    target_user_id: Uuid,
+    expires_at: Option<chrono::DateTime<chrono::Utc>>,
+    reason: Option<String>,
+) -> Result<(), TeamError> {
+    // Vérifier que l'acteur est Manager
+    let role = team_repository::get_member_role(pool, team_id, manager_id)
+        .await
+        .map_err(TeamError::DatabaseError)?
+        .ok_or(TeamError::NotMember)?;
+
+    if role != TeamRole::Manager {
+        return Err(TeamError::NotManager);
+    }
+
+    // Le Manager ne peut pas se bannir lui-même
+    if manager_id == target_user_id {
+        return Err(TeamError::CannotTargetSelf);
+    }
+
+    // Kicker d'abord si encore membre
+    let is_member = team_repository::is_member(pool, team_id, target_user_id)
+        .await
+        .map_err(TeamError::DatabaseError)?;
+
+    if is_member {
+        team_repository::kick_member(pool, team_id, target_user_id)
+            .await
+            .map_err(TeamError::DatabaseError)?;
+    }
+
+    // Appliquer le ban
+    team_repository::ban_member(pool, team_id, manager_id, target_user_id, expires_at, reason)
+        .await
+        .map_err(TeamError::DatabaseError)?;
+
+    Ok(())
+}
+
+// Lever un ban permanent (Manager uniquement)
+pub async fn unban_member(
+    pool: &PgPool,
+    team_id: Uuid,
+    manager_id: Uuid,
+    target_user_id: Uuid,
+) -> Result<(), TeamError> {
+    let role = team_repository::get_member_role(pool, team_id, manager_id)
+        .await
+        .map_err(TeamError::DatabaseError)?
+        .ok_or(TeamError::NotMember)?;
+
+    if role != TeamRole::Manager {
+        return Err(TeamError::NotManager);
+    }
+
+    if manager_id == target_user_id {
+        return Err(TeamError::CannotTargetSelf);
+    }
+
+    team_repository::unban_member(pool, team_id, target_user_id)
+        .await
+        .map_err(TeamError::DatabaseError)?;
+
+    Ok(())
 }
