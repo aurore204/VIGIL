@@ -1,1 +1,2 @@
 mod auth_functional_test;
+mod team_functional_test;
