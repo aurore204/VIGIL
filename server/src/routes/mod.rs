@@ -2,6 +2,7 @@ use axum::{middleware, Router};
 use sqlx::PgPool;
 
 mod auth_routes;
+mod team_routes;
 
 use crate::middleware::auth_middleware::require_auth;
 
@@ -12,7 +13,9 @@ pub fn create_router(pool: PgPool) -> Router {
 
     // Routes protégées — middleware require_auth
     let protected_routes = Router::new()
+
         .merge(auth_routes::protected_routes())
+        .merge(team_routes::team_routes())
         .layer(middleware::from_fn_with_state(
             pool.clone(),
             require_auth,
