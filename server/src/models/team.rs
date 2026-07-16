@@ -6,6 +6,8 @@ use uuid::Uuid;
 // Représente les 3 rôles possibles dans une team
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Type)]
 #[sqlx(type_name = "team_role", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
+
 pub enum TeamRole {
     Observer,
     Responder,

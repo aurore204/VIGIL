@@ -6,6 +6,8 @@ use uuid::Uuid;
 // États possibles d'un incident
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Type)]
 #[sqlx(type_name = "incident_state", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
+    
 pub enum IncidentState {
     Open,
     Acknowledged,
@@ -16,6 +18,7 @@ pub enum IncidentState {
 // Niveaux de sévérité
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Type)]
 #[sqlx(type_name = "incident_severity", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum IncidentSeverity {
     Low,
     Medium,
