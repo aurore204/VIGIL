@@ -61,6 +61,29 @@ pub async fn find_by_id(
     Ok(team)
 }
 
+// Met à jour le rôle d'un membre
+pub async fn update_member_role(
+    pool: &PgPool,
+    team_id: Uuid,
+    user_id: Uuid,
+    role: TeamRole,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE team_members
+        SET role = $1
+        WHERE team_id = $2 AND user_id = $3
+        "#,
+        role as TeamRole,
+        team_id,
+        user_id
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
 // Récupère tous les membres d'une team avec leurs infos
 pub async fn get_members(
     pool: &PgPool,

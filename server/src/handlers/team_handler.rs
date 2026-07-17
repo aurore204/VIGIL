@@ -7,6 +7,7 @@ use axum::{
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::models::team::UpdateMemberRoleRequest;
 use crate::middleware::auth_middleware::AuthenticatedUser;
 use crate::models::response::{ApiError, ApiResponse};
 use crate::models::team::{
@@ -222,6 +223,52 @@ pub async fn transfer_manager(
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!(ApiError::new(
                 "Vous ne pouvez pas vous transférer le rôle à vous-même",
+                "CANNOT_TARGET_SELF"
+            ))),
+        ),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!(ApiError::new(
+                "Erreur interne du serveur",
+                "INTERNAL_ERROR"
+            ))),
+        ),
+    }
+}
+
+
+// PATCH /teams/:team_id/members/:user_id/role
+pub async fn update_member_role(
+    State(pool): State<PgPool>,
+    Extension(auth_user): Extension<AuthenticatedUser>,
+    Path((team_id, user_id)): Path<(Uuid, Uuid)>,
+    Json(req): Json<UpdateMemberRoleRequest>,
+) -> impl IntoResponse {
+    match team_service::update_member_role(&pool, team_id, auth_user.id, user_id, req.role).await {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(serde_json::json!(ApiResponse::<()>::success_no_data(
+                "Rôle mis à jour avec succès"
+            ))),
+        ),
+        Err(TeamError::NotMember) => (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!(ApiError::new(
+                "Vous n'êtes pas membre de cette team",
+                "NOT_MEMBER"
+            ))),
+        ),
+        Err(TeamError::NotManager) => (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!(ApiError::new(
+                "Seul le Manager peut changer les rôles",
+                "NOT_MANAGER"
+            ))),
+        ),
+        Err(TeamError::CannotTargetSelf) => (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!(ApiError::new(
+                "Vous ne pouvez pas modifier votre propre rôle",
                 "CANNOT_TARGET_SELF"
             ))),
         ),

@@ -90,3 +90,8 @@ pub struct BanMemberRequest {
     pub expires_at: Option<DateTime<Utc>>,
     pub reason: Option<String>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateMemberRoleRequest {
+    pub role: TeamRole,
+}

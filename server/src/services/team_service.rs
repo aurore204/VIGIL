@@ -130,6 +130,33 @@ pub async fn generate_invitation(
     Ok(invitation.code)
 }
 
+// Change le rôle d'un membre (Manager uniquement)
+pub async fn update_member_role(
+    pool: &PgPool,
+    team_id: Uuid,
+    manager_id: Uuid,
+    target_user_id: Uuid,
+    role: TeamRole,
+) -> Result<(), TeamError> {
+    let manager_role = team_repository::get_member_role(pool, team_id, manager_id)
+        .await
+        .map_err(TeamError::DatabaseError)?
+        .ok_or(TeamError::NotMember)?;
+
+    if manager_role != TeamRole::Manager {
+        return Err(TeamError::NotManager);
+    }
+
+    if manager_id == target_user_id {
+        return Err(TeamError::CannotTargetSelf);
+    }
+
+    team_repository::update_member_role(pool, team_id, target_user_id, role)
+        .await
+        .map_err(TeamError::DatabaseError)?;
+
+    Ok(())
+}
 // Rejoindre une team via un code d'invitation
 pub async fn join_team(
     pool: &PgPool,
