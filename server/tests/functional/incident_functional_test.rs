@@ -48,7 +48,7 @@ async fn setup_team_and_get_ids(server: &TestServer) -> (String, String, String,
 
     let invite_response = server
         .post(&format!("/teams/{}/invitations", team_id))
-        .add_header(mn, mv)
+        .add_header(mn.clone(), mv.clone())
         .await;
     let body: serde_json::Value = invite_response.json();
     let code = body["data"]["code"].as_str().unwrap().to_string();
@@ -58,6 +58,13 @@ async fn setup_team_and_get_ids(server: &TestServer) -> (String, String, String,
         .post("/teams/join")
         .add_header(rn, rv)
         .json(&json!({"code": code}))
+        .await;
+
+    // Promouvoir en Responder via l'API
+    server
+        .patch(&format!("/teams/{}/members/{}/role", team_id, responder_id))
+        .add_header(mn, mv)
+        .json(&json!({"role": "responder"}))
         .await;
 
     (team_id, manager_token, responder_token, responder_id)

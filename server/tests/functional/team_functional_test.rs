@@ -250,11 +250,15 @@ async fn test_transfer_manager_returns_200() {
         .await;
 
     let body: serde_json::Value = join_response.json();
+    
+    // Afficher la réponse pour déboguer
+    println!("JOIN RESPONSE: {}", serde_json::to_string_pretty(&body).unwrap());
+
     let new_manager_id = body["data"]["members"]
         .as_array()
         .unwrap()
         .iter()
-        .find(|m| m["role"] == "Observer")
+        .find(|m| m["role"] == "observer")
         .unwrap()["user_id"]
         .as_str()
         .unwrap()
