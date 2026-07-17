@@ -6,6 +6,8 @@ use uuid::Uuid;
 // Représente les 3 rôles possibles dans une team
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Type)]
 #[sqlx(type_name = "team_role", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
+
 pub enum TeamRole {
     Observer,
     Responder,
@@ -23,7 +25,6 @@ pub struct Team {
     pub updated_at: DateTime<Utc>,
 }
 
-// Représente un membre d'une team avec son rôle
 #[derive(Debug, Serialize, Deserialize, Clone, sqlx::FromRow)]
 pub struct TeamMember {
     pub id: Uuid,
@@ -33,7 +34,6 @@ pub struct TeamMember {
     pub joined_at: DateTime<Utc>,
 }
 
-// Représente un membre avec ses infos utilisateur
 #[derive(Debug, Serialize, Deserialize, Clone, sqlx::FromRow)]
 pub struct TeamMemberWithUser {
     pub user_id: Uuid,
