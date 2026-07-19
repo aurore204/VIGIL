@@ -1,33 +1,35 @@
 use axum::{
     extract::{
-        ws::{Message, WebSocket},
-        State, WebSocketUpgrade,
+        ws::{Message, WebSocket, WebSocketUpgrade},
+        Query, State,
     },
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
-    Extension,
 };
 use futures_util::{sink::SinkExt, stream::StreamExt};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::middleware::auth_middleware::AuthenticatedUser;
 use crate::repositories::user_repository;
-use super::broadcaster::Broadcaster;
-use super::events::WsEvent;
+use crate::services::auth_service::verify_token;
 use crate::state::AppState;
+use crate::websocket::broadcaster::Broadcaster;
+use crate::websocket::events::WsEvent;
 
-// Message envoyé par le client pour s'abonner à une ressource
+#[derive(Debug, Deserialize)]
+pub struct WsQuery {
+    pub token: Option<String>,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientMessage {
-    // Le client indique qu'il regarde une ressource
     Watch {
         resource_id: Uuid,
         resource_type: String,
         team_id: Uuid,
     },
-    // Le client indique qu'il arrête de regarder
     Unwatch {
         resource_id: Uuid,
         resource_type: String,
@@ -35,16 +37,38 @@ pub enum ClientMessage {
     },
 }
 
-// Handler WebSocket 
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
     State(state): State<AppState>,
-    Extension(auth_user): Extension<AuthenticatedUser>,
+    Query(query): Query<WsQuery>,
+    headers: HeaderMap,
 ) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_socket(socket, state.pool, state.broadcaster, auth_user.id))
+    let token = if let Some(t) = query.token {
+        t
+    } else if let Some(auth) = headers.get("Authorization") {
+        let auth_str = auth.to_str().unwrap_or("");
+        if auth_str.starts_with("Bearer ") {
+            auth_str[7..].to_string()
+        } else {
+            return (StatusCode::UNAUTHORIZED, "Token manquant").into_response();
+        }
+    } else {
+        return (StatusCode::UNAUTHORIZED, "Token manquant").into_response();
+    };
+
+    let claims = match verify_token(&token) {
+        Ok(c) => c,
+        Err(_) => return (StatusCode::UNAUTHORIZED, "Token invalide").into_response(),
+    };
+
+    let user_id = match Uuid::parse_str(&claims.sub) {
+        Ok(id) => id,
+        Err(_) => return (StatusCode::UNAUTHORIZED, "Token invalide").into_response(),
+    };
+
+    ws.on_upgrade(move |socket| handle_socket(socket, state.pool, state.broadcaster, user_id))
 }
 
-// Gère une connexion WebSocket individuelle
 async fn handle_socket(
     socket: WebSocket,
     pool: PgPool,
@@ -53,31 +77,43 @@ async fn handle_socket(
 ) {
     let (mut sender, mut receiver) = socket.split();
 
-    // Récupérer le username pour la présence
-    let username = match user_repository::find_by_id(&pool, user_id).await {
+    let _username = match user_repository::find_by_id(&pool, user_id).await {
         Ok(Some(u)) => u.username,
         _ => return,
     };
 
-    // S'abonner au broadcaster global
-    let mut rx = broadcaster.subscribe();
+    // S'abonner au broadcast global
+    let mut rx_global = broadcaster.subscribe();
+    // S'abonner aux messages privés
+    let mut rx_private = broadcaster.register_user(user_id).await;
 
-    // Task qui envoie les events au client
     let send_task = tokio::spawn(async move {
-        while let Ok(event) = rx.recv().await {
-            let json = match serde_json::to_string(&event) {
-                Ok(j) => j,
-                Err(_) => continue,
-            };
-            if sender.send(Message::Text(json)).await.is_err() {
-                break;
+        loop {
+            tokio::select! {
+                Ok(event) = rx_global.recv() => {
+                    let json = match serde_json::to_string(&event) {
+                        Ok(j) => j,
+                        Err(_) => continue,
+                    };
+                    if sender.send(Message::Text(json)).await.is_err() {
+                        break;
+                    }
+                }
+                Ok(event) = rx_private.recv() => {
+                    let json = match serde_json::to_string(&event) {
+                        Ok(j) => j,
+                        Err(_) => continue,
+                    };
+                    if sender.send(Message::Text(json)).await.is_err() {
+                        break;
+                    }
+                }
+                else => break,
             }
         }
     });
 
-    // Task qui reçoit les messages du client (présence)
     let broadcaster_clone = broadcaster.clone();
-    let username_clone = username.clone();
     let recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
             if let Message::Text(text) = msg {
@@ -88,7 +124,6 @@ async fn handle_socket(
                                 .add_presence(resource_id, user_id, team_id)
                                 .await;
 
-                            // Diffuser la mise à jour de présence
                             let watchers = broadcaster_clone
                                 .get_watchers(resource_id, team_id)
                                 .await;
@@ -122,9 +157,11 @@ async fn handle_socket(
         }
     });
 
-    // Attendre que l'une des deux tasks se termine
     tokio::select! {
         _ = send_task => {},
         _ = recv_task => {},
     }
+
+    // Désenregistrer le user à la déconnexion
+    broadcaster.unregister_user(user_id).await;
 }
