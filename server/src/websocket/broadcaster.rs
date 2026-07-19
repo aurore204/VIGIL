@@ -5,15 +5,13 @@ use uuid::Uuid;
 
 use super::events::WsEvent;
 
-// Capacité du channel de broadcast
 const BROADCAST_CAPACITY: usize = 100;
 
-// Structure qui gère toutes les connexions WebSocket actives
 #[derive(Clone)]
 pub struct Broadcaster {
-    // sender global pour diffuser à tous les clients
     sender: broadcast::Sender<WsEvent>,
     presence: Arc<RwLock<HashMap<Uuid, HashMap<Uuid, Vec<Uuid>>>>>,
+    user_senders: Arc<RwLock<HashMap<Uuid, broadcast::Sender<WsEvent>>>>,
 }
 
 impl Broadcaster {
@@ -22,21 +20,42 @@ impl Broadcaster {
         Self {
             sender,
             presence: Arc::new(RwLock::new(HashMap::new())),
+            user_senders: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
-    // Diffuse un événement à tous les clients connectés
+    // Diffuse à tous les clients connectés
     pub fn broadcast(&self, event: WsEvent) {
-        // Si personne n'écoute, on ignore l'erreur
         let _ = self.sender.send(event);
     }
 
-    // Crée un receiver pour un nouveau client
+    // Envoie un event uniquement à un user spécifique
+    pub async fn send_to_user(&self, user_id: Uuid, event: WsEvent) {
+        let senders = self.user_senders.read().await;
+        if let Some(sender) = senders.get(&user_id) {
+            let _ = sender.send(event);
+        }
+    }
+
+    // Enregistre un sender pour un user spécifique
+    pub async fn register_user(&self, user_id: Uuid) -> broadcast::Receiver<WsEvent> {
+        let mut senders = self.user_senders.write().await;
+        let sender = senders
+            .entry(user_id)
+            .or_insert_with(|| broadcast::channel(BROADCAST_CAPACITY).0);
+        sender.subscribe()
+    }
+
+    // Désenregistre un user
+    pub async fn unregister_user(&self, user_id: Uuid) {
+        let mut senders = self.user_senders.write().await;
+        senders.remove(&user_id);
+    }
+
     pub fn subscribe(&self) -> broadcast::Receiver<WsEvent> {
         self.sender.subscribe()
     }
 
-    // Enregistre qu'un user regarde une ressource
     pub async fn add_presence(&self, resource_id: Uuid, user_id: Uuid, team_id: Uuid) {
         let mut presence = self.presence.write().await;
         presence
@@ -46,8 +65,7 @@ impl Broadcaster {
             .or_default()
             .push(user_id);
     }
-
-    // Retire un user de la présence d'une ressource
+    // Supprime un watcher d'une ressource spécifique
     pub async fn remove_presence(&self, resource_id: Uuid, user_id: Uuid, team_id: Uuid) {
         let mut presence = self.presence.write().await;
         if let Some(team_presence) = presence.get_mut(&team_id) {
@@ -56,8 +74,6 @@ impl Broadcaster {
             }
         }
     }
-
-    // Récupère les watchers d'une ressource
     pub async fn get_watchers(&self, resource_id: Uuid, team_id: Uuid) -> Vec<Uuid> {
         let presence = self.presence.read().await;
         presence
