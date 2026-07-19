@@ -6,7 +6,7 @@ use axum::{
     response::IntoResponse,
     Extension,
 };
-use futures::{sink::SinkExt, stream::StreamExt};
+use futures_util::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -15,6 +15,7 @@ use crate::middleware::auth_middleware::AuthenticatedUser;
 use crate::repositories::user_repository;
 use super::broadcaster::Broadcaster;
 use super::events::WsEvent;
+use crate::state::AppState;
 
 // Message envoyé par le client pour s'abonner à une ressource
 #[derive(Debug, Deserialize)]
@@ -37,10 +38,10 @@ pub enum ClientMessage {
 // Handler WebSocket 
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
-    State((pool, broadcaster)): State<(PgPool, Broadcaster)>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
 ) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_socket(socket, pool, broadcaster, auth_user.id))
+    ws.on_upgrade(move |socket| handle_socket(socket, state.pool, state.broadcaster, auth_user.id))
 }
 
 // Gère une connexion WebSocket individuelle

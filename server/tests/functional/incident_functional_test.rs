@@ -7,7 +7,11 @@ async fn setup_server() -> TestServer {
     dotenv::dotenv().ok();
     let database_url = std::env::var("DATABASE_URL").unwrap();
     let pool = PgPool::connect(&database_url).await.unwrap();
-    TestServer::new(create_router(pool)).unwrap()
+    let state = vigil_server::state::AppState::new(
+        pool,
+        vigil_server::websocket::broadcaster::Broadcaster::new(),
+    );
+    TestServer::new(create_router(state)).unwrap()
 }
 
 fn auth_header(token: &str) -> (axum::http::HeaderName, axum::http::HeaderValue) {
