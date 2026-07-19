@@ -102,3 +102,10 @@ pub struct IncidentResponse {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateIncidentRequest {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub severity: Option<IncidentSeverity>,
+}

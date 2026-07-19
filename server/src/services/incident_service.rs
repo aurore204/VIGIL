@@ -8,6 +8,7 @@ use crate::models::incident::{
 };
 use crate::models::team::TeamRole;
 use crate::repositories::{incident_repository, team_repository};
+use crate::models::incident::UpdateIncidentRequest;
 
 #[derive(Debug)]
 pub enum IncidentError {
@@ -179,6 +180,69 @@ pub async fn acknowledge_incident(
         .map_err(IncidentError::DatabaseError)?
         .ok_or(IncidentError::IncidentNotFound)
 }
+
+// Met à jour un incident (Manager uniquement)
+pub async fn update_incident(
+    pool: &PgPool,
+    incident_id: Uuid,
+    user_id: Uuid,
+    req: UpdateIncidentRequest,
+) -> Result<IncidentResponse, IncidentError> {
+    let incident = incident_repository::find_by_id(pool, incident_id)
+        .await
+        .map_err(IncidentError::DatabaseError)?
+        .ok_or(IncidentError::IncidentNotFound)?;
+
+    let role = team_repository::get_member_role(pool, incident.team_id, user_id)
+        .await
+        .map_err(IncidentError::DatabaseError)?
+        .ok_or(IncidentError::NotMember)?;
+
+    if role != TeamRole::Manager {
+        return Err(IncidentError::Forbidden);
+    }
+
+    incident_repository::update_incident(
+        pool,
+        incident_id,
+        req.title.as_deref(),
+        req.description.as_deref(),
+        req.severity,
+    )
+    .await
+    .map_err(IncidentError::DatabaseError)?;
+
+    incident_repository::get_incident_with_timeline(pool, incident_id)
+        .await
+        .map_err(IncidentError::DatabaseError)?
+        .ok_or(IncidentError::IncidentNotFound)
+}
+
+// Annule un incident (Manager uniquement)
+pub async fn cancel_incident(
+    pool: &PgPool,
+    incident_id: Uuid,
+    user_id: Uuid,
+) -> Result<(), IncidentError> {
+    let incident = incident_repository::find_by_id(pool, incident_id)
+        .await
+        .map_err(IncidentError::DatabaseError)?
+        .ok_or(IncidentError::IncidentNotFound)?;
+
+    let role = team_repository::get_member_role(pool, incident.team_id, user_id)
+        .await
+        .map_err(IncidentError::DatabaseError)?
+        .ok_or(IncidentError::NotMember)?;
+
+    if role != TeamRole::Manager {
+        return Err(IncidentError::Forbidden);
+    }
+
+    incident_repository::delete_incident(pool, incident_id)
+        .await
+        .map_err(IncidentError::DatabaseError)
+}
+
 
 // Escalade un incident avec nouvelle sévérité (Responder ou Manager)
 pub async fn escalate_incident(

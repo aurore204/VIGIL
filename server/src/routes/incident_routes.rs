@@ -1,10 +1,11 @@
 use axum::{
-    routing::{get, patch, post},
+    routing::{get, patch, post,delete},
     Router,
 };
 
 use crate::handlers::incident_handler;
 use crate::state::AppState;
+
 
 pub fn incident_routes() -> Router<AppState> {
     Router::new()
@@ -17,4 +18,6 @@ pub fn incident_routes() -> Router<AppState> {
         .route("/incidents/:incident_id/assign", post(incident_handler::assign_responder))
         .route("/incidents/:incident_id/timeline", post(incident_handler::add_timeline_entry))
         .route("/incidents/:incident_id/timeline/:entry_id", patch(incident_handler::edit_timeline_entry))
+        .route("/incidents/:incident_id", patch(incident_handler::update_incident))
+        .route("/incidents/:incident_id", delete(incident_handler::cancel_incident))
 }

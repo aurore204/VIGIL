@@ -303,3 +303,49 @@ pub async fn get_incident_with_timeline(
         updated_at: incident.updated_at,
     }))
 }
+
+// Met à jour les informations d'un incident
+pub async fn update_incident(
+    pool: &PgPool,
+    incident_id: Uuid,
+    title: Option<&str>,
+    description: Option<&str>,
+    severity: Option<IncidentSeverity>,
+) -> Result<Incident, sqlx::Error> {
+    sqlx::query_as!(
+        Incident,
+        r#"
+        UPDATE incidents
+        SET
+            title = COALESCE($1, title),
+            description = COALESCE($2, description),
+            severity = COALESCE($3, severity),
+            updated_at = NOW()
+        WHERE id = $4
+        RETURNING
+            id, team_id, created_by, assigned_to, title, description,
+            state as "state: IncidentState",
+            severity as "severity: IncidentSeverity",
+            resolved_at, created_at, updated_at
+        "#,
+        title,
+        description,
+        severity as Option<IncidentSeverity>,
+        incident_id
+    )
+    .fetch_one(pool)
+    .await
+}
+// Supprime un incident
+pub async fn delete_incident(
+    pool: &PgPool,
+    incident_id: Uuid,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"DELETE FROM incidents WHERE id = $1"#,
+        incident_id
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
