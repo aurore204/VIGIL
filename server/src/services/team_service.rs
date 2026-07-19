@@ -369,6 +369,27 @@ pub async fn unban_member(
     Ok(())
 }
 
+// Quitter une team
+pub async fn leave_team(
+    pool: &PgPool,
+    team_id: Uuid,
+    user_id: Uuid,
+) -> Result<(), TeamError> {
+    let role = team_repository::get_member_role(pool, team_id, user_id)
+        .await
+        .map_err(TeamError::DatabaseError)?
+        .ok_or(TeamError::NotMember)?;
+
+    // Le Manager ne peut pas quitter sans transférer son rôle
+    if role == TeamRole::Manager {
+        return Err(TeamError::CannotTargetSelf);
+    }
+
+    team_repository::kick_member(pool, team_id, user_id)
+        .await
+        .map_err(TeamError::DatabaseError)
+}
+
 // Met à jour une team (Manager uniquement)
 pub async fn update_team(
     pool: &PgPool,

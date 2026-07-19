@@ -182,6 +182,43 @@ pub async fn generate_invitation(
     }
 }
 
+
+// DELETE /teams/:team_id/leave
+pub async fn leave_team(
+    State(state): State<AppState>,
+    Extension(auth_user): Extension<AuthenticatedUser>,
+    Path(team_id): Path<Uuid>,
+) -> impl IntoResponse {
+    match team_service::leave_team(&state.pool, team_id, auth_user.id).await {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(serde_json::json!(ApiResponse::<()>::success_no_data(
+                "Vous avez quitté la team avec succès"
+            ))),
+        ),
+        Err(TeamError::NotMember) => (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!(ApiError::new(
+                "Vous n'êtes pas membre de cette team",
+                "NOT_MEMBER"
+            ))),
+        ),
+        Err(TeamError::CannotTargetSelf) => (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!(ApiError::new(
+                "Vous devez transférer votre rôle Manager avant de quitter la team",
+                "MANAGER_MUST_TRANSFER_FIRST"
+            ))),
+        ),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!(ApiError::new(
+                "Erreur interne du serveur",
+                "INTERNAL_ERROR"
+            ))),
+        ),
+    }
+}
 pub async fn transfer_manager(
     State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
