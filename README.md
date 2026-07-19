@@ -2,108 +2,372 @@
 
 Plateforme de contrôle opérationnel collaboratif pour la gestion des Releases et des Incidents en temps réel.
 
+VIGIL permet à une équipe technique de coordonner ses déploiements (Releases) et de gérer les incidents de production (Incidents) depuis une interface unifiée, avec mise à jour en temps réel pour tous les membres connectés.
+
+---
+
 ## Stack technique
 
-| Composant        | Technologie    |
-|------------------|----------------|
-| Serveur          | Rust (Axum)    |
-| Client Web       | Next.js        |
-| Client Desktop   | Tauri          |
-| Base de données  | PostgreSQL     |
-| Temps réel       | WebSockets     |
-| Conteneurisation | Docker Compose |
-| CI/CD            | GitHub Actions |
+| Composant        | Technologie     | Justification                          |
+|------------------|-----------------|----------------------------------------|
+| Serveur          | Rust (Axum)     | Performance, sécurité mémoire, async   |
+| Client Web       | Next.js         | SSR, routing, écosystème React         |
+| Client Desktop   | Tauri           | Rust natif, binaire léger              |
+| Base de données  | PostgreSQL      | Concurrence, transactions ACID         |
+| Temps réel       | WebSockets      | Diffusion bidirectionnelle             |
+| Conteneurisation | Docker Compose  | Environnement reproductible            |
+| CI/CD            | GitHub Actions  | Exemption T-DEV-600 déclarée au kickoff|
+
+---
 
 ## Justification des choix techniques
 
 ### Rust (Axum) vs NodeJS
 
-Rust a été retenu pour sa gestion mémoire sans garbage collector, ce qui garantit des performances stables et prévisibles sous forte charge. VIGIL est une salle de contrôle temps réel qui doit gérer des milliers de connexions WebSocket simultanées sans latence. L'écosystème Axum + sqlx + Tokio est particulièrement adapté à ce cas d'usage : Tokio gère la concurrence asynchrone nativement, Axum fournit un routing HTTP ergonomique, et sqlx permet des requêtes PostgreSQL typées et vérifiées à la compilation.
+Rust a été retenu pour sa gestion mémoire sans garbage collector, garantissant des performances stables et prévisibles sous forte charge. VIGIL gère des milliers de connexions WebSocket simultanées — l'écosystème Axum + sqlx + Tokio est particulièrement adapté : Tokio gère la concurrence asynchrone nativement, Axum fournit un routing HTTP ergonomique, et sqlx permet des requêtes PostgreSQL typées et vérifiées à la compilation.
 
 ### PostgreSQL vs SQLite
 
-PostgreSQL a été retenu car VIGIL est une application multi-utilisateurs avec des écritures concurrentes : plusieurs Responders peuvent acquitter des Incidents simultanément, plusieurs Managers peuvent modifier des Releases en parallèle. PostgreSQL gère cette concurrence nativement avec son système de verrous et de transactions ACID. SQLite est conçu pour un usage mono-utilisateur et aurait posé des problèmes de performance et de cohérence dans ce contexte.
+PostgreSQL a été retenu car VIGIL est une application multi-utilisateurs avec des écritures concurrentes : plusieurs Responders peuvent acquitter des Incidents simultanément, plusieurs Managers peuvent modifier des Releases en parallèle. PostgreSQL gère cette concurrence nativement avec son système de verrous et de transactions ACID. SQLite est conçu pour un usage mono-utilisateur et aurait posé des problèmes de cohérence dans ce contexte.
 
 ### Tauri vs Electron
 
-Tauri a été retenu car le backend est déjà en Rust. Tauri utilise Rust pour sa partie native, ce qui permet de partager des connaissances et des outils entre le serveur et le client desktop. Le binaire produit par Tauri est significativement plus léger qu'Electron car il utilise le moteur de rendu natif du système d'exploitation plutôt d'embarquer Chromium.
+Tauri a été retenu car le backend est déjà en Rust. Tauri utilise Rust pour sa partie native, ce qui permet de partager des connaissances et des outils entre le serveur et le client desktop. Le binaire produit est significativement plus léger qu'Electron car il utilise le moteur de rendu natif du système d'exploitation plutôt que d'embarquer Chromium.
 
-## Architecture
+---
 
-    vigil/
-      server/           -> Logique métier, API REST, WebSockets (Rust/Axum)
-      client_web/       -> Interface web (Next.js)
-      client_desktop/   -> Application native (Tauri)
-      locales/          -> Traductions FR/EN partagées
-      docker-compose.yml
-      README.md
-      WEBSOCKET_SPEC.md
-      HOWTOCONTRIBUTE.md
-      UI_GUIDELINES.md
+## Architecture globale
+
+    External services (GitHub, webhooks...)
+              |
+              | POST /webhooks/{service}
+              v
+    +----------------------------------+
+    |        Application Server        |
+    |                                  |
+    |  Webhook Receiver (HMAC)         |
+    |         |                        |
+    |         v                        |
+    |  Hook Engine (rule evaluation)   |
+    |         |                        |
+    |         v                        |
+    |  WS Broadcaster                  |
+    |  REST API - Business Logic - DB  |
+    +----------------------------------+
+              |
+              | WebSocket + REST
+        +-----+------+
+        v             v
+    Web Client    Desktop Client
+    (Next.js)     (Tauri)
 
 ### Où vit chaque responsabilité
 
-- **Handlers** : `server/src/handlers/` — reçoivent les requêtes HTTP et appellent les services
-- **Services** : `server/src/services/` — contiennent toute la logique métier
-- **Repositories** : `server/src/repositories/` — accès à la base de données PostgreSQL
-- **WebSocket** : `server/src/websocket/` — diffusion des événements temps réel
-- **Middleware** : `server/src/middleware/` — vérification des tokens JWT et permissions
+| Couche        | Chemin                        | Rôle                                              |
+|---------------|-------------------------------|---------------------------------------------------|
+| Handlers      | `server/src/handlers/`        | Reçoivent les requêtes HTTP, appellent les services |
+| Services      | `server/src/services/`        | Logique métier, règles de validation               |
+| Repositories  | `server/src/repositories/`    | Accès exclusif à la base de données               |
+| WebSocket     | `server/src/websocket/`       | Broadcaster et handler de connexions WS           |
+| Middleware    | `server/src/middleware/`      | Vérification JWT et permissions par rôle          |
+| Models        | `server/src/models/`          | Structures de données et types                    |
+| State         | `server/src/state.rs`         | État partagé : pool PostgreSQL + broadcaster      |
+
+---
 
 ## Schéma de la base de données
 
-    users
-      id, email, password_hash, username, language, created_at, updated_at
+    -- Comptes utilisateurs, authentification JWT et préférences
+    users (
+      id UUID PK,
+      email VARCHAR UNIQUE,
+      password_hash VARCHAR,        -- nullable pour OAuth2
+      username VARCHAR UNIQUE,
+      language VARCHAR(2),          -- 'fr' ou 'en', persisté côté serveur
+      token_invalidated_at TIMESTAMPTZ, -- invalidation lors du logout
+      created_at TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ
+    )
 
-    teams
-      id, name, description, manager_id (-> users), created_at, updated_at
+    -- Espaces de travail partagés entre membres
+    teams (
+      id UUID PK,
+      name VARCHAR,
+      description TEXT,
+      manager_id UUID -> users,     -- un seul Manager par team
+      created_at TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ
+    )
 
-    team_members
-      id, team_id (-> teams), user_id (-> users), role, joined_at
+    -- Appartenance d'un user à une team avec son rôle
+    team_members (
+      id UUID PK,
+      team_id UUID -> teams,
+      user_id UUID -> users,
+      role team_role,               -- observer | responder | manager
+      joined_at TIMESTAMPTZ,
+      UNIQUE (team_id, user_id)
+    )
 
-    team_invitations
-      id, team_id (-> teams), created_by (-> users), code, expires_at, created_at
+    -- Codes d'invitation générés par le Manager pour rejoindre une team
+    team_invitations (
+      id UUID PK,
+      team_id UUID -> teams,
+      created_by UUID -> users,
+      code VARCHAR UNIQUE,          -- code aléatoire de 8 caractères
+      expires_at TIMESTAMPTZ,       -- nullable = pas d'expiration
+      created_at TIMESTAMPTZ
+    )
 
-    team_bans
-      id, team_id (-> teams), user_id (-> users), banned_by (-> users), reason, expires_at, created_at
+    -- Bans temporaires et permanents appliqués par le Manager
+    team_bans (
+      id UUID PK,
+      team_id UUID -> teams,
+      user_id UUID -> users,
+      banned_by UUID -> users,
+      reason TEXT,
+      expires_at TIMESTAMPTZ,       -- NULL = ban permanent
+      created_at TIMESTAMPTZ,
+      UNIQUE (team_id, user_id)
+    )
 
-    incidents
-      id, team_id (-> teams), created_by (-> users), assigned_to (-> users),
-      title, description, state, severity, resolved_at, created_at, updated_at
+    -- Problèmes détectés en production, cycle de vie complet
+    incidents (
+      id UUID PK,
+      team_id UUID -> teams,
+      created_by UUID -> users,
+      assigned_to UUID -> users,    -- nullable, assigné par le Manager
+      title VARCHAR,
+      description TEXT,
+      state incident_state,         -- open | acknowledged | escalated | resolved
+      severity incident_severity,   -- low | medium | high | critical
+      resolved_at TIMESTAMPTZ,      -- renseigné à la résolution
+      created_at TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ
+    )
 
-    incident_timeline
-      id, incident_id (-> incidents), author_id (-> users),
-      content (max 2000 chars), edited_at, created_at
+    -- Journal collaboratif d'un incident, visible par tous en temps réel
+    incident_timeline (
+      id UUID PK,
+      incident_id UUID -> incidents,
+      author_id UUID -> users,
+      content TEXT,                 -- max 2000 caractères
+      edited_at TIMESTAMPTZ,        -- NULL = jamais modifié
+      created_at TIMESTAMPTZ
+    )
 
-    timeline_reactions
-      id, entry_id (-> incident_timeline), user_id (-> users), emoji, created_at
-      UNIQUE (entry_id, user_id, emoji)
+    -- Réactions emoji sur les entrées de timeline
+    timeline_reactions (
+      id UUID PK,
+      entry_id UUID -> incident_timeline,
+      user_id UUID -> users,
+      emoji VARCHAR,                -- parmi la liste définie par le serveur
+      created_at TIMESTAMPTZ,
+      UNIQUE (entry_id, user_id, emoji) -- un emoji par user par entrée
+    )
 
-    releases
-      id, team_id (-> teams), created_by (-> users),
-      title, description, state, created_at, updated_at
+    -- Déploiements planifiés avec étapes séquentielles
+    releases (
+      id UUID PK,
+      team_id UUID -> teams,
+      created_by UUID -> users,
+      title VARCHAR,
+      description TEXT,
+      state release_state,          -- created | in_progress | completed | cancelled | blocked
+      created_at TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ
+    )
 
-    release_steps
-      id, release_id (-> releases), validated_by (-> users),
-      name, description, position, state, validated_at, created_at, updated_at
+    -- Étapes séquentielles d'une release (build, staging, go_no_go, production...)
+    release_steps (
+      id UUID PK,
+      release_id UUID -> releases,
+      validated_by UUID -> users,   -- nullable avant validation
+      name VARCHAR,
+      description TEXT,
+      position INTEGER,             -- ordre d'exécution, étape précédente obligatoire
+      state step_state,             -- pending | in_progress | completed | cancelled
+      validated_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ,
+      UNIQUE (release_id, position)
+    )
 
-    release_incidents
-      id, release_id (-> releases), incident_id (-> incidents), created_at
+    -- Liaison release/incident déclenchant le blocage automatique
+    release_incidents (
+      id UUID PK,
+      release_id UUID -> releases,
+      incident_id UUID -> incidents,
+      created_at TIMESTAMPTZ,
       UNIQUE (release_id, incident_id)
+    )
 
-    private_messages
-      id, sender_id (-> users), receiver_id (-> users),
-      content (max 2000 chars), read_at, created_at
+    -- Messages directs 1-to-1 entre membres partageant une team
+    private_messages (
+      id UUID PK,
+      sender_id UUID -> users,
+      receiver_id UUID -> users,
+      content TEXT,                 -- max 2000 caractères
+      read_at TIMESTAMPTZ,          -- NULL = non lu
+      created_at TIMESTAMPTZ
+    )
 
-    user_tokens
-      id, user_id (-> users), service_name, token_type,
-      access_token (chiffre), refresh_token (chiffre), expires_at, created_at, updated_at
+    -- Tokens OAuth2 et personnels chiffrés pour les services tiers (Phase 2)
+    user_tokens (
+      id UUID PK,
+      user_id UUID -> users,
+      service_name VARCHAR,
+      token_type token_type,        -- oauth2 | personal
+      access_token TEXT,            -- chiffré côté serveur
+      refresh_token TEXT,           -- chiffré côté serveur
+      expires_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ,
+      UNIQUE (user_id, service_name)
+    )
 
-    rules
-      id, team_id (-> teams), created_by (-> users),
-      name, enabled, trigger (JSONB), reaction (JSONB), created_at, updated_at
+    -- Règles Action-REAction du moteur d'automatisation (Phase 2)
+    rules (
+      id UUID PK,
+      team_id UUID -> teams,
+      created_by UUID -> users,
+      name VARCHAR,
+      enabled BOOLEAN,
+      trigger JSONB,                -- service, event, filters
+      reaction JSONB,               -- type, payload
+      created_at TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ
+    )
 
-    rule_logs
-      id, rule_id (-> rules), status, result (JSONB), error, triggered_at
+    -- Historique des déclenchements de règles (Phase 2)
+    rule_logs (
+      id UUID PK,
+      rule_id UUID -> rules,
+      status rule_log_status,       -- success | failed
+      result JSONB,                 -- données du résultat
+      error TEXT,                   -- message d'erreur si échec
+      triggered_at TIMESTAMPTZ
+    )
+
+---
+
+## API REST complète
+
+### Authentification
+
+| Méthode | Route            | Description                              | Auth |
+|---------|------------------|------------------------------------------|------|
+| POST    | /auth/register   | Inscription email/password               | Non  |
+| POST    | /auth/login      | Connexion, retourne un token JWT         | Non  |
+| GET     | /me              | Utilisateur connecté                     | Oui  |
+| POST    | /auth/logout     | Déconnexion avec invalidation du token   | Oui  |
+
+### Teams
+
+| Méthode | Route                              | Description                    | Rôle requis |
+|---------|------------------------------------|--------------------------------|-------------|
+| GET     | /teams                             | Mes teams                      | Membre      |
+| POST    | /teams                             | Créer une team                 | Tout user   |
+| GET     | /teams/:id                         | Détail d'une team              | Membre      |
+| PATCH   | /teams/:id                         | Modifier nom/description       | Manager     |
+| DELETE  | /teams/:id                         | Supprimer une team             | Manager     |
+| GET     | /teams/:id/members                 | Liste des membres              | Membre      |
+| POST    | /teams/join                        | Rejoindre via code             | Tout user   |
+| DELETE  | /teams/:id/leave                   | Quitter la team                | Membre      |
+| POST    | /teams/:id/invitations             | Générer un code d'invitation   | Manager     |
+| POST    | /teams/:id/transfer                | Transférer le rôle Manager     | Manager     |
+| PATCH   | /teams/:id/members/:uid/role       | Modifier le rôle d'un membre   | Manager     |
+| DELETE  | /teams/:id/members/:uid            | Kick un membre                 | Manager     |
+| POST    | /teams/:id/members/:uid/ban        | Bannir un membre               | Manager     |
+| DELETE  | /teams/:id/members/:uid/ban        | Lever un ban                   | Manager     |
+
+### Incidents
+
+| Méthode | Route                                    | Description                    | Rôle requis        |
+|---------|------------------------------------------|--------------------------------|--------------------|
+| GET     | /teams/:id/incidents                     | Liste des incidents            | Membre             |
+| POST    | /teams/:id/incidents                     | Créer un incident              | Manager            |
+| GET     | /incidents/:id                           | Détail d'un incident           | Membre             |
+| PATCH   | /incidents/:id                           | Modifier titre/sévérité        | Manager            |
+| DELETE  | /incidents/:id                           | Supprimer un incident          | Manager            |
+| PATCH   | /incidents/:id/acknowledge               | Acquitter                      | Responder/Manager  |
+| PATCH   | /incidents/:id/escalate                  | Escalader                      | Responder/Manager  |
+| PATCH   | /incidents/:id/resolve                   | Résoudre                       | Manager            |
+| POST    | /incidents/:id/assign                    | Assigner un Responder          | Manager            |
+| POST    | /incidents/:id/timeline                  | Ajouter une entrée timeline    | Responder/Manager  |
+| PATCH   | /incidents/:id/timeline/:eid             | Modifier son entrée            | Auteur uniquement  |
+
+### Réactions
+
+| Méthode | Route                                          | Description              | Rôle requis |
+|---------|------------------------------------------------|--------------------------|-------------|
+| GET     | /reactions/available                           | Liste des emojis         | Non         |
+| POST    | /incidents/:id/timeline/:eid/reactions         | Ajouter une réaction     | Membre      |
+| DELETE  | /incidents/:id/timeline/:eid/reactions/:emoji  | Retirer une réaction     | Membre      |
+
+### Releases
+
+| Méthode | Route                                  | Description                    | Rôle requis        |
+|---------|----------------------------------------|--------------------------------|--------------------|
+| GET     | /teams/:id/releases                    | Liste des releases             | Membre             |
+| POST    | /teams/:id/releases                    | Créer une release              | Manager            |
+| GET     | /releases/:id                          | Détail d'une release           | Membre             |
+| PATCH   | /releases/:id/start                    | Démarrer une release           | Manager            |
+| PATCH   | /releases/:id/cancel                   | Annuler une release            | Manager            |
+| PATCH   | /releases/:id/steps/:sid/validate      | Valider une étape              | Responder/Manager  |
+| POST    | /releases/:id/incidents/:iid           | Lier un incident               | Manager            |
+
+### Messages privés
+
+| Méthode | Route                | Description              | Rôle requis |
+|---------|----------------------|--------------------------|-------------|
+| POST    | /users/:id/messages  | Envoyer un message       | Membre      |
+| GET     | /users/:id/messages  | Historique conversation  | Membre      |
+| PATCH   | /messages/:id/read   | Marquer comme lu         | Destinataire|
+
+### WebSocket
+
+| Méthode | Route | Description                                    |
+|---------|-------|------------------------------------------------|
+| GET     | /ws   | Connexion WebSocket (token via header ou query)|
+
+### Phase 2
+
+| Méthode | Route        | Description                        |
+|---------|--------------|------------------------------------|
+| GET     | /about.json  | Catalogue des services disponibles |
+
+---
+
+## WebSockets
+
+Voir [WEBSOCKET_SPEC.md](./WEBSOCKET_SPEC.md) pour la documentation complète des événements.
+
+---
+
+## Emojis disponibles
+
+Le serveur expose 6 emojis fixes via `GET /reactions/available` :
+
+| Code    | Description     |
+|---------|-----------------|
+| +1      | Pouce levé      |
+| -1      | Pouce baissé    |
+| eyes    | Yeux            |
+| warning | Avertissement   |
+| check   | Validation      |
+| fire    | Feu             |
+
+---
+
+## Limites
+
+| Ressource            | Limite          |
+|----------------------|-----------------|
+| Entrées de timeline  | 2000 caractères |
+| Messages privés      | 2000 caractères |
+
+---
 
 ## Variables d'environnement
 
@@ -113,14 +377,28 @@ Copie `.env.example` en `.env` et remplis les valeurs :
 
 Ne committe jamais le fichier `.env`. Il est listé dans `.gitignore`.
 
+### Variables requises
+
+| Variable      | Description                              |
+|---------------|------------------------------------------|
+| DATABASE_URL  | URL de connexion PostgreSQL              |
+| SERVER_HOST   | Hôte du serveur (0.0.0.0)               |
+| SERVER_PORT   | Port du serveur (8080)                   |
+| JWT_SECRET    | Clé secrète pour signer les tokens JWT  |
+| RUST_LOG      | Niveau de logs (debug en développement) |
+
+---
+
 ## Installation et lancement en local
 
 ### Prérequis
 
 - Rust (stable)
-- Docker
+- Docker et Docker Compose
 - Node.js 18+
-- sqlx-cli : `cargo install sqlx-cli --no-default-features --features postgres`
+- sqlx-cli :
+
+    cargo install sqlx-cli --version "^0.7" --no-default-features --features postgres
 
 ### Étapes
 
@@ -130,42 +408,67 @@ Ne committe jamais le fichier `.env`. Il est listé dans `.gitignore`.
 
     # 2. Configurer les variables d'environnement
     cp .env.example .env
-    # Ouvrir .env et remplir toutes les valeurs
 
-    # 3. Lancer PostgreSQL
-    docker run --name vigil-db \
-      -e POSTGRES_USER=<POSTGRES_USER> \
-      -e POSTGRES_PASSWORD=<POSTGRES_PASSWORD> \
-      -e POSTGRES_DB=vigil \
-      -p 5433:5432 \
-      -d postgres:16
+    # 3. Lancer la base de données
+    docker compose up -d db
 
-    # 4. Créer la base de données
+    # 4. Lancer les migrations
     cd server
-    sqlx database create
-
-    # 5. Lancer les migrations
     sqlx migrate run
 
-    # 6. Lancer le serveur
+    # 5. Lancer le serveur
     cargo run
 
-    # 7. Lancer le client web (dans un autre terminal)
+    # 6. Lancer le client web (dans un autre terminal)
     cd ../client_web
     npm install
     npm run dev
 
+---
+
 ## Ports
 
-| Service    | Port |
-|------------|------|
-| Serveur    | 8080 |
-| Client web | 8081 |
+| Service      | Port |
+|--------------|------|
+| Serveur      | 8080 |
+| Client web   | 8081 |
+
+---
+
+## OS cible pour le client desktop
+
+Linux — le binaire est exposé via :
+
+    GET http://localhost:8081/client.AppImage
+
+---
+
+## Linting et formatage
+
+### Rust
+
+    cargo clippy
+    cargo fmt --check
+
+### TypeScript
+
+    cd client_web
+    npx eslint .
+    npx prettier --check .
+
+---
+
+## Tests
+
+    cd server
+    cargo test
+
+Coverage :
+
+    cargo tarpaulin --out Html
+
+---
 
 ## Exemptions T-DEV-600
 
 - `repo_cicd` : pipeline CI/CD validé lors du T-DEV-600, exemption déclarée au kickoff.
-
-## OS cible pour le client desktop
-
-Linux — le binaire est exposé via GET http://localhost:8081/client.AppImage

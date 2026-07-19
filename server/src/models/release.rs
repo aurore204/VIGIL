@@ -4,8 +4,8 @@ use sqlx::Type;
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Type)]
-#[sqlx(type_name = "release_state", rename_all = "lowercase")]
-#[serde(rename_all = "lowercase")]
+#[sqlx(type_name = "release_state", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum ReleaseState {
     Created,
     InProgress,
@@ -15,8 +15,8 @@ pub enum ReleaseState {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Type)]
-#[sqlx(type_name = "step_state", rename_all = "lowercase")]
-#[serde(rename_all = "lowercase")]
+#[sqlx(type_name = "step_state", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum StepState {
     Pending,
     InProgress,
