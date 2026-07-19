@@ -3,3 +3,4 @@ pub mod team;
 pub mod response;
 pub mod incident;
 pub mod reaction;
+pub mod message;
