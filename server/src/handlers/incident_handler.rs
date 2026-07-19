@@ -12,6 +12,7 @@ use crate::models::incident::{
     EditTimelineEntryRequest, EscalateIncidentRequest,
 };
 use crate::models::incident::UpdateIncidentRequest;
+use crate::services::release_service;
 use crate::models::response::{ApiError, ApiResponse};
 use crate::repositories::user_repository;
 use crate::services::incident_service::{self, IncidentError};
@@ -278,6 +279,25 @@ pub async fn resolve_incident(
                 new_state: "resolved".to_string(),
                 by: username,
             });
+
+            // Débloquer automatiquement les releases liées
+            if let Ok(linked_releases) = crate::repositories::release_repository::get_releases_by_incident(
+                &state.pool, incident_id
+            ).await {
+                for release_id in linked_releases {
+                    if let Ok(unblocked) = release_service::unblock_release_if_resolved(
+                        &state.pool, release_id
+                    ).await {
+                        if unblocked {
+                            state.broadcaster.broadcast(WsEvent::ReleaseStateChanged {
+                                release_id,
+                                new_state: "in_progress".to_string(),
+                            });
+                        }
+                    }
+                }
+            }
+
             (
                 StatusCode::OK,
                 Json(serde_json::json!(ApiResponse::success(
