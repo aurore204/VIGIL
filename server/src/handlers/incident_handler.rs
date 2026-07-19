@@ -11,6 +11,7 @@ use crate::models::incident::{
     AddTimelineEntryRequest, AssignIncidentRequest, CreateIncidentRequest,
     EditTimelineEntryRequest, EscalateIncidentRequest,
 };
+use crate::models::incident::UpdateIncidentRequest;
 use crate::models::response::{ApiError, ApiResponse};
 use crate::repositories::user_repository;
 use crate::services::incident_service::{self, IncidentError};
@@ -477,6 +478,82 @@ pub async fn edit_timeline_entry(
             Json(serde_json::json!(ApiError::new(
                 "Vous ne pouvez modifier que vos propres entrées",
                 "FORBIDDEN"
+            ))),
+        ),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!(ApiError::new(
+                "Erreur interne du serveur",
+                "INTERNAL_ERROR"
+            ))),
+        ),
+    }
+}
+
+// PATCH /incidents/:incident_id
+pub async fn update_incident(
+    State(state): State<AppState>,
+    Extension(auth_user): Extension<AuthenticatedUser>,
+    Path(incident_id): Path<Uuid>,
+    Json(req): Json<UpdateIncidentRequest>,
+) -> impl IntoResponse {
+    match incident_service::update_incident(&state.pool, incident_id, auth_user.id, req).await {
+        Ok(incident) => (
+            StatusCode::OK,
+            Json(serde_json::json!(ApiResponse::success(
+                "Incident mis à jour avec succès",
+                incident
+            ))),
+        ),
+        Err(IncidentError::IncidentNotFound) => (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!(ApiError::new(
+                "Incident introuvable",
+                "INCIDENT_NOT_FOUND"
+            ))),
+        ),
+        Err(IncidentError::Forbidden) => (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!(ApiError::new(
+                "Seul le Manager peut modifier un incident",
+                "NOT_MANAGER"
+            ))),
+        ),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!(ApiError::new(
+                "Erreur interne du serveur",
+                "INTERNAL_ERROR"
+            ))),
+        ),
+    }
+}
+
+// DELETE /incidents/:incident_id
+pub async fn cancel_incident(
+    State(state): State<AppState>,
+    Extension(auth_user): Extension<AuthenticatedUser>,
+    Path(incident_id): Path<Uuid>,
+) -> impl IntoResponse {
+    match incident_service::cancel_incident(&state.pool, incident_id, auth_user.id).await {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(serde_json::json!(ApiResponse::<()>::success_no_data(
+                "Incident supprimé avec succès"
+            ))),
+        ),
+        Err(IncidentError::IncidentNotFound) => (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!(ApiError::new(
+                "Incident introuvable",
+                "INCIDENT_NOT_FOUND"
+            ))),
+        ),
+        Err(IncidentError::Forbidden) => (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!(ApiError::new(
+                "Seul le Manager peut supprimer un incident",
+                "NOT_MANAGER"
             ))),
         ),
         Err(_) => (
