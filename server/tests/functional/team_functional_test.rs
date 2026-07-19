@@ -377,3 +377,64 @@ async fn test_get_team_members_returns_200() {
     let body: serde_json::Value = response.json();
     assert_eq!(body["data"].as_array().unwrap().len(), 1);
 }
+
+#[tokio::test]
+async fn test_leave_team_as_observer_returns_200() {
+    let server = setup_server().await;
+    let token1 = register_and_get_token(&server, &uuid::Uuid::new_v4().to_string()).await;
+    let token2 = register_and_get_token(&server, &uuid::Uuid::new_v4().to_string()).await;
+
+    let (n1, v1) = auth_header(&token1);
+    let create_response = server
+        .post("/teams")
+        .add_header(n1.clone(), v1.clone())
+        .json(&json!({"name": "Team Test"}))
+        .await;
+    let body: serde_json::Value = create_response.json();
+    let team_id = body["data"]["id"].as_str().unwrap();
+
+    let invite = server
+        .post(&format!("/teams/{}/invitations", team_id))
+        .add_header(n1, v1)
+        .await;
+    let body: serde_json::Value = invite.json();
+    let code = body["data"]["code"].as_str().unwrap();
+
+    let (n2, v2) = auth_header(&token2);
+    server
+        .post("/teams/join")
+        .add_header(n2.clone(), v2.clone())
+        .json(&json!({"code": code}))
+        .await;
+
+    let response = server
+        .delete(&format!("/teams/{}/leave", team_id))
+        .add_header(n2, v2)
+        .await;
+
+    response.assert_status(axum::http::StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_leave_team_as_manager_returns_400() {
+    let server = setup_server().await;
+    let token = register_and_get_token(&server, &uuid::Uuid::new_v4().to_string()).await;
+    let (n, v) = auth_header(&token);
+
+    let create_response = server
+        .post("/teams")
+        .add_header(n.clone(), v.clone())
+        .json(&json!({"name": "Team Test"}))
+        .await;
+    let body: serde_json::Value = create_response.json();
+    let team_id = body["data"]["id"].as_str().unwrap();
+
+    let response = server
+        .delete(&format!("/teams/{}/leave", team_id))
+        .add_header(n, v)
+        .await;
+
+    response.assert_status(axum::http::StatusCode::BAD_REQUEST);
+    let body: serde_json::Value = response.json();
+    assert_eq!(body["code"], "MANAGER_MUST_TRANSFER_FIRST");
+}

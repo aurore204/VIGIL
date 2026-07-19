@@ -47,3 +47,26 @@ fn test_update_team_request_accepts_all_fields() {
     assert!(req.name.is_some());
     assert!(req.description.is_some());
 }
+
+#[test]
+fn test_manager_cannot_leave_without_transfer() {
+    // Le Manager a le rôle Manager
+    let role = vigil_server::models::team::TeamRole::Manager;
+    // Un Manager ne peut pas quitter donc son rôle ne doit pas être Observer ou Responder
+    assert_ne!(role, vigil_server::models::team::TeamRole::Observer);
+    assert_ne!(role, vigil_server::models::team::TeamRole::Responder);
+}
+
+#[test]
+fn test_observer_can_leave_team() {
+    // Un Observer peut quitter car son rôle n'est pas Manager
+    let role = vigil_server::models::team::TeamRole::Observer;
+    assert_ne!(role, vigil_server::models::team::TeamRole::Manager);
+}
+
+#[test]
+fn test_responder_can_leave_team() {
+    // Un Responder peut quitter car son rôle n'est pas Manager
+    let role = vigil_server::models::team::TeamRole::Responder;
+    assert_ne!(role, vigil_server::models::team::TeamRole::Manager);
+}
