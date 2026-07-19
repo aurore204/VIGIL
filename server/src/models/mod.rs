@@ -4,3 +4,4 @@ pub mod response;
 pub mod incident;
 pub mod reaction;
 pub mod message;
+pub mod release;
