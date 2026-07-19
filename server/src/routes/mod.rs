@@ -5,6 +5,7 @@ mod incident_routes;
 mod team_routes;
 mod reaction_routes;
 mod message_routes;
+mod release_routes;
 
 use crate::middleware::auth_middleware::require_auth;
 use crate::state::AppState;
@@ -22,6 +23,7 @@ pub fn create_router(state: AppState) -> Router {
         .merge(incident_routes::incident_routes())
         .merge(reaction_routes::protected_reaction_routes())
         .merge(message_routes::message_routes())
+        .merge(release_routes::release_routes())
         .route("/ws", get(ws_handler))
         .layer(middleware::from_fn_with_state(
             state.pool.clone(),
