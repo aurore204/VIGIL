@@ -11,7 +11,6 @@ fn test_available_emojis_contains_required_emojis() {
 
 #[test]
 fn test_available_emojis_count_between_5_and_8() {
-    // Le sujet recommande entre 5 et 8 emojis
     assert!(AVAILABLE_EMOJIS.len() >= 5);
     assert!(AVAILABLE_EMOJIS.len() <= 8);
 }
