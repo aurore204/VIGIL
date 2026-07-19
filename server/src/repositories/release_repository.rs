@@ -55,6 +55,25 @@ pub async fn create_step(
     .await
 }
 
+// Récupère toutes les releases liées à un incident
+pub async fn get_releases_by_incident(
+    pool: &PgPool,
+    incident_id: Uuid,
+) -> Result<Vec<Uuid>, sqlx::Error> {
+    let rows = sqlx::query!(
+        r#"
+        SELECT release_id
+        FROM release_incidents
+        WHERE incident_id = $1
+        "#,
+        incident_id
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|r| r.release_id).collect())
+}
+
 pub async fn find_by_id(
     pool: &PgPool,
     release_id: Uuid,
