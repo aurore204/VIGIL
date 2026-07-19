@@ -396,3 +396,43 @@ pub async fn unban_member(
 
     Ok(())
 }
+
+// Met à jour une team
+pub async fn update_team(
+    pool: &PgPool,
+    team_id: Uuid,
+    name: Option<&str>,
+    description: Option<&str>,
+) -> Result<Team, sqlx::Error> {
+    sqlx::query_as!(
+        Team,
+        r#"
+        UPDATE teams
+        SET
+            name = COALESCE($1, name),
+            description = COALESCE($2, description),
+            updated_at = NOW()
+        WHERE id = $3
+        RETURNING id, name, description, manager_id, created_at, updated_at
+        "#,
+        name,
+        description,
+        team_id
+    )
+    .fetch_one(pool)
+    .await
+}
+
+// Supprime une team
+pub async fn delete_team(
+    pool: &PgPool,
+    team_id: Uuid,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"DELETE FROM teams WHERE id = $1"#,
+        team_id
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}

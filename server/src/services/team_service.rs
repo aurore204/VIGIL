@@ -5,6 +5,7 @@ use crate::models::team::{
     CreateTeamRequest, JoinTeamRequest, TeamResponse, TeamRole, TransferManagerRequest,
 };
 use crate::repositories::team_repository;
+use crate::models::team::UpdateTeamRequest;
 
 #[derive(Debug)]
 pub enum TeamError {
@@ -366,4 +367,63 @@ pub async fn unban_member(
         .map_err(TeamError::DatabaseError)?;
 
     Ok(())
+}
+
+// Met à jour une team (Manager uniquement)
+pub async fn update_team(
+    pool: &PgPool,
+    team_id: Uuid,
+    user_id: Uuid,
+    req: UpdateTeamRequest,
+) -> Result<TeamResponse, TeamError> {
+    let role = team_repository::get_member_role(pool, team_id, user_id)
+        .await
+        .map_err(TeamError::DatabaseError)?
+        .ok_or(TeamError::NotMember)?;
+
+    if role != TeamRole::Manager {
+        return Err(TeamError::NotManager);
+    }
+
+    let team = team_repository::update_team(
+        pool,
+        team_id,
+        req.name.as_deref(),
+        req.description.as_deref(),
+    )
+    .await
+    .map_err(TeamError::DatabaseError)?;
+
+    let members = team_repository::get_members(pool, team_id)
+        .await
+        .map_err(TeamError::DatabaseError)?;
+
+    Ok(TeamResponse {
+        id: team.id,
+        name: team.name,
+        description: team.description,
+        manager_id: team.manager_id,
+        members,
+        created_at: team.created_at,
+    })
+}
+
+// Supprime une team (Manager uniquement)
+pub async fn delete_team(
+    pool: &PgPool,
+    team_id: Uuid,
+    user_id: Uuid,
+) -> Result<(), TeamError> {
+    let role = team_repository::get_member_role(pool, team_id, user_id)
+        .await
+        .map_err(TeamError::DatabaseError)?
+        .ok_or(TeamError::NotMember)?;
+
+    if role != TeamRole::Manager {
+        return Err(TeamError::NotManager);
+    }
+
+    team_repository::delete_team(pool, team_id)
+        .await
+        .map_err(TeamError::DatabaseError)
 }

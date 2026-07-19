@@ -209,3 +209,89 @@ async fn test_kick_member_removes_from_team() {
     let is_member = team_repository::is_member(&pool, team.id, user_id).await.unwrap();
     assert!(!is_member);
 }
+
+#[tokio::test]
+async fn test_update_team_as_manager_succeeds() {
+    let pool = setup_pool().await;
+    let (manager_id, _) = create_test_user(&pool, &uuid::Uuid::new_v4().to_string()).await;
+
+    let req = CreateTeamRequest {
+        name: "Team originale".to_string(),
+        description: None,
+    };
+    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
+
+    let result = team_service::update_team(
+        &pool,
+        team.id,
+        manager_id,
+        vigil_server::models::team::UpdateTeamRequest {
+            name: Some("Team renommée".to_string()),
+            description: Some("Nouvelle description".to_string()),
+        },
+    ).await;
+
+    assert!(result.is_ok());
+    let updated = result.unwrap();
+    assert_eq!(updated.name, "Team renommée");
+}
+
+#[tokio::test]
+async fn test_update_team_as_non_manager_fails() {
+    let pool = setup_pool().await;
+    let (manager_id, _) = create_test_user(&pool, &uuid::Uuid::new_v4().to_string()).await;
+    let (observer_id, _) = create_test_user(&pool, &uuid::Uuid::new_v4().to_string()).await;
+
+    let req = CreateTeamRequest {
+        name: "Team".to_string(),
+        description: None,
+    };
+    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
+    let code = team_service::generate_invitation(&pool, team.id, manager_id).await.unwrap();
+    team_service::join_team(&pool, vigil_server::models::team::JoinTeamRequest { code }, observer_id).await.unwrap();
+
+    let result = team_service::update_team(
+        &pool,
+        team.id,
+        observer_id,
+        vigil_server::models::team::UpdateTeamRequest {
+            name: Some("Tentative".to_string()),
+            description: None,
+        },
+    ).await;
+
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_delete_team_as_manager_succeeds() {
+    let pool = setup_pool().await;
+    let (manager_id, _) = create_test_user(&pool, &uuid::Uuid::new_v4().to_string()).await;
+
+    let req = CreateTeamRequest {
+        name: "Team à supprimer".to_string(),
+        description: None,
+    };
+    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
+
+    let result = team_service::delete_team(&pool, team.id, manager_id).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_delete_team_as_non_manager_fails() {
+    let pool = setup_pool().await;
+    let (manager_id, _) = create_test_user(&pool, &uuid::Uuid::new_v4().to_string()).await;
+    let (observer_id, _) = create_test_user(&pool, &uuid::Uuid::new_v4().to_string()).await;
+
+    let req = CreateTeamRequest {
+        name: "Team".to_string(),
+        description: None,
+    };
+    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
+    let code = team_service::generate_invitation(&pool, team.id, manager_id).await.unwrap();
+    team_service::join_team(&pool, vigil_server::models::team::JoinTeamRequest { code }, observer_id).await.unwrap();
+
+    let result = team_service::delete_team(&pool, team.id, observer_id).await;
+    assert!(result.is_err());
+}
