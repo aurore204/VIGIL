@@ -33,4 +33,7 @@ Thumbs.db
 .vscode/
 .idea/
 
-.env
+.envnode_modules/
+package-lock.json
+package.json
+test_ws.js

@@ -20,8 +20,10 @@ fn test_team_role_equality() {
 }
 
 #[test]
-fn test_invitation_code_length() {
-    // Le code généré doit faire 8 caractères
-    let code = format!("{:08X}", 0xABCD1234u32);
+fn test_invitation_code_format() {
+    // Vérifie que notre format de code produit toujours 8 caractères hexadécimaux
+    let hash_value: u32 = 0xABCD1234u32 & 0xFFFFFFFF;
+    let code = format!("{:08X}", hash_value);
     assert_eq!(code.len(), 8);
+    assert!(code.chars().all(|c| c.is_ascii_hexdigit()));
 }

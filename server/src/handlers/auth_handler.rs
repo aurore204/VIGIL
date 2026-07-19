@@ -4,26 +4,22 @@ use axum::{
     response::IntoResponse,
     Extension, Json,
 };
-use sqlx::PgPool;
 
 use crate::middleware::auth_middleware::AuthenticatedUser;
 use crate::models::response::{ApiError, ApiResponse};
 use crate::models::user::{LoginRequest, RegisterRequest};
 use crate::repositories::user_repository;
 use crate::services::auth_service::{self, AuthError};
+use crate::state::AppState;
 
-// POST /auth/register
 pub async fn register(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(req): Json<RegisterRequest>,
 ) -> impl IntoResponse {
-    match auth_service::register(&pool, req).await {
+    match auth_service::register(&state.pool, req).await {
         Ok(response) => (
             StatusCode::CREATED,
-            Json(serde_json::json!(ApiResponse::success(
-                "Inscription réussie",
-                response
-            ))),
+            Json(serde_json::json!(ApiResponse::success("Inscription réussie", response))),
         ),
         Err(AuthError::EmailAlreadyExists) => (
             StatusCode::CONFLICT,
@@ -42,18 +38,14 @@ pub async fn register(
     }
 }
 
-// POST /auth/login
 pub async fn login(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(req): Json<LoginRequest>,
 ) -> impl IntoResponse {
-    match auth_service::login(&pool, req).await {
+    match auth_service::login(&state.pool, req).await {
         Ok(response) => (
             StatusCode::OK,
-            Json(serde_json::json!(ApiResponse::success(
-                "Connexion réussie",
-                response
-            ))),
+            Json(serde_json::json!(ApiResponse::success("Connexion réussie", response))),
         ),
         Err(AuthError::InvalidCredentials) => (
             StatusCode::UNAUTHORIZED,
@@ -72,12 +64,11 @@ pub async fn login(
     }
 }
 
-// GET /me
 pub async fn me(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
 ) -> impl IntoResponse {
-    match user_repository::find_by_id(&pool, auth_user.id).await {
+    match user_repository::find_by_id(&state.pool, auth_user.id).await {
         Ok(Some(user)) => (
             StatusCode::OK,
             Json(serde_json::json!(ApiResponse::success(
@@ -102,12 +93,11 @@ pub async fn me(
     }
 }
 
-// POST /auth/logout
 pub async fn logout(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
 ) -> impl IntoResponse {
-    match auth_service::logout(&pool, auth_user.id).await {
+    match auth_service::logout(&state.pool, auth_user.id).await {
         Ok(_) => (
             StatusCode::OK,
             Json(serde_json::json!(ApiResponse::<()>::success_no_data(

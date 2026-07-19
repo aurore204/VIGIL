@@ -4,7 +4,6 @@ use axum::{
     response::IntoResponse,
     Extension, Json,
 };
-use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::middleware::auth_middleware::AuthenticatedUser;
@@ -13,17 +12,19 @@ use crate::models::incident::{
     EditTimelineEntryRequest, EscalateIncidentRequest,
 };
 use crate::models::response::{ApiError, ApiResponse};
+use crate::repositories::user_repository;
 use crate::services::incident_service::{self, IncidentError};
+use crate::state::AppState;
+use crate::websocket::events::{TimelineEntryPayload, WsEvent};
 
-// POST /teams/:team_id/incidents
 pub async fn create_incident(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path(team_id): Path<Uuid>,
     Json(req): Json<CreateIncidentRequest>,
 ) -> impl IntoResponse {
     let title = req.title.clone();
-    match incident_service::create_incident(&pool, team_id, auth_user.id, req).await {
+    match incident_service::create_incident(&state.pool, team_id, auth_user.id, req).await {
         Ok(incident) => (
             StatusCode::CREATED,
             Json(serde_json::json!(ApiResponse::success(
@@ -55,13 +56,12 @@ pub async fn create_incident(
     }
 }
 
-// GET /teams/:team_id/incidents
 pub async fn get_team_incidents(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path(team_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    match incident_service::get_team_incidents(&pool, team_id, auth_user.id).await {
+    match incident_service::get_team_incidents(&state.pool, team_id, auth_user.id).await {
         Ok(incidents) => (
             StatusCode::OK,
             Json(serde_json::json!(ApiResponse::success(
@@ -86,13 +86,12 @@ pub async fn get_team_incidents(
     }
 }
 
-// GET /incidents/:incident_id
 pub async fn get_incident(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path(incident_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    match incident_service::get_incident(&pool, incident_id, auth_user.id).await {
+    match incident_service::get_incident(&state.pool, incident_id, auth_user.id).await {
         Ok(incident) => (
             StatusCode::OK,
             Json(serde_json::json!(ApiResponse::success(
@@ -124,20 +123,35 @@ pub async fn get_incident(
     }
 }
 
-// PATCH /incidents/:incident_id/acknowledge
 pub async fn acknowledge_incident(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path(incident_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    match incident_service::acknowledge_incident(&pool, incident_id, auth_user.id).await {
-        Ok(incident) => (
-            StatusCode::OK,
-            Json(serde_json::json!(ApiResponse::success(
-                "Incident acquitté avec succès",
-                incident
-            ))),
-        ),
+    // Récupérer le username pour l'event WS
+    let username = user_repository::find_by_id(&state.pool, auth_user.id)
+        .await
+        .ok()
+        .flatten()
+        .map(|u| u.username)
+        .unwrap_or_default();
+
+    match incident_service::acknowledge_incident(&state.pool, incident_id, auth_user.id).await {
+        Ok(incident) => {
+            // Diffuser l'événement WebSocket
+            state.broadcaster.broadcast(WsEvent::IncidentStateChanged {
+                incident_id,
+                new_state: "acknowledged".to_string(),
+                by: username,
+            });
+            (
+                StatusCode::OK,
+                Json(serde_json::json!(ApiResponse::success(
+                    "Incident acquitté avec succès",
+                    incident
+                ))),
+            )
+        }
         Err(IncidentError::IncidentNotFound) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!(ApiError::new(
@@ -176,21 +190,43 @@ pub async fn acknowledge_incident(
     }
 }
 
-// PATCH /incidents/:incident_id/escalate
 pub async fn escalate_incident(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path(incident_id): Path<Uuid>,
     Json(req): Json<EscalateIncidentRequest>,
 ) -> impl IntoResponse {
-    match incident_service::escalate_incident(&pool, incident_id, auth_user.id, req).await {
-        Ok(incident) => (
-            StatusCode::OK,
-            Json(serde_json::json!(ApiResponse::success(
-                "Incident escaladé avec succès",
-                incident
-            ))),
-        ),
+    let username = user_repository::find_by_id(&state.pool, auth_user.id)
+        .await
+        .ok()
+        .flatten()
+        .map(|u| u.username)
+        .unwrap_or_default();
+
+    let new_severity = format!("{:?}", req.severity).to_lowercase();
+
+    match incident_service::escalate_incident(&state.pool, incident_id, auth_user.id, req).await {
+        Ok(incident) => {
+            // Diffuser incident_state_changed
+            state.broadcaster.broadcast(WsEvent::IncidentStateChanged {
+                incident_id,
+                new_state: "escalated".to_string(),
+                by: username.clone(),
+            });
+            // Diffuser incident_escalated
+            state.broadcaster.broadcast(WsEvent::IncidentEscalated {
+                incident_id,
+                new_severity,
+                by: username,
+            });
+            (
+                StatusCode::OK,
+                Json(serde_json::json!(ApiResponse::success(
+                    "Incident escaladé avec succès",
+                    incident
+                ))),
+            )
+        }
         Err(IncidentError::IncidentNotFound) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!(ApiError::new(
@@ -222,20 +258,33 @@ pub async fn escalate_incident(
     }
 }
 
-// PATCH /incidents/:incident_id/resolve
 pub async fn resolve_incident(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path(incident_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    match incident_service::resolve_incident(&pool, incident_id, auth_user.id).await {
-        Ok(incident) => (
-            StatusCode::OK,
-            Json(serde_json::json!(ApiResponse::success(
-                "Incident résolu avec succès",
-                incident
-            ))),
-        ),
+    let username = user_repository::find_by_id(&state.pool, auth_user.id)
+        .await
+        .ok()
+        .flatten()
+        .map(|u| u.username)
+        .unwrap_or_default();
+
+    match incident_service::resolve_incident(&state.pool, incident_id, auth_user.id).await {
+        Ok(incident) => {
+            state.broadcaster.broadcast(WsEvent::IncidentStateChanged {
+                incident_id,
+                new_state: "resolved".to_string(),
+                by: username,
+            });
+            (
+                StatusCode::OK,
+                Json(serde_json::json!(ApiResponse::success(
+                    "Incident résolu avec succès",
+                    incident
+                ))),
+            )
+        }
         Err(IncidentError::IncidentNotFound) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!(ApiError::new(
@@ -274,21 +323,37 @@ pub async fn resolve_incident(
     }
 }
 
-// POST /incidents/:incident_id/assign
 pub async fn assign_responder(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path(incident_id): Path<Uuid>,
     Json(req): Json<AssignIncidentRequest>,
 ) -> impl IntoResponse {
-    match incident_service::assign_responder(&pool, incident_id, auth_user.id, req).await {
-        Ok(incident) => (
-            StatusCode::OK,
-            Json(serde_json::json!(ApiResponse::success(
-                "Responder assigné avec succès",
-                incident
-            ))),
-        ),
+    let assigned_to_id = req.user_id;
+
+    // Récupérer le username de la personne assignée
+    let assigned_username = user_repository::find_by_id(&state.pool, assigned_to_id)
+        .await
+        .ok()
+        .flatten()
+        .map(|u| u.username)
+        .unwrap_or_default();
+
+    match incident_service::assign_responder(&state.pool, incident_id, auth_user.id, req).await {
+        Ok(incident) => {
+            // Diffuser incident_assigned
+            state.broadcaster.broadcast(WsEvent::IncidentAssigned {
+                incident_id,
+                assigned_to: assigned_username,
+            });
+            (
+                StatusCode::OK,
+                Json(serde_json::json!(ApiResponse::success(
+                    "Responder assigné avec succès",
+                    incident
+                ))),
+            )
+        }
         Err(IncidentError::IncidentNotFound) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!(ApiError::new(
@@ -320,21 +385,31 @@ pub async fn assign_responder(
     }
 }
 
-// POST /incidents/:incident_id/timeline
 pub async fn add_timeline_entry(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path(incident_id): Path<Uuid>,
     Json(req): Json<AddTimelineEntryRequest>,
 ) -> impl IntoResponse {
-    match incident_service::add_timeline_entry(&pool, incident_id, auth_user.id, req).await {
-        Ok(entry) => (
-            StatusCode::CREATED,
-            Json(serde_json::json!(ApiResponse::success(
-                "Entrée ajoutée à la timeline",
-                entry
-            ))),
-        ),
+    match incident_service::add_timeline_entry(&state.pool, incident_id, auth_user.id, req).await {
+        Ok(entry) => {
+            // Diffuser timeline_entry_added
+            state.broadcaster.broadcast(WsEvent::TimelineEntryAdded {
+                incident_id,
+                entry: TimelineEntryPayload {
+                    content: entry.content.clone(),
+                    author: entry.author_username.clone(),
+                    at: entry.created_at,
+                },
+            });
+            (
+                StatusCode::CREATED,
+                Json(serde_json::json!(ApiResponse::success(
+                    "Entrée ajoutée à la timeline",
+                    entry
+                ))),
+            )
+        }
         Err(IncidentError::IncidentNotFound) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!(ApiError::new(
@@ -366,22 +441,30 @@ pub async fn add_timeline_entry(
     }
 }
 
-// PATCH /incidents/:incident_id/timeline/:entry_id
 pub async fn edit_timeline_entry(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path((incident_id, entry_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<EditTimelineEntryRequest>,
 ) -> impl IntoResponse {
-    let _ = incident_id; // utilisé pour la route, la vérification se fait via l'entrée
-    match incident_service::edit_timeline_entry(&pool, entry_id, auth_user.id, req).await {
-        Ok(entry) => (
-            StatusCode::OK,
-            Json(serde_json::json!(ApiResponse::success(
-                "Entrée de timeline modifiée avec succès",
-                entry
-            ))),
-        ),
+    let _ = incident_id;
+    match incident_service::edit_timeline_entry(&state.pool, entry_id, auth_user.id, req).await {
+        Ok(entry) => {
+            // Diffuser timeline_entry_edited
+            state.broadcaster.broadcast(WsEvent::TimelineEntryEdited {
+                incident_id: entry.incident_id,
+                entry_id,
+                new_content: entry.content.clone(),
+                edited_at: entry.edited_at.unwrap_or(entry.created_at),
+            });
+            (
+                StatusCode::OK,
+                Json(serde_json::json!(ApiResponse::success(
+                    "Entrée de timeline modifiée avec succès",
+                    entry
+                ))),
+            )
+        }
         Err(IncidentError::IncidentNotFound) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!(ApiError::new(

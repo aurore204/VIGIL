@@ -4,25 +4,24 @@ use axum::{
     response::IntoResponse,
     Extension, Json,
 };
-use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::models::team::UpdateMemberRoleRequest;
 use crate::middleware::auth_middleware::AuthenticatedUser;
 use crate::models::response::{ApiError, ApiResponse};
 use crate::models::team::{
     BanMemberRequest, CreateTeamRequest, JoinTeamRequest, TransferManagerRequest,
+    UpdateMemberRoleRequest,
 };
 use crate::services::team_service::{self, TeamError};
+use crate::state::AppState;
 
-// POST /teams
 pub async fn create_team(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Json(req): Json<CreateTeamRequest>,
 ) -> impl IntoResponse {
     let name = req.name.clone();
-    match team_service::create_team(&pool, req, auth_user.id).await {
+    match team_service::create_team(&state.pool, req, auth_user.id).await {
         Ok(team) => (
             StatusCode::CREATED,
             Json(serde_json::json!(ApiResponse::success(
@@ -40,12 +39,11 @@ pub async fn create_team(
     }
 }
 
-// GET /teams
 pub async fn get_user_teams(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
 ) -> impl IntoResponse {
-    match team_service::get_user_teams(&pool, auth_user.id).await {
+    match team_service::get_user_teams(&state.pool, auth_user.id).await {
         Ok(teams) => (
             StatusCode::OK,
             Json(serde_json::json!(ApiResponse::success(
@@ -63,13 +61,12 @@ pub async fn get_user_teams(
     }
 }
 
-// GET /teams/:team_id
 pub async fn get_team(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path(team_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    match team_service::get_team(&pool, team_id, auth_user.id).await {
+    match team_service::get_team(&state.pool, team_id, auth_user.id).await {
         Ok(team) => (
             StatusCode::OK,
             Json(serde_json::json!(ApiResponse::success(
@@ -101,13 +98,12 @@ pub async fn get_team(
     }
 }
 
-// POST /teams/join
 pub async fn join_team(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Json(req): Json<JoinTeamRequest>,
 ) -> impl IntoResponse {
-    match team_service::join_team(&pool, req, auth_user.id).await {
+    match team_service::join_team(&state.pool, req, auth_user.id).await {
         Ok(team) => (
             StatusCode::OK,
             Json(serde_json::json!(ApiResponse::success(
@@ -146,13 +142,12 @@ pub async fn join_team(
     }
 }
 
-// POST /teams/:team_id/invitations
 pub async fn generate_invitation(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path(team_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    match team_service::generate_invitation(&pool, team_id, auth_user.id).await {
+    match team_service::generate_invitation(&state.pool, team_id, auth_user.id).await {
         Ok(code) => (
             StatusCode::CREATED,
             Json(serde_json::json!(ApiResponse::success(
@@ -184,14 +179,13 @@ pub async fn generate_invitation(
     }
 }
 
-// POST /teams/:team_id/transfer
 pub async fn transfer_manager(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path(team_id): Path<Uuid>,
     Json(req): Json<TransferManagerRequest>,
 ) -> impl IntoResponse {
-    match team_service::transfer_manager(&pool, team_id, auth_user.id, req).await {
+    match team_service::transfer_manager(&state.pool, team_id, auth_user.id, req).await {
         Ok(team) => {
             let new_manager = team.members.iter()
                 .find(|m| m.user_id == team.manager_id)
@@ -236,59 +230,12 @@ pub async fn transfer_manager(
     }
 }
 
-
-// PATCH /teams/:team_id/members/:user_id/role
-pub async fn update_member_role(
-    State(pool): State<PgPool>,
-    Extension(auth_user): Extension<AuthenticatedUser>,
-    Path((team_id, user_id)): Path<(Uuid, Uuid)>,
-    Json(req): Json<UpdateMemberRoleRequest>,
-) -> impl IntoResponse {
-    match team_service::update_member_role(&pool, team_id, auth_user.id, user_id, req.role).await {
-        Ok(_) => (
-            StatusCode::OK,
-            Json(serde_json::json!(ApiResponse::<()>::success_no_data(
-                "Rôle mis à jour avec succès"
-            ))),
-        ),
-        Err(TeamError::NotMember) => (
-            StatusCode::FORBIDDEN,
-            Json(serde_json::json!(ApiError::new(
-                "Vous n'êtes pas membre de cette team",
-                "NOT_MEMBER"
-            ))),
-        ),
-        Err(TeamError::NotManager) => (
-            StatusCode::FORBIDDEN,
-            Json(serde_json::json!(ApiError::new(
-                "Seul le Manager peut changer les rôles",
-                "NOT_MANAGER"
-            ))),
-        ),
-        Err(TeamError::CannotTargetSelf) => (
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!(ApiError::new(
-                "Vous ne pouvez pas modifier votre propre rôle",
-                "CANNOT_TARGET_SELF"
-            ))),
-        ),
-        Err(_) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!(ApiError::new(
-                "Erreur interne du serveur",
-                "INTERNAL_ERROR"
-            ))),
-        ),
-    }
-}
-
-// DELETE /teams/:team_id/members/:user_id
 pub async fn kick_member(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path((team_id, user_id)): Path<(Uuid, Uuid)>,
 ) -> impl IntoResponse {
-    match team_service::kick_member(&pool, team_id, auth_user.id, user_id).await {
+    match team_service::kick_member(&state.pool, team_id, auth_user.id, user_id).await {
         Ok(_) => (
             StatusCode::OK,
             Json(serde_json::json!(ApiResponse::<()>::success_no_data(
@@ -326,9 +273,52 @@ pub async fn kick_member(
     }
 }
 
-// POST /teams/:team_id/members/:user_id/ban
+pub async fn update_member_role(
+    State(state): State<AppState>,
+    Extension(auth_user): Extension<AuthenticatedUser>,
+    Path((team_id, user_id)): Path<(Uuid, Uuid)>,
+    Json(req): Json<UpdateMemberRoleRequest>,
+) -> impl IntoResponse {
+    match team_service::update_member_role(&state.pool, team_id, auth_user.id, user_id, req.role).await {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(serde_json::json!(ApiResponse::<()>::success_no_data(
+                "Rôle mis à jour avec succès"
+            ))),
+        ),
+        Err(TeamError::NotMember) => (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!(ApiError::new(
+                "Vous n'êtes pas membre de cette team",
+                "NOT_MEMBER"
+            ))),
+        ),
+        Err(TeamError::NotManager) => (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!(ApiError::new(
+                "Seul le Manager peut changer les rôles",
+                "NOT_MANAGER"
+            ))),
+        ),
+        Err(TeamError::CannotTargetSelf) => (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!(ApiError::new(
+                "Vous ne pouvez pas modifier votre propre rôle",
+                "CANNOT_TARGET_SELF"
+            ))),
+        ),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!(ApiError::new(
+                "Erreur interne du serveur",
+                "INTERNAL_ERROR"
+            ))),
+        ),
+    }
+}
+
 pub async fn ban_member(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path((team_id, user_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<BanMemberRequest>,
@@ -340,15 +330,13 @@ pub async fn ban_member(
     };
 
     match team_service::ban_member(
-        &pool,
+        &state.pool,
         team_id,
         auth_user.id,
         user_id,
         req.expires_at,
         req.reason,
-    )
-    .await
-    {
+    ).await {
         Ok(_) => (
             StatusCode::OK,
             Json(serde_json::json!(ApiResponse::<()>::success_no_data(
@@ -386,13 +374,12 @@ pub async fn ban_member(
     }
 }
 
-// DELETE /teams/:team_id/members/:user_id/ban
 pub async fn unban_member(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path((team_id, user_id)): Path<(Uuid, Uuid)>,
 ) -> impl IntoResponse {
-    match team_service::unban_member(&pool, team_id, auth_user.id, user_id).await {
+    match team_service::unban_member(&state.pool, team_id, auth_user.id, user_id).await {
         Ok(_) => (
             StatusCode::OK,
             Json(serde_json::json!(ApiResponse::<()>::success_no_data(

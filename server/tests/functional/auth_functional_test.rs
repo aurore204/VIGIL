@@ -5,15 +5,13 @@ use vigil_server::routes::create_router;
 
 async fn setup_server() -> TestServer {
     dotenv::dotenv().ok();
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL doit être défini");
-
-    let pool = PgPool::connect(&database_url)
-        .await
-        .expect("Impossible de se connecter à la base de test");
-
-    let app = create_router(pool);
-    TestServer::new(app).unwrap()
+    let database_url = std::env::var("DATABASE_URL").unwrap();
+    let pool = PgPool::connect(&database_url).await.unwrap();
+    let state = vigil_server::state::AppState::new(
+        pool,
+        vigil_server::websocket::broadcaster::Broadcaster::new(),
+    );
+    TestServer::new(create_router(state)).unwrap()
 }
 
 #[tokio::test]
