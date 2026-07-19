@@ -27,3 +27,23 @@ fn test_invitation_code_format() {
     assert_eq!(code.len(), 8);
     assert!(code.chars().all(|c| c.is_ascii_hexdigit()));
 }
+
+#[test]
+fn test_update_team_request_accepts_partial_fields() {
+    let req = vigil_server::models::team::UpdateTeamRequest {
+        name: Some("Nouveau nom".to_string()),
+        description: None,
+    };
+    assert!(req.name.is_some());
+    assert!(req.description.is_none());
+}
+
+#[test]
+fn test_update_team_request_accepts_all_fields() {
+    let req = vigil_server::models::team::UpdateTeamRequest {
+        name: Some("Nouveau nom".to_string()),
+        description: Some("Nouvelle description".to_string()),
+    };
+    assert!(req.name.is_some());
+    assert!(req.description.is_some());
+}

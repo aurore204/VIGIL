@@ -95,3 +95,9 @@ pub struct BanMemberRequest {
 pub struct UpdateMemberRoleRequest {
     pub role: TeamRole,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateTeamRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
+}

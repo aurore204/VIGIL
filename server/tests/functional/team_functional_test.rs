@@ -306,3 +306,74 @@ async fn test_transfer_manager_to_self_returns_400() {
     let body: serde_json::Value = response.json();
     assert_eq!(body["code"], "CANNOT_TARGET_SELF");
 }
+
+#[tokio::test]
+async fn test_update_team_returns_200() {
+    let server = setup_server().await;
+    let token = register_and_get_token(&server, &uuid::Uuid::new_v4().to_string()).await;
+    let (name, value) = auth_header(&token);
+
+    let create_response = server
+        .post("/teams")
+        .add_header(name.clone(), value.clone())
+        .json(&json!({"name": "Team originale"}))
+        .await;
+    let body: serde_json::Value = create_response.json();
+    let team_id = body["data"]["id"].as_str().unwrap();
+
+    let response = server
+        .patch(&format!("/teams/{}", team_id))
+        .add_header(name, value)
+        .json(&json!({"name": "Team renommée"}))
+        .await;
+
+    response.assert_status(axum::http::StatusCode::OK);
+    let body: serde_json::Value = response.json();
+    assert_eq!(body["data"]["name"], "Team renommée");
+}
+
+#[tokio::test]
+async fn test_delete_team_returns_200() {
+    let server = setup_server().await;
+    let token = register_and_get_token(&server, &uuid::Uuid::new_v4().to_string()).await;
+    let (name, value) = auth_header(&token);
+
+    let create_response = server
+        .post("/teams")
+        .add_header(name.clone(), value.clone())
+        .json(&json!({"name": "Team à supprimer"}))
+        .await;
+    let body: serde_json::Value = create_response.json();
+    let team_id = body["data"]["id"].as_str().unwrap();
+
+    let response = server
+        .delete(&format!("/teams/{}", team_id))
+        .add_header(name, value)
+        .await;
+
+    response.assert_status(axum::http::StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_get_team_members_returns_200() {
+    let server = setup_server().await;
+    let token = register_and_get_token(&server, &uuid::Uuid::new_v4().to_string()).await;
+    let (name, value) = auth_header(&token);
+
+    let create_response = server
+        .post("/teams")
+        .add_header(name.clone(), value.clone())
+        .json(&json!({"name": "Team Test"}))
+        .await;
+    let body: serde_json::Value = create_response.json();
+    let team_id = body["data"]["id"].as_str().unwrap();
+
+    let response = server
+        .get(&format!("/teams/{}/members", team_id))
+        .add_header(name, value)
+        .await;
+
+    response.assert_status(axum::http::StatusCode::OK);
+    let body: serde_json::Value = response.json();
+    assert_eq!(body["data"].as_array().unwrap().len(), 1);
+}
