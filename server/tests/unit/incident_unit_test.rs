@@ -64,3 +64,26 @@ fn validate_transition(current: &IncidentState, next: &IncidentState) -> bool {
         | (IncidentState::Open, IncidentState::Resolved)
     )
 }
+
+#[test]
+fn test_update_incident_request_accepts_partial_fields() {
+    let req = vigil_server::models::incident::UpdateIncidentRequest {
+        title: Some("Nouveau titre".to_string()),
+        description: None,
+        severity: None,
+    };
+    assert!(req.title.is_some());
+    assert!(req.description.is_none());
+    assert!(req.severity.is_none());
+}
+
+#[test]
+fn test_update_incident_request_accepts_severity_change() {
+    let req = vigil_server::models::incident::UpdateIncidentRequest {
+        title: None,
+        description: None,
+        severity: Some(vigil_server::models::incident::IncidentSeverity::Critical),
+    };
+    assert!(req.severity.is_some());
+    assert_eq!(req.severity.unwrap(), vigil_server::models::incident::IncidentSeverity::Critical);
+}

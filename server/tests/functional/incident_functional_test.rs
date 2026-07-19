@@ -269,3 +269,51 @@ async fn test_get_incident_as_non_member_returns_403() {
 
     response.assert_status(axum::http::StatusCode::FORBIDDEN);
 }
+
+#[tokio::test]
+async fn test_update_incident_returns_200() {
+    let server = setup_server().await;
+    let (team_id, manager_token, _, _) = setup_team_and_get_ids(&server).await;
+    let (mn, mv) = auth_header(&manager_token);
+
+    let create_response = server
+        .post(&format!("/teams/{}/incidents", team_id))
+        .add_header(mn.clone(), mv.clone())
+        .json(&json!({"title": "Titre original", "severity": "low"}))
+        .await;
+    let body: serde_json::Value = create_response.json();
+    let incident_id = body["data"]["id"].as_str().unwrap();
+
+    let response = server
+        .patch(&format!("/incidents/{}", incident_id))
+        .add_header(mn, mv)
+        .json(&json!({"title": "Titre modifié", "severity": "high"}))
+        .await;
+
+    response.assert_status(axum::http::StatusCode::OK);
+    let body: serde_json::Value = response.json();
+    assert_eq!(body["data"]["title"], "Titre modifié");
+    assert_eq!(body["data"]["severity"], "high");
+}
+
+#[tokio::test]
+async fn test_cancel_incident_returns_200() {
+    let server = setup_server().await;
+    let (team_id, manager_token, _, _) = setup_team_and_get_ids(&server).await;
+    let (mn, mv) = auth_header(&manager_token);
+
+    let create_response = server
+        .post(&format!("/teams/{}/incidents", team_id))
+        .add_header(mn.clone(), mv.clone())
+        .json(&json!({"title": "Test", "severity": "low"}))
+        .await;
+    let body: serde_json::Value = create_response.json();
+    let incident_id = body["data"]["id"].as_str().unwrap();
+
+    let response = server
+        .delete(&format!("/incidents/{}", incident_id))
+        .add_header(mn, mv)
+        .await;
+
+    response.assert_status(axum::http::StatusCode::OK);
+}

@@ -284,3 +284,98 @@ async fn test_edit_timeline_entry_by_non_author_fails() {
 
     assert!(result.is_err());
 }
+
+#[tokio::test]
+async fn test_update_incident_as_manager_succeeds() {
+    let pool = setup_pool().await;
+    let (team_id, manager_id, _) = setup_team_with_responder(&pool).await;
+
+    let incident = incident_service::create_incident(
+        &pool, team_id, manager_id,
+        CreateIncidentRequest {
+            title: "Titre original".to_string(),
+            description: None,
+            severity: IncidentSeverity::Low,
+        },
+    ).await.unwrap();
+
+    let result = incident_service::update_incident(
+        &pool,
+        incident.id,
+        manager_id,
+        vigil_server::models::incident::UpdateIncidentRequest {
+            title: Some("Titre modifié".to_string()),
+            description: Some("Description ajoutée".to_string()),
+            severity: Some(IncidentSeverity::High),
+        },
+    ).await;
+
+    assert!(result.is_ok());
+    let updated = result.unwrap();
+    assert_eq!(updated.title, "Titre modifié");
+    assert_eq!(updated.severity, IncidentSeverity::High);
+}
+
+#[tokio::test]
+async fn test_update_incident_as_responder_fails() {
+    let pool = setup_pool().await;
+    let (team_id, manager_id, responder_id) = setup_team_with_responder(&pool).await;
+
+    let incident = incident_service::create_incident(
+        &pool, team_id, manager_id,
+        CreateIncidentRequest {
+            title: "Test".to_string(),
+            description: None,
+            severity: IncidentSeverity::Low,
+        },
+    ).await.unwrap();
+
+    let result = incident_service::update_incident(
+        &pool,
+        incident.id,
+        responder_id,
+        vigil_server::models::incident::UpdateIncidentRequest {
+            title: Some("Tentative".to_string()),
+            description: None,
+            severity: None,
+        },
+    ).await;
+
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_cancel_incident_as_manager_succeeds() {
+    let pool = setup_pool().await;
+    let (team_id, manager_id, _) = setup_team_with_responder(&pool).await;
+
+    let incident = incident_service::create_incident(
+        &pool, team_id, manager_id,
+        CreateIncidentRequest {
+            title: "Test".to_string(),
+            description: None,
+            severity: IncidentSeverity::Low,
+        },
+    ).await.unwrap();
+
+    let result = incident_service::cancel_incident(&pool, incident.id, manager_id).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_cancel_incident_as_responder_fails() {
+    let pool = setup_pool().await;
+    let (team_id, manager_id, responder_id) = setup_team_with_responder(&pool).await;
+
+    let incident = incident_service::create_incident(
+        &pool, team_id, manager_id,
+        CreateIncidentRequest {
+            title: "Test".to_string(),
+            description: None,
+            severity: IncidentSeverity::Low,
+        },
+    ).await.unwrap();
+
+    let result = incident_service::cancel_incident(&pool, incident.id, responder_id).await;
+    assert!(result.is_err());
+}
