@@ -12,6 +12,8 @@ use crate::models::team::{
     BanMemberRequest, CreateTeamRequest, JoinTeamRequest, TransferManagerRequest,
     UpdateMemberRoleRequest,
 };
+use crate::repositories::user_repository;
+use crate::websocket::events::WsEvent;
 use crate::services::team_service::{self, TeamError};
 use crate::state::AppState;
 
@@ -235,13 +237,35 @@ pub async fn kick_member(
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path((team_id, user_id)): Path<(Uuid, Uuid)>,
 ) -> impl IntoResponse {
+    // Récupérer le username du membre kické
+    let kicked_username = user_repository::find_by_id(&state.pool, user_id)
+        .await
+        .ok()
+        .flatten()
+        .map(|u| u.username)
+        .unwrap_or_default();
+
+    let kicked_by = user_repository::find_by_id(&state.pool, auth_user.id)
+        .await
+        .ok()
+        .flatten()
+        .map(|u| u.username)
+        .unwrap_or_default();
+
     match team_service::kick_member(&state.pool, team_id, auth_user.id, user_id).await {
-        Ok(_) => (
-            StatusCode::OK,
-            Json(serde_json::json!(ApiResponse::<()>::success_no_data(
-                "Membre retiré de la team avec succès"
-            ))),
-        ),
+        Ok(_) => {
+            state.broadcaster.broadcast(WsEvent::MemberKicked {
+                team_id,
+                member: kicked_username,
+                by: kicked_by,
+            });
+            (
+                StatusCode::OK,
+                Json(serde_json::json!(ApiResponse::<()>::success_no_data(
+                    "Membre retiré de la team avec succès"
+                ))),
+            )
+        }
         Err(TeamError::NotMember) => (
             StatusCode::FORBIDDEN,
             Json(serde_json::json!(ApiError::new(
@@ -272,7 +296,6 @@ pub async fn kick_member(
         ),
     }
 }
-
 pub async fn update_member_role(
     State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
@@ -323,7 +346,22 @@ pub async fn ban_member(
     Path((team_id, user_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<BanMemberRequest>,
 ) -> impl IntoResponse {
-    let ban_type = if req.expires_at.is_some() {
+    let banned_username = user_repository::find_by_id(&state.pool, user_id)
+        .await
+        .ok()
+        .flatten()
+        .map(|u| u.username)
+        .unwrap_or_default();
+
+    let banned_by = user_repository::find_by_id(&state.pool, auth_user.id)
+        .await
+        .ok()
+        .flatten()
+        .map(|u| u.username)
+        .unwrap_or_default();
+
+    let expires_at = req.expires_at;
+    let ban_type = if expires_at.is_some() {
         "temporairement banni"
     } else {
         "définitivement banni"
@@ -337,12 +375,20 @@ pub async fn ban_member(
         req.expires_at,
         req.reason,
     ).await {
-        Ok(_) => (
-            StatusCode::OK,
-            Json(serde_json::json!(ApiResponse::<()>::success_no_data(
-                &format!("Membre {} de la team avec succès", ban_type)
-            ))),
-        ),
+        Ok(_) => {
+            state.broadcaster.broadcast(WsEvent::MemberBanned {
+                team_id,
+                member: banned_username,
+                until: expires_at,
+                by: banned_by,
+            });
+            (
+                StatusCode::OK,
+                Json(serde_json::json!(ApiResponse::<()>::success_no_data(
+                    &format!("Membre {} de la team avec succès", ban_type)
+                ))),
+            )
+        }
         Err(TeamError::NotMember) => (
             StatusCode::FORBIDDEN,
             Json(serde_json::json!(ApiError::new(
