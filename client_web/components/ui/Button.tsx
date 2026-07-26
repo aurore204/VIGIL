@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, ReactNode } from 'react';
+import { ButtonHTMLAttributes, ReactNode, forwardRef } from 'react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
@@ -15,33 +15,31 @@ const variantStyles: Record<ButtonVariant, string> = {
   ghost: 'bg-transparent hover:bg-surface-raised text-text-secondary hover:text-text-primary',
 };
 
-export function Button({
-  variant = 'primary',
-  loading = false,
-  disabled,
-  children,
-  className = '',
-  ...props
-}: ButtonProps) {
-  return (
-    <button
-      disabled={disabled || loading}
-      className={`
-        inline-flex items-center justify-center gap-sm
-        px-md py-sm rounded
-        text-body font-medium
-        transition-colors duration-150
-        focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background
-        disabled:opacity-50 disabled:cursor-not-allowed
-        ${variantStyles[variant]}
-        ${className}
-      `}
-      {...props}
-    >
-      {loading ? (
-        <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" aria-hidden="true" />
-      ) : null}
-      {children}
-    </button>
-  );
-}
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ variant = 'primary', loading = false, disabled, children, className = '', ...props }, ref) => {
+    return (
+      <button
+        ref={ref}
+        disabled={disabled || loading}
+        className={`
+          inline-flex items-center justify-center gap-sm
+          px-md py-sm rounded
+          text-body font-medium
+          transition-colors duration-150
+          focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background
+          disabled:opacity-50 disabled:cursor-not-allowed
+          ${variantStyles[variant]}
+          ${className}
+        `}
+        {...props}
+      >
+        {loading ? (
+          <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" aria-hidden="true" />
+        ) : null}
+        {children}
+      </button>
+    );
+  }
+);
+
+Button.displayName = 'Button';
