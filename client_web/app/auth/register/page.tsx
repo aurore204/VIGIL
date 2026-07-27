@@ -3,123 +3,156 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
-import { useToast } from '@/components/ui/Toast';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{
-    username?: string;
-    email?: string;
-    password?: string;
-    confirmPassword?: string;
-  }>({});
-
+  const [error, setError] = useState('');
   const { setAuth } = useAuthStore();
   const router = useRouter();
-  const { showToast } = useToast();
-
-  const validate = () => {
-    const newErrors: typeof errors = {};
-    if (!username) newErrors.username = 'Le nom d\'utilisateur est requis';
-    if (username.length < 3) newErrors.username = 'Minimum 3 caractères';
-    if (!email) newErrors.email = 'L\'email est requis';
-    if (!email.includes('@')) newErrors.email = 'Email invalide';
-    if (!password) newErrors.password = 'Le mot de passe est requis';
-    if (password.length < 8) newErrors.password = 'Minimum 8 caractères';
-    if (password !== confirmPassword) newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
-
+    if (!username || !email || !password || !confirm) {
+      setError('Tous les champs sont requis');
+      return;
+    }
+    if (password !== confirm) {
+      setError('Les mots de passe ne correspondent pas');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Le mot de passe doit contenir au moins 8 caractères');
+      return;
+    }
     setLoading(true);
+    setError('');
     try {
       const data = await api.register(email, password, username);
       setAuth(data.user, data.token);
-      showToast('Compte créé avec succès', 'success');
-      router.push('/dashboard');
+      showToast('Compte créé avec succès !', 'success');
+      router.push('/login');
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Erreur lors de l\'inscription', 'error');
+      setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription');
+      showToast('Erreur d inscription', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="bg-surface border border-border rounded-lg p-xl">
-      <h2 className="text-subtitle text-text-primary mb-lg">Créer un compte</h2>
+  const inputStyle = {
+    width: '100%', padding: '10px 12px', marginBottom: '16px',
+    borderRadius: '8px', border: '1px solid oklch(0.34 0.02 260)',
+    background: 'oklch(0.195 0.015 260)', color: 'oklch(0.95 0.005 260)',
+    fontSize: '14px', outline: 'none'
+  };
 
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-md">
-        <Input
-          label="Nom d'utilisateur"
+  const labelStyle = {
+    display: 'block', fontSize: '12px', fontWeight: 600,
+    color: 'oklch(0.72 0.01 260)', marginBottom: '6px'
+  } as React.CSSProperties;
+
+  return (
+    <div style={{ width: '100%', maxWidth: '360px' }}>
+      {/* Tabs */}
+      <div style={{
+        display: 'flex', gap: '4px',
+        background: 'oklch(0.195 0.015 260)',
+        border: '1px solid oklch(0.34 0.02 260)',
+        borderRadius: '10px', padding: '4px', marginBottom: '28px'
+      }}>
+        <Link href="/auth/login" style={{
+          flex: 1, padding: '9px', borderRadius: '7px',
+          fontSize: '13px', fontWeight: 600, textAlign: 'center',
+          background: 'transparent', color: 'oklch(0.72 0.01 260)',
+          textDecoration: 'none', display: 'block'
+        }}>
+          Connexion
+        </Link>
+        <div style={{
+          flex: 1, padding: '9px', borderRadius: '7px',
+          fontSize: '13px', fontWeight: 700, textAlign: 'center',
+          background: 'oklch(0.66 0.16 255)',
+          color: 'oklch(0.16 0.015 260)'
+        }}>
+          Inscription
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
+        <label style={labelStyle}>Nom d'utilisateur</label>
+        <input
           type="text"
           value={username}
           onChange={e => setUsername(e.target.value)}
-          error={errors.username}
+          placeholder="nina_martin"
           required
           autoComplete="username"
+          style={inputStyle}
         />
 
-        <Input
-          label="Email"
+        <label style={labelStyle}>Email</label>
+        <input
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
-          error={errors.email}
+          placeholder="vous@entreprise.com"
           required
           autoComplete="email"
+          style={inputStyle}
         />
 
-        <Input
-          label="Mot de passe"
+        <label style={labelStyle}>Mot de passe</label>
+        <input
           type="password"
           value={password}
           onChange={e => setPassword(e.target.value)}
-          error={errors.password}
-          hint="Minimum 8 caractères"
+          placeholder="••••••••"
           required
           autoComplete="new-password"
+          style={inputStyle}
         />
 
-        <Input
-          label="Confirmer le mot de passe"
+        <label style={labelStyle}>Confirmer le mot de passe</label>
+        <input
           type="password"
-          value={confirmPassword}
-          onChange={e => setConfirmPassword(e.target.value)}
-          error={errors.confirmPassword}
+          value={confirm}
+          onChange={e => setConfirm(e.target.value)}
+          placeholder="••••••••"
           required
           autoComplete="new-password"
+          style={{ ...inputStyle, marginBottom: '8px' }}
         />
 
-        <Button
-          type="submit"
-          loading={loading}
-          className="w-full mt-sm"
-        >
-          Créer mon compte
-        </Button>
-      </form>
+        {error && (
+          <div style={{
+            padding: '10px 12px', borderRadius: '8px', marginBottom: '8px',
+            background: 'oklch(0.25 0.05 25)', border: '1px solid oklch(0.45 0.15 25)',
+            color: 'oklch(0.85 0.12 25)', fontSize: '13px'
+          }}>
+            {error}
+          </div>
+        )}
 
-      <p className="text-caption text-text-secondary text-center mt-lg">
-        Déjà un compte ?{' '}
-        <Link
-          href="/auth/login"
-          className="text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary rounded"
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: '100%', marginTop: '12px', padding: '11px',
+            borderRadius: '8px', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+            fontSize: '14px', fontWeight: 700,
+            background: loading ? 'oklch(0.50 0.10 255)' : 'oklch(0.66 0.16 255)',
+            color: 'oklch(0.16 0.015 260)'
+          }}
         >
-          Se connecter
-        </Link>
-      </p>
+          {loading ? 'Inscription...' : 'Créer mon compte'}
+        </button>
+      </form>
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -10,15 +9,11 @@ export const metadata: Metadata = {
   description: 'Plateforme de contrôle opérationnel collaboratif',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
-      <body className={`${inter.className} bg-background text-text-primary min-h-screen`}>
-        <ToastProvider>
+      <body style={{ margin: 0, padding: 0, background: 'oklch(0.16 0.015 260)' }} className={inter.className}>
+         <ToastProvider>
           {children}
         </ToastProvider>
       </body>
