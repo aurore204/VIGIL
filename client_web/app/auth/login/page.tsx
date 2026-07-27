@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const { setAuth } = useAuthStore();
   const router = useRouter();
+  const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +24,6 @@ export default function LoginPage() {
     }
     setLoading(true);
     setError('');
-    const { showToast } = useToast();
 
     try {
       const data = await api.login(email, password);
@@ -31,8 +31,9 @@ export default function LoginPage() {
       showToast('Connexion réussie !', 'success');
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur de connexion');
-      showToast('Erreur de connexion', 'error');
+      const message = err instanceof Error ? err.message : 'Erreur de connexion';
+      setError(message);
+      showToast(message, 'error');
     } finally {
       setLoading(false);
     }

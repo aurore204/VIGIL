@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
+
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -13,8 +15,10 @@ export default function RegisterPage() {
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { setAuth } = useAuthStore();
   const router = useRouter();
+  const { showToast } = useToast();
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,13 +37,13 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await api.register(email, password, username);
-      setAuth(data.user, data.token);
+      await api.register(email, password, username);
       showToast('Compte créé avec succès !', 'success');
-      router.push('/login');
+      router.push('/auth/login');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription');
-      showToast('Erreur d inscription', 'error');
+      const message = err instanceof Error ? err.message : 'Erreur de l\'inscription';
+      setError(message);
+      showToast(message, 'error');
     } finally {
       setLoading(false);
     }
@@ -85,7 +89,7 @@ export default function RegisterPage() {
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
-        <label style={labelStyle}>Nom d'utilisateur</label>
+        <label style={labelStyle}>Nom d&apos;utilisateur</label>
         <input
           type="text"
           value={username}
