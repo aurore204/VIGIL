@@ -6,39 +6,41 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   hint?: string;
 }
 
-export function Input({ label, error, hint, id, className = '', ...props }: InputProps) {
+export function Input({ label, error, hint, id, ...props }: InputProps) {
   const inputId = id || label.toLowerCase().replace(/\s+/g, '-');
 
   return (
-    <div className="flex flex-col gap-xs">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
       <label
         htmlFor={inputId}
-        className="text-caption font-medium text-text-secondary"
+        style={{ fontSize: '12px', fontWeight: 600, color: 'oklch(0.72 0.01 260)' }}
       >
         {label}
         {props.required && (
-          <span className="text-danger ml-xs" aria-label="champ obligatoire">*</span>
+          <span style={{ color: 'oklch(0.78 0.14 25)', marginLeft: '4px' }} aria-label="champ obligatoire">*</span>
         )}
       </label>
       <input
         id={inputId}
-        className={`
-          w-full px-md py-sm
-          bg-surface border rounded
-          text-body text-text-primary
-          placeholder:text-text-disabled
-          focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
-          disabled:opacity-50 disabled:cursor-not-allowed
-          ${error ? 'border-danger' : 'border-border'}
-          ${className}
-        `}
+        style={{
+          width: '100%',
+          padding: '10px 12px',
+          borderRadius: '8px',
+          border: `1px solid ${error ? 'oklch(0.55 0.18 25)' : 'oklch(0.34 0.02 260)'}`,
+          background: 'oklch(0.195 0.015 260)',
+          color: 'oklch(0.95 0.005 260)',
+          fontSize: '14px',
+          outline: 'none',
+          fontFamily: 'Inter, system-ui, sans-serif',
+          boxSizing: 'border-box',
+        }}
         {...props}
       />
       {hint && !error && (
-        <span className="text-caption text-text-secondary">{hint}</span>
+        <span style={{ fontSize: '12px', color: 'oklch(0.52 0.012 260)' }}>{hint}</span>
       )}
       {error && (
-        <span className="text-caption text-danger" role="alert">{error}</span>
+        <span role="alert" style={{ fontSize: '12px', color: 'oklch(0.78 0.14 25)' }}>{error}</span>
       )}
     </div>
   );

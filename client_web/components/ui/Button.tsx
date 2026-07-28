@@ -8,34 +8,62 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
 }
 
-const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-primary hover:bg-primary-hover text-white',
-  secondary: 'bg-surface-raised hover:bg-border text-text-primary border border-border',
-  danger: 'bg-danger hover:bg-danger-hover text-white',
-  ghost: 'bg-transparent hover:bg-surface-raised text-text-secondary hover:text-text-primary',
+const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
+  primary: {
+    background: 'oklch(0.66 0.16 255)',
+    color: 'oklch(0.16 0.015 260)',
+    border: 'none',
+  },
+  secondary: {
+    background: 'transparent',
+    color: 'oklch(0.90 0.005 260)',
+    border: '1px solid oklch(0.34 0.02 260)',
+  },
+  danger: {
+    background: 'oklch(0.55 0.18 25)',
+    color: 'oklch(0.95 0.005 260)',
+    border: 'none',
+  },
+  ghost: {
+    background: 'transparent',
+    color: 'oklch(0.72 0.01 260)',
+    border: 'none',
+  },
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', loading = false, disabled, children, className = '', ...props }, ref) => {
+  ({ variant = 'primary', loading = false, disabled, children, style, ...props }, ref) => {
     return (
       <button
         ref={ref}
         disabled={disabled || loading}
-        className={`
-          inline-flex items-center justify-center gap-sm
-          px-md py-sm rounded
-          text-body font-medium
-          transition-colors duration-150
-          focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background
-          disabled:opacity-50 disabled:cursor-not-allowed
-          ${variantStyles[variant]}
-          ${className}
-        `}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px',
+          padding: '9px 14px',
+          borderRadius: '7px',
+          fontSize: '13px',
+          fontWeight: 600,
+          cursor: disabled || loading ? 'not-allowed' : 'pointer',
+          opacity: disabled || loading ? 0.5 : 1,
+          fontFamily: 'Inter, system-ui, sans-serif',
+          ...variantStyles[variant],
+          ...style,
+        }}
         {...props}
       >
-        {loading ? (
-          <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" aria-hidden="true" />
-        ) : null}
+        {loading && (
+          <span style={{
+            width: '14px', height: '14px',
+            border: '2px solid currentColor',
+            borderTopColor: 'transparent',
+            borderRadius: '50%',
+            display: 'inline-block',
+            animation: 'vigil-spin 0.7s linear infinite',
+          }} aria-hidden="true" />
+        )}
         {children}
       </button>
     );

@@ -1,66 +1,66 @@
-import type { IncidentState, IncidentSeverity, ReleaseState } from '@/lib/types';
-
-type BadgeVariant = 'success' | 'warning' | 'danger' | 'neutral' | 'primary';
+import type { IncidentState, IncidentSeverity, ReleaseState, TeamRole } from '@/lib/types';
 
 interface BadgeProps {
-  variant: BadgeVariant;
-  icon: string;
+  color: string;
+  bg: string;
+  icon?: string;
   label: string;
 }
 
-const variantStyles: Record<BadgeVariant, string> = {
-  success: 'bg-success/10 text-success border border-success/20',
-  warning: 'bg-warning/10 text-warning border border-warning/20',
-  danger: 'bg-danger/10 text-danger border border-danger/20',
-  neutral: 'bg-neutral/10 text-text-secondary border border-neutral/20',
-  primary: 'bg-primary/10 text-primary border border-primary/20',
-};
-
-export function Badge({ variant, icon, label }: BadgeProps) {
+export function Badge({ color, bg, icon, label }: BadgeProps) {
   return (
-    <span className={`inline-flex items-center gap-xs px-sm py-1 rounded text-caption font-medium ${variantStyles[variant]}`}>
-      <span aria-hidden="true">{icon}</span>
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: '5px',
+      padding: '3px 9px', borderRadius: '6px',
+      fontSize: '11px', fontWeight: 600,
+      background: bg, color,
+    }}>
+      {icon && <span aria-hidden="true">{icon}</span>}
       <span>{label}</span>
     </span>
   );
 }
 
-// Badge pour l'état d'un incident
-const incidentStateConfig: Record<IncidentState, { variant: BadgeVariant; icon: string; label: string }> = {
-  open: { variant: 'danger', icon: '○', label: 'Ouvert' },
-  acknowledged: { variant: 'warning', icon: '◑', label: 'Acquitté' },
-  escalated: { variant: 'danger', icon: '▲', label: 'Escaladé' },
-  resolved: { variant: 'success', icon: '●', label: 'Résolu' },
+const incidentStateConfig: Record<IncidentState, BadgeProps> = {
+  open: { color: 'oklch(0.78 0.14 25)', bg: 'oklch(0.25 0.05 25)', icon: '○', label: 'Ouvert' },
+  acknowledged: { color: 'oklch(0.75 0.14 255)', bg: 'oklch(0.22 0.04 255)', icon: '◑', label: 'Acquitté' },
+  escalated: { color: 'oklch(0.78 0.14 60)', bg: 'oklch(0.24 0.05 60)', icon: '▲', label: 'Escaladé' },
+  resolved: { color: 'oklch(0.72 0.14 150)', bg: 'oklch(0.22 0.04 150)', icon: '●', label: 'Résolu' },
+};
+
+const severityConfig: Record<IncidentSeverity, BadgeProps> = {
+  low: { color: 'oklch(0.72 0.14 150)', bg: 'oklch(0.22 0.04 150)', icon: 'ℹ', label: 'Faible' },
+  medium: { color: 'oklch(0.82 0.14 85)', bg: 'oklch(0.24 0.05 85)', icon: '△', label: 'Moyen' },
+  high: { color: 'oklch(0.78 0.14 60)', bg: 'oklch(0.24 0.05 60)', icon: '▲', label: 'Élevé' },
+  critical: { color: 'oklch(0.78 0.14 25)', bg: 'oklch(0.25 0.05 25)', icon: '⬡', label: 'Critique' },
+};
+
+const releaseStateConfig: Record<ReleaseState, BadgeProps> = {
+  created: { color: 'oklch(0.65 0.01 260)', bg: 'oklch(0.25 0.01 260)', icon: '□', label: 'Créée' },
+  in_progress: { color: 'oklch(0.75 0.14 255)', bg: 'oklch(0.22 0.04 255)', icon: '↻', label: 'En cours' },
+  completed: { color: 'oklch(0.72 0.14 150)', bg: 'oklch(0.22 0.04 150)', icon: '●', label: 'Terminée' },
+  cancelled: { color: 'oklch(0.65 0.01 260)', bg: 'oklch(0.25 0.01 260)', icon: '⊘', label: 'Annulée' },
+  blocked: { color: 'oklch(0.78 0.14 25)', bg: 'oklch(0.25 0.05 25)', icon: '⊠', label: 'Bloquée' },
+};
+
+const roleConfig: Record<TeamRole, BadgeProps> = {
+  manager: { color: 'oklch(0.82 0.14 85)', bg: 'oklch(0.24 0.05 85 / 0.3)', label: 'Manager' },
+  responder: { color: 'oklch(0.75 0.14 255)', bg: 'oklch(0.22 0.04 255 / 0.3)', label: 'Responder' },
+  observer: { color: 'oklch(0.65 0.01 260)', bg: 'oklch(0.25 0.01 260 / 0.3)', label: 'Observer' },
 };
 
 export function IncidentStateBadge({ state }: { state: IncidentState }) {
-  const config = incidentStateConfig[state];
-  return <Badge {...config} />;
+  return <Badge {...incidentStateConfig[state]} />;
 }
-
-// Badge pour la sévérité d'un incident
-const severityConfig: Record<IncidentSeverity, { variant: BadgeVariant; icon: string; label: string }> = {
-  low: { variant: 'neutral', icon: 'ℹ', label: 'Faible' },
-  medium: { variant: 'warning', icon: '△', label: 'Moyen' },
-  high: { variant: 'danger', icon: '▲', label: 'Élevé' },
-  critical: { variant: 'danger', icon: '⬡', label: 'Critique' },
-};
 
 export function SeverityBadge({ severity }: { severity: IncidentSeverity }) {
-  const config = severityConfig[severity];
-  return <Badge {...config} />;
+  return <Badge {...severityConfig[severity]} />;
 }
 
-// Badge pour l'état d'une release
-const releaseStateConfig: Record<ReleaseState, { variant: BadgeVariant; icon: string; label: string }> = {
-  created: { variant: 'neutral', icon: '□', label: 'Créée' },
-  in_progress: { variant: 'primary', icon: '↻', label: 'En cours' },
-  completed: { variant: 'success', icon: '●', label: 'Terminée' },
-  cancelled: { variant: 'neutral', icon: '⊘', label: 'Annulée' },
-  blocked: { variant: 'danger', icon: '⊠', label: 'Bloquée' },
-};
-
 export function ReleaseStateBadge({ state }: { state: ReleaseState }) {
-  const config = releaseStateConfig[state];
-  return <Badge {...config} />;
+  return <Badge {...releaseStateConfig[state]} />;
+}
+
+export function RoleBadge({ role }: { role: TeamRole }) {
+  return <Badge {...roleConfig[role]} />;
 }

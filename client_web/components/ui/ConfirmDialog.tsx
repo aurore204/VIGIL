@@ -25,16 +25,12 @@ export function ConfirmDialog({
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      cancelRef.current?.focus();
-    }
+    if (isOpen) cancelRef.current?.focus();
   }, [isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onCancel();
-      }
+      if (e.key === 'Escape' && isOpen) onCancel();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
@@ -44,44 +40,45 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby="dialog-title"
       aria-describedby="dialog-description"
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
     >
       <div
-        className="absolute inset-0 bg-black/60"
         onClick={onCancel}
         aria-hidden="true"
+        style={{ position: 'absolute', inset: 0, background: 'oklch(0 0 0 / 0.65)' }}
       />
-      <div className="relative bg-surface border border-border rounded-lg p-lg w-full max-w-md shadow-xl">
+      <div style={{
+        position: 'relative',
+        background: 'oklch(0.195 0.015 260)',
+        border: '1px solid oklch(0.34 0.02 260)',
+        borderRadius: '14px', padding: '24px',
+        width: '100%', maxWidth: '400px',
+        boxShadow: '0 8px 40px oklch(0 0 0 / 0.5)',
+      }}>
         <h2
           id="dialog-title"
-          className="text-subtitle text-text-primary mb-sm"
+          style={{ fontSize: '16px', fontWeight: 700, color: 'oklch(0.95 0.005 260)', margin: '0 0 8px' }}
         >
           {title}
         </h2>
         <p
           id="dialog-description"
-          className="text-body text-text-secondary mb-lg"
+          style={{ fontSize: '13px', color: 'oklch(0.72 0.01 260)', margin: '0 0 20px' }}
         >
           {description}
         </p>
-        <div className="flex justify-end gap-sm">
-          <Button
-            ref={cancelRef}
-            variant="secondary"
-            onClick={onCancel}
-            disabled={loading}
-          >
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+          <Button ref={cancelRef} variant="secondary" onClick={onCancel} disabled={loading}>
             {cancelLabel}
           </Button>
-          <Button
-            variant="danger"
-            onClick={onConfirm}
-            loading={loading}
-          >
+          <Button variant="danger" onClick={onConfirm} loading={loading}>
             {confirmLabel}
           </Button>
         </div>
