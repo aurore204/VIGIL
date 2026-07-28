@@ -69,7 +69,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{ fontSize: '22px', fontWeight: 800, color: 'oklch(0.95 0.005 260)', margin: 0 }}>
-          Bonjour, {user?.username} salut!
+          Bonjour, {user?.username} 
         </h1>
         <p style={{ color: 'oklch(0.52 0.012 260)', marginTop: '4px', fontSize: '13px' }}>
           Voici l&apos;état de vos opérations en temps réel
