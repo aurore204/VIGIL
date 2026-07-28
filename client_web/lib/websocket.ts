@@ -23,7 +23,7 @@ class VIGILWebSocket {
     this.ws = new WebSocket(`${WS_URL}?token=${this.token}`);
 
     this.ws.onopen = () => {
-      console.log('WebSocket connecté');
+      console.log('WebSocket connecté', WS_URL);
       this.reconnectDelay = 1000;
     };
 
@@ -53,6 +53,7 @@ class VIGILWebSocket {
       console.error('WebSocket erreur:', error);
     };
   }
+
 
   on(eventType: string, handler: WsEventHandler) {
     if (!this.handlers.has(eventType)) {
@@ -86,5 +87,7 @@ class VIGILWebSocket {
     this.ws = null;
   }
 }
+
+
 
 export const vigilWs = new VIGILWebSocket();
