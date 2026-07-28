@@ -80,41 +80,48 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     vigilWs.connect(token);
 
     vigilWs.on('incident_state_changed', (e: WsEvent) => {
+      if (e.type !== 'incident_state_changed') return;
       showToast(`Incident ${e.new_state} par ${e.by}`, 'info');
     });
     vigilWs.on('incident_escalated', (e: WsEvent) => {
+      if (e.type !== 'incident_escalated') return;
       showToast(`Incident escaladé en ${e.new_severity} par ${e.by}`, 'warning');
     });
     vigilWs.on('incident_assigned', (e: WsEvent) => {
+      if (e.type !== 'incident_assigned') return;
       showToast(`Incident assigné à ${e.assigned_to}`, 'info');
     });
     vigilWs.on('timeline_entry_added', (e: WsEvent) => {
+      if (e.type !== 'timeline_entry_added') return;
       showToast(`Nouvelle entrée timeline par ${e.entry.author}`, 'info');
     });
     vigilWs.on('release_state_changed', (e: WsEvent) => {
-      if (e.new_state === 'blocked') {
-        showToast('Une release a été bloquée par un incident', 'error');
-      } else if (e.new_state === 'completed') {
-        showToast('Release complétée avec succès', 'success');
-      } else {
-        showToast(`Release passée en ${e.new_state}`, 'info');
-      }
+      if (e.type !== 'release_state_changed') return;
+      if (e.new_state === 'blocked') showToast('Release bloquée par un incident', 'error');
+      else if (e.new_state === 'completed') showToast('Release complétée', 'success');
+      else showToast(`Release : ${e.new_state}`, 'info');
     });
     vigilWs.on('release_step_validated', (e: WsEvent) => {
+      if (e.type !== 'release_step_validated') return;
       showToast(`Étape "${e.step}" validée par ${e.by}`, 'success');
     });
     vigilWs.on('member_kicked', (e: WsEvent) => {
-      showToast(`${e.member} a été retiré de la team`, 'warning');
+      if (e.type !== 'member_kicked') return;
+      showToast(`${e.member} retiré de la team`, 'warning');
     });
     vigilWs.on('member_banned', (e: WsEvent) => {
-      showToast(`${e.member} a été banni`, 'error');
+      if (e.type !== 'member_banned') return;
+      showToast(`${e.member} banni`, 'error');
     });
     vigilWs.on('private_message_received', (e: WsEvent) => {
+      if (e.type !== 'private_message_received') return;
       showToast(`Nouveau message de ${e.from}`, 'info');
     });
     vigilWs.on('reaction_added', (e: WsEvent) => {
+      if (e.type !== 'reaction_added') return;
       showToast(`${e.by} a réagi avec ${e.emoji}`, 'info');
     });
+      
   }
 
   return () => {

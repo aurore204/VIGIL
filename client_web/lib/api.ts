@@ -123,6 +123,9 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  deleteIncident: (incidentId: string) =>
+    request<void>(`/incidents/${incidentId}`, { method: 'DELETE' }),
+  
   acknowledgeIncident: (incidentId: string) =>
     request<Incident>(`/incidents/${incidentId}/acknowledge`, { method: 'PATCH' }),
 
