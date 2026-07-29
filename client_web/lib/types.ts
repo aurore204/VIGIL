@@ -211,6 +211,11 @@ export interface WsReactionRemoved {
   by: string;
 }
 
+export interface WsPresenceOnline {
+  type: 'presence_online';
+  usernames: string[];
+}
+
 export type WsEvent =
   | WsIncidentStateChanged
   | WsIncidentEscalated
@@ -218,6 +223,7 @@ export type WsEvent =
   | WsTimelineEntryAdded
   | WsTimelineEntryEdited
   | WsPresenceUpdate
+  | WsPresenceOnline 
   | WsReleaseStateChanged
   | WsReleaseStepValidated
   | WsMemberKicked
