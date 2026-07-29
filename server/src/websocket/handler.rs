@@ -43,6 +43,8 @@ pub async fn ws_handler(
     Query(query): Query<WsQuery>,
     headers: HeaderMap,
 ) -> impl IntoResponse {
+    tracing::info!("ws_handler appelé, token en query présent: {}", query.token.is_some());
+
     let token = if let Some(t) = query.token {
         t
     } else if let Some(auth) = headers.get("Authorization") {
@@ -50,21 +52,31 @@ pub async fn ws_handler(
         if auth_str.starts_with("Bearer ") {
             auth_str[7..].to_string()
         } else {
+            tracing::warn!("Header Authorization présent mais mal formé");
             return (StatusCode::UNAUTHORIZED, "Token manquant").into_response();
         }
     } else {
+        tracing::warn!("Aucun token trouvé (ni query, ni header)");
         return (StatusCode::UNAUTHORIZED, "Token manquant").into_response();
     };
 
     let claims = match verify_token(&token) {
         Ok(c) => c,
-        Err(_) => return (StatusCode::UNAUTHORIZED, "Token invalide").into_response(),
+        Err(e) => {
+            tracing::warn!("Échec verify_token: {:?}", e);
+            return (StatusCode::UNAUTHORIZED, "Token invalide").into_response();
+        }
     };
 
     let user_id = match Uuid::parse_str(&claims.sub) {
         Ok(id) => id,
-        Err(_) => return (StatusCode::UNAUTHORIZED, "Token invalide").into_response(),
+        Err(e) => {
+            tracing::warn!("sub invalide dans le token: {:?}", e);
+            return (StatusCode::UNAUTHORIZED, "Token invalide").into_response();
+        }
     };
+
+    tracing::info!("Upgrade WS accepté pour user_id={}", user_id);
 
     ws.on_upgrade(move |socket| handle_socket(socket, state.pool, state.broadcaster, user_id))
 }
@@ -79,8 +91,17 @@ async fn handle_socket(
 
     let _username = match user_repository::find_by_id(&pool, user_id).await {
         Ok(Some(u)) => u.username,
-        _ => return,
+        Ok(None) => {
+            tracing::warn!("Utilisateur introuvable en base pour user_id={}", user_id);
+            return;
+        }
+        Err(e) => {
+            tracing::error!("Erreur DB lors du find_by_id: {:?}", e);
+            return;
+        }
     };
+
+    tracing::info!("Connexion WS établie pour {}", _username);
 
     // S'abonner au broadcast global
     let mut rx_global = broadcaster.subscribe();

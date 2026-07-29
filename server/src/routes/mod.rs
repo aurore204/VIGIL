@@ -24,14 +24,20 @@ pub fn create_router(state: AppState) -> Router {
         .merge(reaction_routes::protected_reaction_routes())
         .merge(message_routes::message_routes())
         .merge(release_routes::release_routes())
-        .route("/ws", get(ws_handler))
         .layer(middleware::from_fn_with_state(
             state.pool.clone(),
             require_auth,
         ));
+ 
+    // La route WS sort de protected_routes : elle gère sa propre auth
+     let ws_routes = Router::new()
+        .route("/ws", get(ws_handler));
 
     Router::new()
         .merge(public_routes)
         .merge(protected_routes)
+        .merge(ws_routes)
         .with_state(state)
+
+    
 }
