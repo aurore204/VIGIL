@@ -106,7 +106,7 @@ async fn handle_socket(
     // S'abonner au broadcast global
     let mut rx_global = broadcaster.subscribe();
     // S'abonner aux messages privés
-    let mut rx_private = broadcaster.register_user(user_id).await;
+    let mut rx_private = broadcaster.register_user(user_id, _username).await;
 
     let send_task = tokio::spawn(async move {
         loop {
