@@ -19,7 +19,7 @@ class VIGILWebSocket {
 
   private createConnection() {
     if (!this.token) return;
-
+    this.ws?.close();
     this.ws = new WebSocket(`${WS_URL}?token=${this.token}`);
 
     this.ws.onopen = () => {
@@ -40,7 +40,8 @@ class VIGILWebSocket {
       }
     };
 
-    this.ws.onclose = () => {
+    this.ws.onclose = (event) => {
+      console.log('WebSocket fermé — code:', event.code, 'reason:', event.reason, 'clean:', event.wasClean);
       if (this.shouldReconnect) {
         setTimeout(() => {
           this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay);

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
-import type { Release, Team } from '@/lib/types';
+import { vigilWs } from '@/lib/websocket';
+import type { Release, Team, WsEvent } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { ReleaseCard } from '@/components/releases/ReleaseCard';
@@ -40,7 +41,42 @@ export default function ReleasesPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  // Met à jour une seule release dans la liste locale, sans tout recharger
+  const refreshRelease = async (releaseId: string) => {
+    try {
+      const updated = await api.getRelease(releaseId);
+      setReleases(prev => {
+        const exists = prev.some(r => r.id === releaseId);
+        if (exists) {
+          return prev.map(r => (r.id === releaseId ? updated : r));
+        }
+        return [updated, ...prev];
+      });
+    } catch {
+      setReleases(prev => prev.filter(r => r.id !== releaseId));
+    }
+  };
+
+  useEffect(() => {
+    load();
+
+    const onReleaseStateChanged = (e: WsEvent) => {
+      if (e.type !== 'release_state_changed') return;
+      refreshRelease(e.release_id);
+    };
+    const onReleaseStepValidated = (e: WsEvent) => {
+      if (e.type !== 'release_step_validated') return;
+      refreshRelease(e.release_id);
+    };
+
+    vigilWs.on('release_state_changed', onReleaseStateChanged);
+    vigilWs.on('release_step_validated', onReleaseStepValidated);
+
+    return () => {
+      vigilWs.off('release_state_changed', onReleaseStateChanged);
+      vigilWs.off('release_step_validated', onReleaseStepValidated);
+    };
+  }, []); 
 
   const managerTeams = teams.filter(t => t.manager_id === user?.id);
 

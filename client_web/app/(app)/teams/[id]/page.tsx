@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
-import type { Team } from '@/lib/types';
+import { vigilWs } from '@/lib/websocket';
+import type { Team, WsEvent } from '@/lib/types';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -25,12 +26,35 @@ export default function TeamDetailPage() {
     try {
       const data = await api.getTeam(id);
       setTeam(data);
+    } catch {
+      // on n'a plus accès à cette team (ex: on vient d'en être kické/banni)
+      showToast('Vous n\'avez plus accès à cette team', 'warning');
+      router.push('/teams');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    load();
+
+    const onMemberKicked = (e: WsEvent) => {
+      if (e.type !== 'member_kicked' || e.team_id !== id) return;
+      load();
+    };
+    const onMemberBanned = (e: WsEvent) => {
+      if (e.type !== 'member_banned' || e.team_id !== id) return;
+      load();
+    };
+
+    vigilWs.on('member_kicked', onMemberKicked);
+    vigilWs.on('member_banned', onMemberBanned);
+
+    return () => {
+      vigilWs.off('member_kicked', onMemberKicked);
+      vigilWs.off('member_banned', onMemberBanned);
+    };
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isManager = team?.manager_id === user?.id;
 

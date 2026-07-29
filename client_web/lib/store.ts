@@ -11,7 +11,7 @@ interface AuthStore {
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
-  token: null,
+  token: typeof window !== 'undefined' ? localStorage.getItem('vigil_token') : null,
 
   setAuth: (user, token) => {
     localStorage.setItem('vigil_token', token);

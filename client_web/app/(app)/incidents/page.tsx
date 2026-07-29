@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
-import type { Incident, IncidentState, IncidentSeverity, Team } from '@/lib/types';
+import { vigilWs } from '@/lib/websocket';
+import type { Incident, IncidentState, IncidentSeverity, Team, WsEvent } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { IncidentTable } from '@/components/incidents/IncidentTable';
@@ -38,7 +39,50 @@ export default function IncidentsPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  // Met à jour un seul incident dans la liste locale, sans tout recharger
+  const refreshIncident = async (incidentId: string) => {
+    try {
+      const updated = await api.getIncident(incidentId);
+      setIncidents(prev => {
+        const exists = prev.some(i => i.id === incidentId);
+        if (exists) {
+          return prev.map(i => (i.id === incidentId ? updated : i));
+        }
+        // Incident pas encore dans la liste locale  
+        return [updated, ...prev];
+      });
+    } catch {
+      // incident supprimé ou plus accessible : on l'enlève de la liste locale
+      setIncidents(prev => prev.filter(i => i.id !== incidentId));
+    }
+  };
+
+  useEffect(() => {
+    load();
+
+    const onIncidentStateChanged = (e: WsEvent) => {
+      if (e.type !== 'incident_state_changed') return;
+      refreshIncident(e.incident_id);
+    };
+    const onIncidentEscalated = (e: WsEvent) => {
+      if (e.type !== 'incident_escalated') return;
+      refreshIncident(e.incident_id);
+    };
+    const onIncidentAssigned = (e: WsEvent) => {
+      if (e.type !== 'incident_assigned') return;
+      refreshIncident(e.incident_id);
+    };
+
+    vigilWs.on('incident_state_changed', onIncidentStateChanged);
+    vigilWs.on('incident_escalated', onIncidentEscalated);
+    vigilWs.on('incident_assigned', onIncidentAssigned);
+
+    return () => {
+      vigilWs.off('incident_state_changed', onIncidentStateChanged);
+      vigilWs.off('incident_escalated', onIncidentEscalated);
+      vigilWs.off('incident_assigned', onIncidentAssigned);
+    };
+  }, []); 
 
   const managerTeams = teams.filter(t => t.manager_id === user?.id);
 

@@ -5,6 +5,8 @@ import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import type { Team, Incident, Release } from '@/lib/types';
 import Link from 'next/link';
+import { vigilWs } from '@/lib/websocket';
+import type { WsEvent } from '@/lib/types';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -13,34 +15,56 @@ export default function DashboardPage() {
   const [releases, setReleases] = useState<Release[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // `load` est maintenant défini au niveau du composant, accessible partout
+  const load = async () => {
+    try {
+      const teamsData = await api.getTeams();
+      setTeams(teamsData);
+
+      const allIncidents: Incident[] = [];
+      const allReleases: Release[] = [];
+
+      await Promise.all(
+        teamsData.map(async (team) => {
+          const [inc, rel] = await Promise.all([
+            api.getIncidents(team.id),
+            api.getReleases(team.id),
+          ]);
+          allIncidents.push(...inc);
+          allReleases.push(...rel);
+        })
+      );
+
+      setIncidents(allIncidents);
+      setReleases(allReleases);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        const teamsData = await api.getTeams();
-        setTeams(teamsData);
+    load();
 
-        const allIncidents: Incident[] = [];
-        const allReleases: Release[] = [];
-
-        await Promise.all(
-          teamsData.map(async (team) => {
-            const [inc, rel] = await Promise.all([
-              api.getIncidents(team.id),
-              api.getReleases(team.id),
-            ]);
-            allIncidents.push(...inc);
-            allReleases.push(...rel);
-          })
-        );
-
-        setIncidents(allIncidents);
-        setReleases(allReleases);
-      } finally {
-        setLoading(false);
+    const handleUpdate = (e: WsEvent) => {
+      if (
+        e.type === 'incident_state_changed' ||
+        e.type === 'release_state_changed' ||
+        e.type === 'incident_assigned'
+      ) {
+        load(); // ✅ appelle bien la fonction du composant, plus d'erreur
       }
     };
-    load();
-  }, []);
+
+    vigilWs.on('incident_state_changed', handleUpdate);
+    vigilWs.on('release_state_changed', handleUpdate);
+    vigilWs.on('incident_assigned', handleUpdate);
+
+    return () => {
+      vigilWs.off('incident_state_changed', handleUpdate);
+      vigilWs.off('release_state_changed', handleUpdate);
+      vigilWs.off('incident_assigned', handleUpdate);
+    };
+  }, []); // pas de connect()/disconnect() ici : AppLayout gère déjà le cycle de vie du WS
 
   const open = incidents.filter(i => i.state === 'open').length;
   const acknowledged = incidents.filter(i => i.state === 'acknowledged').length;

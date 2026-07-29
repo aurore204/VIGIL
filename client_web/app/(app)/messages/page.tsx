@@ -48,6 +48,10 @@ export default function MessagesPage() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  // Abonnement WS 
+  useEffect(() => {
     const handleMessage = (e: WsEvent) => {
       if (e.type !== 'private_message_received') return;
       if (selectedContact && (e.from === selectedContact.username || e.to === selectedContact.username)) {
@@ -56,11 +60,12 @@ export default function MessagesPage() {
     };
     vigilWs.on('private_message_received', handleMessage);
     return () => vigilWs.off('private_message_received', handleMessage);
-  }, [selectedContact]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedContact]); 
 
+  // Chargement de la conversation à chaque changement de contact sélectionné
   useEffect(() => {
     if (selectedContact) loadConversation(selectedContact);
-  }, [selectedContact]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedContact]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
-import type { Team, Incident } from '@/lib/types';
+import { vigilWs } from '@/lib/websocket';
+import type { Team, Incident, WsEvent } from '@/lib/types';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/shared/Modal';
@@ -39,7 +40,58 @@ export default function TeamsPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  // Recalcule le compteur d'incidents actifs d'une seule team
+  const refreshTeamIncidentCount = async (teamId: string) => {
+    try {
+      const incidents = await api.getIncidents(teamId);
+      setTeamIncidents(prev => ({ ...prev, [teamId]: incidents.filter(i => i.state !== 'resolved').length }));
+    } catch { /* ignore */ }
+  };
+
+  // Recharge une seule team (membres kické/banni, etc.)
+  const refreshTeam = async (teamId: string) => {
+    try {
+      const updated = await api.getTeam(teamId);
+      setTeams(prev => prev.map(t => (t.id === teamId ? updated : t)));
+    } catch {
+      // On n'a plus accès à cette team (ex: on vient d'en être kické/banni nous-même)
+      setTeams(prev => prev.filter(t => t.id !== teamId));
+      setTeamIncidents(prev => {
+        const { [teamId]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  };
+
+  useEffect(() => {
+    load();
+
+    const onIncidentStateChanged = async (e: WsEvent) => {
+      if (e.type !== 'incident_state_changed') return;
+      try {
+        const inc = await api.getIncident(e.incident_id);
+        refreshTeamIncidentCount(inc.team_id);
+      } catch { /* ignore */ }
+    };
+    const onMemberKicked = (e: WsEvent) => {
+      if (e.type !== 'member_kicked') return;
+      refreshTeam(e.team_id);
+    };
+    const onMemberBanned = (e: WsEvent) => {
+      if (e.type !== 'member_banned') return;
+      refreshTeam(e.team_id);
+    };
+
+    vigilWs.on('incident_state_changed', onIncidentStateChanged);
+    vigilWs.on('member_kicked', onMemberKicked);
+    vigilWs.on('member_banned', onMemberBanned);
+
+    return () => {
+      vigilWs.off('incident_state_changed', onIncidentStateChanged);
+      vigilWs.off('member_kicked', onMemberKicked);
+      vigilWs.off('member_banned', onMemberBanned);
+    };
+  }, []); 
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
