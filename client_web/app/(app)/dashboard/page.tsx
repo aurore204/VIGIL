@@ -3,19 +3,112 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
-import type { Team, Incident, Release } from '@/lib/types';
-import Link from 'next/link';
 import { vigilWs } from '@/lib/websocket';
-import type { WsEvent } from '@/lib/types';
+import type { Team, Incident, Release, WsEvent } from '@/lib/types';
+import Link from 'next/link';
+import {
+  AlertTriangle,
+  Flame,
+  Rocket,
+  Users,
+  Activity,
+  ArrowUpRight,
+  ArrowUpCircle,
+  CheckCircle2,
+  Circle,
+  Lock,
+  PlayCircle,
+} from 'lucide-react';
+
+const COLORS = {
+  bg: '#0B0F1A',
+  card: '#101623',
+  cardBorder: '#1B2333',
+  row: '#171F2E',
+  text: '#EAEEF5',
+  muted: '#78859A',
+  mutedStrong: '#8896A8',
+  blueBg: '#182238',
+  blueText: '#8FB3E8',
+  blueStrip: '#3D6FD1',
+  amberBg: '#2B2013',
+  amberText: '#D9AE63',
+  emberBg: '#2B1E1A',
+  emberText: '#DE8B6C',
+  greenBg: '#182819',
+  greenText: '#7BC198',
+  greenStrip: '#4CAE7C',
+  grayBg: '#1A1F2A',
+  grayText: '#8896A8',
+};
+
+const cardStyle: React.CSSProperties = {
+  background: COLORS.card,
+  border: `1px solid ${COLORS.cardBorder}`,
+  borderRadius: '14px',
+  overflow: 'hidden',
+};
+
+function StatCard({
+  Icon, value, label, stripColor, iconBg, iconColor,
+}: { Icon: React.ElementType; value: number; label: string; stripColor: string; iconBg: string; iconColor: string }) {
+  return (
+    <div style={cardStyle}>
+      <div style={{ height: '3px', background: stripColor }} />
+      <div style={{ padding: '17px 18px' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px',
+        }}>
+          <div style={{
+            width: '38px', height: '38px', borderRadius: '10px', background: iconBg,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Icon size={19} color={iconColor} strokeWidth={2} aria-hidden="true" />
+          </div>
+          <ArrowUpRight size={14} color={COLORS.mutedStrong} aria-hidden="true" />
+        </div>
+        <div style={{
+          fontFamily: "'Space Grotesk', sans-serif", fontSize: '25px', fontWeight: 700,
+          letterSpacing: '-0.01em', color: iconColor === COLORS.emberText ? iconColor : COLORS.text,
+        }}>
+          {value}
+        </div>
+        <div style={{ fontSize: '12px', color: COLORS.muted, marginTop: '4px' }}>{label}</div>
+      </div>
+    </div>
+  );
+}
+
+const stateConfig: Record<string, { label: string; bg: string; text: string; Icon: React.ElementType }> = {
+  open: { label: 'Ouvert', bg: COLORS.grayBg, text: COLORS.grayText, Icon: Circle },
+  acknowledged: { label: 'Acquitté', bg: COLORS.blueBg, text: COLORS.blueText, Icon: CheckCircle2 },
+  escalated: { label: 'Escaladé', bg: COLORS.amberBg, text: COLORS.amberText, Icon: ArrowUpCircle },
+  resolved: { label: 'Résolu', bg: COLORS.greenBg, text: COLORS.greenText, Icon: CheckCircle2 },
+};
+
+const severityColor: Record<string, string> = {
+  low: COLORS.greenText,
+  medium: COLORS.mutedStrong,
+  high: COLORS.amberText,
+  critical: COLORS.emberText,
+};
+
+interface ActivityItem {
+  id: string;
+  kind: 'incident' | 'release';
+  label: string;
+  detail: string;
+  at: string;
+}
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const [teams, setTeams] = useState<Team[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [releases, setReleases] = useState<Release[]>([]);
+  const [onlineUsernames, setOnlineUsernames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // `load` est maintenant défini au niveau du composant, accessible partout
   const load = async () => {
     try {
       const teamsData = await api.getTeams();
@@ -35,6 +128,8 @@ export default function DashboardPage() {
         })
       );
 
+      allIncidents.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+      allReleases.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
       setIncidents(allIncidents);
       setReleases(allReleases);
     } finally {
@@ -49,202 +144,347 @@ export default function DashboardPage() {
       if (
         e.type === 'incident_state_changed' ||
         e.type === 'release_state_changed' ||
-        e.type === 'incident_assigned'
+        e.type === 'incident_assigned' ||
+        e.type === 'release_step_validated'
       ) {
-        load(); // ✅ appelle bien la fonction du composant, plus d'erreur
+        load();
       }
     };
+
+    // TODO backend: pas encore d'event de présence globale (voir note ci-dessous).
+    // Une fois ajouté côté serveur, décommenter et adapter :
+    // const handlePresence = (e: WsEvent) => {
+    //   if (e.type !== 'presence_online') return;
+    //   setOnlineUsernames(e.usernames);
+    // };
+    // vigilWs.on('presence_online', handlePresence);
 
     vigilWs.on('incident_state_changed', handleUpdate);
     vigilWs.on('release_state_changed', handleUpdate);
     vigilWs.on('incident_assigned', handleUpdate);
+    vigilWs.on('release_step_validated', handleUpdate);
 
     return () => {
       vigilWs.off('incident_state_changed', handleUpdate);
       vigilWs.off('release_state_changed', handleUpdate);
       vigilWs.off('incident_assigned', handleUpdate);
+      vigilWs.off('release_step_validated', handleUpdate);
+      // vigilWs.off('presence_online', handlePresence);
     };
-  }, []); // pas de connect()/disconnect() ici : AppLayout gère déjà le cycle de vie du WS
-
-  const open = incidents.filter(i => i.state === 'open').length;
-  const acknowledged = incidents.filter(i => i.state === 'acknowledged').length;
-  const escalated = incidents.filter(i => i.state === 'escalated').length;
-  const critical = incidents.filter(i => i.severity === 'critical' && i.state !== 'resolved').length;
-  const activeReleases = releases.filter(r => r.state === 'in_progress').length;
-  const blockedReleases = releases.filter(r => r.state === 'blocked').length;
-
-  const cardStyle = (color: string) => ({
-    background: 'oklch(0.195 0.015 260)',
-    border: `1px solid ${color}`,
-    borderRadius: '12px',
-    padding: '20px 24px',
-  });
+  }, []);
 
   if (loading) {
     return (
-      <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)' }}>
+      <div style={{ padding: '32px', color: COLORS.muted, fontFamily: 'Inter, sans-serif' }}>
         Chargement...
       </div>
     );
   }
 
+  const activeIncidents = incidents.filter(i => i.state !== 'resolved');
+  const critical = incidents.filter(i => i.severity === 'critical' && i.state !== 'resolved').length;
+  const activeReleases = releases.filter(r => r.state === 'in_progress' || r.state === 'blocked');
+  const roleOf = (team: Team) => team.members.find(m => m.user_id === user?.id)?.role ?? 'observer';
+  const roleLabel: Record<string, string> = { observer: 'Observer', responder: 'Responder', manager: 'Manager' };
+
+  const activityFeed: ActivityItem[] = [
+    ...incidents.slice(0, 5).map((i): ActivityItem => ({
+      id: i.id, kind: 'incident', label: i.title,
+      detail: `Incident ${stateConfig[i.state]?.label.toLowerCase() ?? i.state}`,
+      at: i.updated_at,
+    })),
+    ...releases.slice(0, 5).map((r): ActivityItem => ({
+      id: r.id, kind: 'release', label: r.title,
+      detail: `Release ${r.state === 'in_progress' ? 'en cours' : r.state}`,
+      at: r.updated_at,
+    })),
+  ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 6);
+
   return (
-    <div style={{ padding: '32px', maxWidth: '1200px' }}>
-      {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: 800, color: 'oklch(0.95 0.005 260)', margin: 0 }}>
-          Bonjour, {user?.username} 
-        </h1>
-        <p style={{ color: 'oklch(0.52 0.012 260)', marginTop: '4px', fontSize: '13px' }}>
-          Voici l&apos;état de vos opérations en temps réel
-        </p>
-      </div>
-
-      {/* Métriques */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
-        <div style={cardStyle('oklch(0.45 0.15 25)')}>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: 'oklch(0.72 0.01 260)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Incidents ouverts
+    <div style={{
+      padding: '26px 30px', maxWidth: '1200px', fontFamily: 'Inter, sans-serif',
+      color: COLORS.text, background: COLORS.bg, minHeight: '100vh',
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+        marginBottom: '22px', flexWrap: 'wrap', gap: '10px',
+      }}>
+        <div>
+          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '20px', fontWeight: 700, letterSpacing: '-0.01em' }}>
+            Bonjour, {user?.username}
           </div>
-          <div style={{ fontSize: '32px', fontWeight: 800, color: 'oklch(0.78 0.14 25)' }}>{open}</div>
-          <div style={{ fontSize: '12px', color: 'oklch(0.52 0.012 260)', marginTop: '4px' }}>
-            {acknowledged} acquittés · {escalated} escaladés
-          </div>
-        </div>
-
-        <div style={cardStyle('oklch(0.45 0.15 25)')}>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: 'oklch(0.72 0.01 260)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Critiques actifs
-          </div>
-          <div style={{ fontSize: '32px', fontWeight: 800, color: critical > 0 ? 'oklch(0.72 0.20 25)' : 'oklch(0.72 0.14 150)' }}>
-            {critical}
-          </div>
-          <div style={{ fontSize: '12px', color: 'oklch(0.52 0.012 260)', marginTop: '4px' }}>
-            {critical > 0 ? '⚠ Attention requise' : '✓ Aucun incident critique'}
-          </div>
-        </div>
-
-        <div style={cardStyle(blockedReleases > 0 ? 'oklch(0.45 0.15 25)' : 'oklch(0.34 0.02 260)')}>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: 'oklch(0.72 0.01 260)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Releases
-          </div>
-          <div style={{ fontSize: '32px', fontWeight: 800, color: 'oklch(0.75 0.14 255)' }}>{activeReleases}</div>
-          <div style={{ fontSize: '12px', color: 'oklch(0.52 0.012 260)', marginTop: '4px' }}>
-            en cours · {blockedReleases > 0 ? `${blockedReleases} bloquée(s) ⚠` : '0 bloquée'}
+          <div style={{ fontSize: '13px', color: COLORS.muted, marginTop: '4px' }}>
+            {activeIncidents.length} incident{activeIncidents.length > 1 ? 's' : ''} actif{activeIncidents.length > 1 ? 's' : ''} sur {teams.length} team{teams.length > 1 ? 's' : ''}
           </div>
         </div>
       </div>
 
-      {/* Incidents récents */}
-      <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 700, color: 'oklch(0.90 0.005 260)', margin: 0 }}>
-            Incidents récents
-          </h2>
-          <Link href="/incidents" style={{ fontSize: '12px', color: 'oklch(0.66 0.16 255)', textDecoration: 'none' }}>
-            Voir tout →
-          </Link>
-        </div>
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '16px',
+      }}>
+        <StatCard Icon={AlertTriangle} value={activeIncidents.length} label="Incidents actifs" stripColor={COLORS.blueStrip} iconBg={COLORS.blueBg} iconColor={COLORS.blueText} />
+        <StatCard Icon={Flame} value={critical} label="Critiques" stripColor={COLORS.emberText} iconBg={COLORS.emberBg} iconColor={COLORS.emberText} />
+        <StatCard Icon={Rocket} value={activeReleases.length} label="Releases en cours" stripColor={COLORS.greenStrip} iconBg={COLORS.greenBg} iconColor={COLORS.greenText} />
+      </div>
 
-        {incidents.length === 0 ? (
-          <div style={{
-            background: 'oklch(0.195 0.015 260)',
-            border: '1px solid oklch(0.30 0.02 260)',
-            borderRadius: '10px', padding: '24px',
-            textAlign: 'center', color: 'oklch(0.52 0.012 260)', fontSize: '13px'
-          }}>
-            Aucun incident
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {incidents.slice(0, 5).map(incident => (
-              <Link key={incident.id} href={`/incidents/${incident.id}`} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: 'oklch(0.195 0.015 260)',
-                border: '1px solid oklch(0.30 0.02 260)',
-                borderRadius: '10px', padding: '14px 16px',
-                textDecoration: 'none',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <StateBadge state={incident.state} />
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'oklch(0.90 0.005 260)' }}>
-                    {incident.title}
-                  </span>
-                </div>
-                <SeverityBadge severity={incident.severity} />
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)', gap: '14px', marginBottom: '16px',
+      }}>
+        <div style={cardStyle}>
+          <div style={{ height: '3px', background: COLORS.blueStrip }} />
+          <div style={{ padding: '17px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600 }}>
+                <AlertTriangle size={15} color={COLORS.blueText} aria-hidden="true" />
+                Incidents actifs
+              </div>
+              <Link href="/incidents" style={{ fontSize: '12px', color: COLORS.blueText, textDecoration: 'none' }}>
+                Voir tout
               </Link>
-            ))}
+            </div>
+
+            {activeIncidents.length === 0 ? (
+              <div style={{ fontSize: '13px', color: COLORS.muted, padding: '12px 0' }}>Aucun incident actif</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {activeIncidents.slice(0, 5).map((incident, i, arr) => {
+                  const cfg = stateConfig[incident.state] ?? stateConfig.open;
+                  const StateIcon = cfg.Icon;
+                  return (
+                    <Link
+                      key={incident.id}
+                      href={`/incidents/${incident.id}`}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '11px 2px',
+                        borderBottom: i < arr.length - 1 ? `1px solid ${COLORS.row}` : 'none',
+                        textDecoration: 'none', color: COLORS.text,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '11px', minWidth: 0 }}>
+                        <span style={{
+                          display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10.5px', fontWeight: 600,
+                          padding: '3px 8px', borderRadius: '6px', background: cfg.bg, color: cfg.text, flexShrink: 0,
+                        }}>
+                          <StateIcon size={11} aria-hidden="true" />{cfg.label}
+                        </span>
+                        <span style={{ fontSize: '12.5px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {incident.title}
+                        </span>
+                      </div>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10.5px', color: severityColor[incident.severity], flexShrink: 0 }}>
+                        {incident.severity}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
+        </div>
+
+        <div style={cardStyle}>
+          <div style={{ height: '3px', background: COLORS.greenStrip }} />
+          <div style={{ padding: '17px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600 }}>
+                <Users size={15} color={COLORS.greenText} aria-hidden="true" />
+                En ligne
+              </div>
+              <span style={{ fontSize: '11px', color: COLORS.greenText }}>{onlineUsernames.length} actif{onlineUsernames.length > 1 ? 's' : ''}</span>
+            </div>
+
+            {onlineUsernames.length === 0 ? (
+              <div style={{ fontSize: '12px', color: COLORS.muted, padding: '8px 0' }}>
+                Aucune donnée de présence disponible pour le moment.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {onlineUsernames.map(username => (
+                  <div key={username} style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                    <div style={{ position: 'relative', width: '26px', height: '26px', flexShrink: 0 }}>
+                      <div style={{
+                        width: '26px', height: '26px', borderRadius: '50%', background: COLORS.blueBg,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px',
+                        fontWeight: 600, color: COLORS.blueText,
+                      }}>
+                        {username.slice(0, 2).toUpperCase()}
+                      </div>
+                      <span style={{
+                        position: 'absolute', bottom: '-1px', right: '-1px', width: '8px', height: '8px',
+                        borderRadius: '50%', background: COLORS.greenText, border: `2px solid ${COLORS.card}`,
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '12px', fontWeight: 500 }}>{username}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Teams */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '14px', marginBottom: '16px',
+      }}>
+        <div style={cardStyle}>
+          <div style={{ height: '3px', background: COLORS.greenStrip }} />
+          <div style={{ padding: '17px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600 }}>
+                <Rocket size={15} color={COLORS.greenText} aria-hidden="true" />
+                Releases en cours
+              </div>
+              <Link href="/releases" style={{ fontSize: '12px', color: COLORS.blueText, textDecoration: 'none' }}>
+                Voir tout
+              </Link>
+            </div>
+
+            {activeReleases.length === 0 ? (
+              <div style={{ fontSize: '13px', color: COLORS.muted, padding: '12px 0' }}>Aucune release en cours</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {activeReleases.slice(0, 3).map(release => {
+                  const completed = release.steps.filter(s => s.state === 'completed').length;
+                  const total = release.steps.length || 1;
+                  const pct = Math.round((completed / total) * 100);
+                  const blocked = release.state === 'blocked';
+                  return (
+                    <Link key={release.id} href={`/releases/${release.id}`} style={{ textDecoration: 'none', color: COLORS.text }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '12.5px', fontWeight: 600 }}>{release.title}</span>
+                        <span style={{
+                          display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', fontWeight: 600,
+                          padding: '2px 7px', borderRadius: '5px',
+                          background: blocked ? COLORS.emberBg : COLORS.blueBg,
+                          color: blocked ? COLORS.emberText : COLORS.blueText,
+                        }}>
+                          {blocked ? <Lock size={10} aria-hidden="true" /> : <PlayCircle size={10} aria-hidden="true" />}
+                          {blocked ? 'Bloquée' : 'En cours'}
+                        </span>
+                      </div>
+                      <div style={{ height: '5px', borderRadius: '3px', background: COLORS.row, overflow: 'hidden' }}>
+                        <div style={{
+                          width: `${pct}%`, height: '100%', borderRadius: '3px',
+                          background: blocked ? COLORS.emberText : COLORS.blueStrip,
+                        }} />
+                      </div>
+                      <div style={{ fontSize: '10.5px', color: COLORS.muted, marginTop: '5px' }}>
+                        {completed}/{release.steps.length} étapes
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={cardStyle}>
+          <div style={{ height: '3px', background: COLORS.blueStrip }} />
+          <div style={{ padding: '17px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>
+              <Activity size={15} color={COLORS.blueText} aria-hidden="true" />
+              Activité récente
+            </div>
+
+            {activityFeed.length === 0 ? (
+              <div style={{ fontSize: '13px', color: COLORS.muted, padding: '12px 0' }}>Rien à signaler</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {activityFeed.map(item => (
+                  <div key={`${item.kind}-${item.id}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '9px' }}>
+                    <div style={{
+                      width: '26px', height: '26px', borderRadius: '8px', flexShrink: 0,
+                      background: item.kind === 'incident' ? COLORS.blueBg : COLORS.greenBg,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {item.kind === 'incident'
+                        ? <AlertTriangle size={13} color={COLORS.blueText} aria-hidden="true" />
+                        : <Rocket size={13} color={COLORS.greenText} aria-hidden="true" />}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '12px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.label}
+                      </div>
+                      <div style={{ fontSize: '11px', color: COLORS.muted, marginTop: '1px' }}>{item.detail}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 700, color: 'oklch(0.90 0.005 260)', margin: 0 }}>
-            Mes teams ({teams.length})
-          </h2>
-          <Link href="/teams" style={{ fontSize: '12px', color: 'oklch(0.66 0.16 255)', textDecoration: 'none' }}>
-            Gérer →
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 600 }}>Mes teams ({teams.length})</div>
+          <Link href="/teams" style={{ fontSize: '12px', color: COLORS.blueText, textDecoration: 'none' }}>
+            Gérer
           </Link>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
-          {teams.map(team => (
-            <Link key={team.id} href={`/teams/${team.id}`} style={{
-              background: 'oklch(0.195 0.015 260)',
-              border: '1px solid oklch(0.30 0.02 260)',
-              borderRadius: '10px', padding: '16px',
-              textDecoration: 'none',
-            }}>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: 'oklch(0.90 0.005 260)', marginBottom: '6px' }}>
-                {team.name}
-              </div>
-              <div style={{ fontSize: '12px', color: 'oklch(0.52 0.012 260)' }}>
-                {team.members.length} membre{team.members.length > 1 ? 's' : ''}
-              </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '14px' }}>
+          {teams.map(team => {
+            const role = roleOf(team);
+            const isManager = role === 'manager';
+            return (
+              <Link key={team.id} href={`/teams/${team.id}`} style={{ textDecoration: 'none', color: COLORS.text }}>
+                    <div style={cardStyle}>
+                      <div style={{ height: '3px', background: isManager ? COLORS.blueStrip : COLORS.cardBorder }} />
+                      <div style={{ padding: '16px 18px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                          <div>
+                            <div style={{ fontSize: '13.5px', fontWeight: 600, marginBottom: '3px' }}>{team.name}</div>
+                            {team.description && (
+                              <div style={{ fontSize: '11px', color: COLORS.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>
+                                {team.description}
+                              </div>
+                            )}
+                          </div>
+                          <span style={{
+                            fontSize: '9.5px', fontWeight: 600, padding: '3px 8px', borderRadius: '20px', flexShrink: 0,
+                            background: isManager ? COLORS.blueBg : COLORS.grayBg,
+                            color: isManager ? COLORS.blueText : COLORS.grayText,
+                          }}>
+                            {roleLabel[role]}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex' }}>
+                            {team.members.slice(0, 4).map((m, i) => (
+                              <div key={m.user_id} style={{
+                                width: '24px', height: '24px', borderRadius: '50%', background: COLORS.blueBg,
+                                border: `2px solid ${COLORS.card}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '9px', fontWeight: 600, color: COLORS.blueText,
+                                marginLeft: i === 0 ? 0 : '-8px',
+                              }}>
+                                {m.username.slice(0, 2).toUpperCase()}
+                              </div>
+                            ))}
+                            {team.members.length > 4 && (
+                              <div style={{
+                                width: '24px', height: '24px', borderRadius: '50%', background: COLORS.grayBg,
+                                border: `2px solid ${COLORS.card}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '9px', fontWeight: 600, color: COLORS.grayText, marginLeft: '-8px',
+                              }}>
+                                +{team.members.length - 4}
+                              </div>
+                            )}
+                          </div>
+                          <span style={{ fontSize: '11px', color: COLORS.muted }}>
+                            {team.members.length} membre{team.members.length > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
             </Link>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
-  );
-}
-
-const stateConfig: Record<string, { label: string; color: string; bg: string }> = {
-  open: { label: 'Ouvert', color: 'oklch(0.78 0.14 25)', bg: 'oklch(0.25 0.05 25)' },
-  acknowledged: { label: 'Acquitté', color: 'oklch(0.75 0.14 255)', bg: 'oklch(0.22 0.04 255)' },
-  escalated: { label: 'Escaladé', color: 'oklch(0.78 0.14 60)', bg: 'oklch(0.24 0.05 60)' },
-  resolved: { label: 'Résolu', color: 'oklch(0.72 0.14 150)', bg: 'oklch(0.22 0.04 150)' },
-};
-
-const severityConfig: Record<string, { label: string; color: string; bg: string }> = {
-  low: { label: 'Faible', color: 'oklch(0.72 0.14 150)', bg: 'oklch(0.22 0.04 150)' },
-  medium: { label: 'Moyen', color: 'oklch(0.82 0.14 85)', bg: 'oklch(0.24 0.05 85)' },
-  high: { label: 'Élevé', color: 'oklch(0.78 0.14 60)', bg: 'oklch(0.24 0.05 60)' },
-  critical: { label: 'Critique', color: 'oklch(0.78 0.14 25)', bg: 'oklch(0.25 0.05 25)' },
-};
-
-function StateBadge({ state }: { state: string }) {
-  const config = stateConfig[state] || stateConfig.open;
-  return (
-    <span style={{
-      padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700,
-      background: config.bg, color: config.color,
-    }}>
-      {config.label}
-    </span>
-  );
-}
-
-function SeverityBadge({ severity }: { severity: string }) {
-  const config = severityConfig[severity] || severityConfig.low;
-  return (
-    <span style={{
-      padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700,
-      background: config.bg, color: config.color,
-    }}>
-      {config.label}
-    </span>
   );
 }

@@ -10,6 +10,7 @@ class VIGILWebSocket {
   private maxReconnectDelay = 30000;
   private token: string | null = null;
   private shouldReconnect = true;
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null; 
 
   connect(token: string) {
     this.token = token;
@@ -25,6 +26,7 @@ class VIGILWebSocket {
     this.ws.onopen = () => {
       console.log('WebSocket connecté', WS_URL);
       this.reconnectDelay = 1000;
+      this.startHeartbeat();
     };
 
     this.ws.onmessage = (event) => {
@@ -42,6 +44,7 @@ class VIGILWebSocket {
 
     this.ws.onclose = (event) => {
       console.log('WebSocket fermé — code:', event.code, 'reason:', event.reason, 'clean:', event.wasClean);
+      this.stopHeartbeat();
       if (this.shouldReconnect) {
         setTimeout(() => {
           this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay);
@@ -56,6 +59,22 @@ class VIGILWebSocket {
   }
 
 
+
+    private startHeartbeat() {
+    this.stopHeartbeat(); // évite les doublons si appelé plusieurs fois
+    this.heartbeatInterval = setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 25000); // toutes les 25s
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
   on(eventType: string, handler: WsEventHandler) {
     if (!this.handlers.has(eventType)) {
       this.handlers.set(eventType, []);
