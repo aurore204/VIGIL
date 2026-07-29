@@ -151,14 +151,14 @@ export default function DashboardPage() {
       }
     };
 
-    // TODO backend: pas encore d'event de présence globale (voir note ci-dessous).
-    // Une fois ajouté côté serveur, décommenter et adapter :
-    // const handlePresence = (e: WsEvent) => {
-    //   if (e.type !== 'presence_online') return;
-    //   setOnlineUsernames(e.usernames);
-    // };
-    // vigilWs.on('presence_online', handlePresence);
+    const handlePresence = (e: WsEvent) => {
+      if (e.type !== 'presence_online') return;
+      console.log(' presence_online reçu:', e.usernames);
+      setOnlineUsernames(e.usernames);
+    };
 
+    console.log(' handler presence_online enregistré');
+    vigilWs.on('presence_online', handlePresence);
     vigilWs.on('incident_state_changed', handleUpdate);
     vigilWs.on('release_state_changed', handleUpdate);
     vigilWs.on('incident_assigned', handleUpdate);
@@ -169,7 +169,7 @@ export default function DashboardPage() {
       vigilWs.off('release_state_changed', handleUpdate);
       vigilWs.off('incident_assigned', handleUpdate);
       vigilWs.off('release_step_validated', handleUpdate);
-      // vigilWs.off('presence_online', handlePresence);
+      vigilWs.off('presence_online', handlePresence);
     };
   }, []);
 
