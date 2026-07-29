@@ -5,6 +5,7 @@ interface AuthStore {
   user: User | null;
   token: string | null;
   setAuth: (user: User, token: string) => void;
+  setUser: (user: User) => void;
   clearAuth: () => void;
   isAuthenticated: () => boolean;
 }
@@ -18,6 +19,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ user, token });
   },
 
+  setUser: (user) => set({ user }),
+   
   clearAuth: () => {
     localStorage.removeItem('vigil_token');
     set({ user: null, token: null });
