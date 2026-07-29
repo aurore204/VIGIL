@@ -75,6 +75,9 @@ pub enum WsEvent {
         release_id: Uuid,
         new_state: String,
     },
+
+    PresenceOnline { usernames: Vec<String> },
+
     // Phase 2
     RuleTriggered {
         rule_name: String,
