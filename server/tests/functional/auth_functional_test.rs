@@ -5,15 +5,13 @@ use vigil_server::routes::create_router;
 
 async fn setup_server() -> TestServer {
     dotenv::dotenv().ok();
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL doit être défini");
-
-    let pool = PgPool::connect(&database_url)
-        .await
-        .expect("Impossible de se connecter à la base de test");
-
-    let app = create_router(pool);
-    TestServer::new(app).unwrap()
+    let database_url = std::env::var("DATABASE_URL").unwrap();
+    let pool = PgPool::connect(&database_url).await.unwrap();
+    let state = vigil_server::state::AppState::new(
+        pool,
+        vigil_server::websocket::broadcaster::Broadcaster::new(),
+    );
+    TestServer::new(create_router(state)).unwrap()
 }
 
 #[tokio::test]
@@ -32,7 +30,8 @@ async fn test_register_returns_201_with_token() {
 
     response.assert_status(axum::http::StatusCode::CREATED);
     let body: serde_json::Value = response.json();
-    assert!(body["token"].is_string());
+    assert!(body["success"].as_bool().unwrap());
+    assert!(body["data"]["token"].is_string());
 }
 
 #[tokio::test]
@@ -59,6 +58,9 @@ async fn test_register_returns_409_for_duplicate_email() {
         .await;
 
     response.assert_status(axum::http::StatusCode::CONFLICT);
+    let body: serde_json::Value = response.json();
+    assert!(!body["success"].as_bool().unwrap());
+    assert_eq!(body["code"], "EMAIL_ALREADY_EXISTS");
 }
 
 #[tokio::test]
@@ -86,7 +88,8 @@ async fn test_login_returns_200_with_token() {
 
     response.assert_status(axum::http::StatusCode::OK);
     let body: serde_json::Value = response.json();
-    assert!(body["token"].is_string());
+    assert!(body["success"].as_bool().unwrap());
+    assert!(body["data"]["token"].is_string());
 }
 
 #[tokio::test]
@@ -112,6 +115,9 @@ async fn test_login_returns_401_with_wrong_password() {
         .await;
 
     response.assert_status(axum::http::StatusCode::UNAUTHORIZED);
+    let body: serde_json::Value = response.json();
+    assert!(!body["success"].as_bool().unwrap());
+    assert_eq!(body["code"], "INVALID_CREDENTIALS");
 }
 
 #[tokio::test]
@@ -129,7 +135,7 @@ async fn test_me_returns_200_with_valid_token() {
         .await;
 
     let body: serde_json::Value = register_response.json();
-    let token = body["token"].as_str().unwrap();
+    let token = body["data"]["token"].as_str().unwrap();
 
     let response = server
         .get("/me")
@@ -140,6 +146,8 @@ async fn test_me_returns_200_with_valid_token() {
         .await;
 
     response.assert_status(axum::http::StatusCode::OK);
+    let body: serde_json::Value = response.json();
+    assert!(body["success"].as_bool().unwrap());
 }
 
 #[tokio::test]
@@ -149,6 +157,8 @@ async fn test_me_returns_401_without_token() {
     let response = server.get("/me").await;
 
     response.assert_status(axum::http::StatusCode::UNAUTHORIZED);
+    let body: serde_json::Value = response.json();
+    assert!(!body["success"].as_bool().unwrap());
 }
 
 #[tokio::test]
@@ -166,9 +176,8 @@ async fn test_me_returns_401_with_revoked_token() {
         .await;
 
     let body: serde_json::Value = register_response.json();
-    let token = body["token"].as_str().unwrap().to_string();
+    let token = body["data"]["token"].as_str().unwrap().to_string();
 
-    // Logout pour révoquer le token
     server
         .post("/auth/logout")
         .add_header(
@@ -177,7 +186,6 @@ async fn test_me_returns_401_with_revoked_token() {
         )
         .await;
 
-    // Réessayer GET /me avec le token révoqué
     let response = server
         .get("/me")
         .add_header(
@@ -204,7 +212,7 @@ async fn test_logout_returns_200() {
         .await;
 
     let body: serde_json::Value = register_response.json();
-    let token = body["token"].as_str().unwrap();
+    let token = body["data"]["token"].as_str().unwrap();
 
     let response = server
         .post("/auth/logout")
@@ -215,4 +223,6 @@ async fn test_logout_returns_200() {
         .await;
 
     response.assert_status(axum::http::StatusCode::OK);
+    let body: serde_json::Value = response.json();
+    assert!(body["success"].as_bool().unwrap());
 }
