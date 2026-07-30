@@ -1,18 +1,25 @@
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock};
 use uuid::Uuid;
 
 use super::events::WsEvent;
 
-const BROADCAST_CAPACITY: usize = 100;
+const BROADCAST_CAPACITY: usize = 1000;
+
+struct UserConnection {
+    sender: broadcast::Sender<WsEvent>,
+    generation: u64,
+}
 
 #[derive(Clone)]
 pub struct Broadcaster {
     sender: broadcast::Sender<WsEvent>,
     presence: Arc<RwLock<HashMap<Uuid, HashMap<Uuid, Vec<Uuid>>>>>,
-    user_senders: Arc<RwLock<HashMap<Uuid, broadcast::Sender<WsEvent>>>>,
+    user_senders: Arc<RwLock<HashMap<Uuid, UserConnection>>>,
     online_users: Arc<RwLock<HashMap<Uuid, String>>>,
+    generation_counter: Arc<AtomicU64>,
 }
 
 impl Broadcaster {
@@ -23,45 +30,60 @@ impl Broadcaster {
             presence: Arc::new(RwLock::new(HashMap::new())),
             user_senders: Arc::new(RwLock::new(HashMap::new())),
             online_users: Arc::new(RwLock::new(HashMap::new())),
+            generation_counter: Arc::new(AtomicU64::new(0)),
         }
     }
 
-    // Diffuse à tous les clients connectés
     pub fn broadcast(&self, event: WsEvent) {
         let _ = self.sender.send(event);
     }
 
-    // Envoie un event uniquement à un user spécifique
     pub async fn send_to_user(&self, user_id: Uuid, event: WsEvent) {
         let senders = self.user_senders.read().await;
-        if let Some(sender) = senders.get(&user_id) {
-            let _ = sender.send(event);
+        if let Some(conn) = senders.get(&user_id) {
+            let _ = conn.sender.send(event);
         }
     }
 
-    // Enregistre un sender pour un user spécifique et le marque en ligne
-    pub async fn register_user(&self, user_id: Uuid, username: String) -> broadcast::Receiver<WsEvent> {
-        let mut senders = self.user_senders.write().await;
-        let sender = senders
-            .entry(user_id)
-            .or_insert_with(|| broadcast::channel(BROADCAST_CAPACITY).0);
-        let rx = sender.subscribe();
-        drop(senders);
+    /// Enregistre une nouvelle connexion pour un user. Retourne le receiver
+    pub async fn register_user(&self, user_id: Uuid, username: String) -> (broadcast::Receiver<WsEvent>, u64) {
+    let generation = self.generation_counter.fetch_add(1, Ordering::SeqCst);
 
+    let (new_sender, rx) = broadcast::channel(BROADCAST_CAPACITY);
+
+    {
+        let mut senders = self.user_senders.write().await;
+        senders.insert(user_id, UserConnection { sender: new_sender, generation });
+    }
+
+    {
+        let mut online = self.online_users.write().await;
+        online.insert(user_id, username);
+    }
+
+    self.broadcast_online_users().await;
+    (rx, generation)
+}
+
+  
+
+    /// Désenregistre un user, MAIS uniquement si la génération correspond à la connexion qui se ferme réellement. Une connexion plus ancienne
+    pub async fn unregister_user(&self, user_id: Uuid, generation: u64) {
         {
-            let mut online = self.online_users.write().await;
-            online.insert(user_id, username);
+            let mut senders = self.user_senders.write().await;
+            if let Some(conn) = senders.get(&user_id) {
+                if conn.generation == generation {
+                    senders.remove(&user_id);
+                } else {
+                    // Une connexion plus récente existe déjà : on ne touche à rien.
+                    tracing::debug!(
+                        "unregister_user ignoré pour user_id={} (génération {} obsolète, actuelle différente)",
+                        user_id, generation
+                    );
+                    return;
+                }
+            }
         }
-
-        self.broadcast_online_users().await;
-        rx
-    }
-
-    // Désenregistre un user
-      pub async fn unregister_user(&self, user_id: Uuid) {
-        let mut senders = self.user_senders.write().await;
-        senders.remove(&user_id);
-        drop(senders);
 
         {
             let mut online = self.online_users.write().await;
@@ -71,9 +93,6 @@ impl Broadcaster {
         self.broadcast_online_users().await;
     }
 
-
-
-    // Liste des usernames actuellement connectés (tous, tous teams confondus)
     pub async fn online_usernames(&self) -> Vec<String> {
         let online = self.online_users.read().await;
         online.values().cloned().collect()
@@ -98,7 +117,7 @@ impl Broadcaster {
             .or_default()
             .push(user_id);
     }
-    // Supprime un watcher d'une ressource spécifique
+
     pub async fn remove_presence(&self, resource_id: Uuid, user_id: Uuid, team_id: Uuid) {
         let mut presence = self.presence.write().await;
         if let Some(team_presence) = presence.get_mut(&team_id) {
@@ -107,6 +126,7 @@ impl Broadcaster {
             }
         }
     }
+
     pub async fn get_watchers(&self, resource_id: Uuid, team_id: Uuid) -> Vec<Uuid> {
         let presence = self.presence.read().await;
         presence
@@ -115,8 +135,6 @@ impl Broadcaster {
             .cloned()
             .unwrap_or_default()
     }
-
-    
 }
 
 impl Default for Broadcaster {

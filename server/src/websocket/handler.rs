@@ -5,6 +5,7 @@ use axum::{
     },
     http::{HeaderMap, StatusCode},
     response::IntoResponse,
+    Json,
 };
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use serde::Deserialize;
@@ -81,6 +82,14 @@ pub async fn ws_handler(
     ws.on_upgrade(move |socket| handle_socket(socket, state.pool, state.broadcaster, user_id))
 }
 
+pub async fn get_online_users(State(state): State<AppState>) -> impl IntoResponse {
+    let usernames = state.broadcaster.online_usernames().await;
+    Json(serde_json::json!(crate::models::response::ApiResponse::success(
+        "Utilisateurs en ligne",
+        usernames
+    )))
+}
+
 async fn handle_socket(
     socket: WebSocket,
     pool: PgPool,
@@ -106,30 +115,53 @@ async fn handle_socket(
     // S'abonner au broadcast global
     let mut rx_global = broadcaster.subscribe();
     // S'abonner aux messages privés
-    let mut rx_private = broadcaster.register_user(user_id, _username).await;
+    let (mut rx_private, connection_generation) = broadcaster.register_user(user_id, _username).await;
 
     let send_task = tokio::spawn(async move {
         loop {
             tokio::select! {
-                Ok(event) = rx_global.recv() => {
-                    let json = match serde_json::to_string(&event) {
-                        Ok(j) => j,
-                        Err(_) => continue,
-                    };
-                    if sender.send(Message::Text(json)).await.is_err() {
-                        break;
+                result = rx_global.recv() => {
+                    match result {
+                        Ok(event) => {
+                            let json = match serde_json::to_string(&event) {
+                                Ok(j) => j,
+                                Err(_) => continue,
+                            };
+                            if sender.send(Message::Text(json)).await.is_err() {
+                                break;
+                            }
+                        }
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                            tracing::warn!("rx_global en retard de {} messages, on continue", n);
+                            continue;
+                        }
+                        Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                            tracing::warn!("rx_global fermé, arrêt de send_task");
+                            break;
+                        }
                     }
                 }
-                Ok(event) = rx_private.recv() => {
-                    let json = match serde_json::to_string(&event) {
-                        Ok(j) => j,
-                        Err(_) => continue,
-                    };
-                    if sender.send(Message::Text(json)).await.is_err() {
-                        break;
+                result = rx_private.recv() => {
+                    match result {
+                        Ok(event) => {
+                            let json = match serde_json::to_string(&event) {
+                                Ok(j) => j,
+                                Err(_) => continue,
+                            };
+                            if sender.send(Message::Text(json)).await.is_err() {
+                                break;
+                            }
+                        }
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                            tracing::warn!("rx_private en retard de {} messages, on continue", n);
+                            continue;
+                        }
+                        Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                            tracing::warn!("rx_private fermé, arrêt de send_task");
+                            break;
+                        }
                     }
                 }
-                else => break,
             }
         }
     });
@@ -184,5 +216,5 @@ async fn handle_socket(
     }
 
     // Désenregistrer le user à la déconnexion
-    broadcaster.unregister_user(user_id).await;
+    broadcaster.unregister_user(user_id, connection_generation).await;
 }
