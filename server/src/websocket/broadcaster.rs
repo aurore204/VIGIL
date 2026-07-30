@@ -81,6 +81,7 @@ impl Broadcaster {
 
     async fn broadcast_online_users(&self) {
         let usernames = self.online_usernames().await;
+        tracing::info!("Diffusion presence_online: {:?}", usernames);
         self.broadcast(WsEvent::PresenceOnline { usernames });
     }
 
@@ -114,6 +115,8 @@ impl Broadcaster {
             .cloned()
             .unwrap_or_default()
     }
+
+    
 }
 
 impl Default for Broadcaster {

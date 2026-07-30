@@ -425,65 +425,68 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '14px' }}>
-          {teams.map(team => {
-            const role = roleOf(team);
-            const isManager = role === 'manager';
-            return (
-              <Link key={team.id} href={`/teams/${team.id}`} style={{ textDecoration: 'none', color: COLORS.text }}>
-                    <div style={cardStyle}>
-                      <div style={{ height: '3px', background: isManager ? COLORS.blueStrip : COLORS.cardBorder }} />
-                      <div style={{ padding: '16px 18px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                          <div>
-                            <div style={{ fontSize: '13.5px', fontWeight: 600, marginBottom: '3px' }}>{team.name}</div>
-                            {team.description && (
-                              <div style={{ fontSize: '11px', color: COLORS.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>
-                                {team.description}
-                              </div>
-                            )}
-                          </div>
-                          <span style={{
-                            fontSize: '9.5px', fontWeight: 600, padding: '3px 8px', borderRadius: '20px', flexShrink: 0,
-                            background: isManager ? COLORS.blueBg : COLORS.grayBg,
-                            color: isManager ? COLORS.blueText : COLORS.grayText,
-                          }}>
-                            {roleLabel[role]}
-                          </span>
-                        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+  {teams.map(team => {
+    const role = roleOf(team);
+    const isManager = role === 'manager';
+    return (
+      <Link key={team.id} href={`/teams/${team.id}`} style={{ textDecoration: 'none', color: COLORS.text }}>
+        <div style={{ ...cardStyle, minHeight: '150px' }}>
+          <div style={{ height: '3px', background: isManager ? COLORS.blueStrip : COLORS.cardBorder }} />
+          <div style={{ padding: '20px 20px', display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '5px' }}>{team.name}</div>
+                {team.description && (
+                  <div style={{
+                    fontSize: '12.5px', color: COLORS.muted, overflow: 'hidden',
+                    textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '220px',
+                  }}>
+                    {team.description}
+                  </div>
+                )}
+              </div>
+              <span style={{
+                fontSize: '11px', fontWeight: 600, padding: '5px 12px', borderRadius: '20px', flexShrink: 0,
+                background: isManager ? COLORS.blueBg : COLORS.grayBg,
+                color: isManager ? COLORS.blueText : COLORS.grayText,
+              }}>
+                {roleLabel[role]}
+              </span>
+            </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ display: 'flex' }}>
-                            {team.members.slice(0, 4).map((m, i) => (
-                              <div key={m.user_id} style={{
-                                width: '24px', height: '24px', borderRadius: '50%', background: COLORS.blueBg,
-                                border: `2px solid ${COLORS.card}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '9px', fontWeight: 600, color: COLORS.blueText,
-                                marginLeft: i === 0 ? 0 : '-8px',
-                              }}>
-                                {m.username.slice(0, 2).toUpperCase()}
-                              </div>
-                            ))}
-                            {team.members.length > 4 && (
-                              <div style={{
-                                width: '24px', height: '24px', borderRadius: '50%', background: COLORS.grayBg,
-                                border: `2px solid ${COLORS.card}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '9px', fontWeight: 600, color: COLORS.grayText, marginLeft: '-8px',
-                              }}>
-                                +{team.members.length - 4}
-                              </div>
-                            )}
-                          </div>
-                          <span style={{ fontSize: '11px', color: COLORS.muted }}>
-                            {team.members.length} membre{team.members.length > 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-            </Link>
-            );
-          })}
+            <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex' }}>
+                {team.members.slice(0, 5).map((m, i) => (
+                  <div key={m.user_id} style={{
+                    width: '32px', height: '32px', borderRadius: '50%', background: COLORS.blueBg,
+                    border: `2.5px solid ${COLORS.card}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '11px', fontWeight: 600, color: COLORS.blueText,
+                    marginLeft: i === 0 ? 0 : '-10px',
+                  }}>
+                    {m.username.slice(0, 2).toUpperCase()}
+                  </div>
+                ))}
+                {team.members.length > 5 && (
+                  <div style={{
+                    width: '32px', height: '32px', borderRadius: '50%', background: COLORS.grayBg,
+                    border: `2.5px solid ${COLORS.card}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '11px', fontWeight: 600, color: COLORS.grayText, marginLeft: '-10px',
+                  }}>
+                    +{team.members.length - 5}
+                  </div>
+                )}
+              </div>
+              <span style={{ fontSize: '12.5px', color: COLORS.muted, fontWeight: 500 }}>
+                {team.members.length} membre{team.members.length > 1 ? 's' : ''}
+              </span>
+            </div>
+          </div>
         </div>
+      </Link>
+    );
+  })}
+</div>
       </div>
     </div>
   );
