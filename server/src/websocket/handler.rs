@@ -173,18 +173,20 @@ async fn handle_socket(
                 if let Ok(client_msg) = serde_json::from_str::<ClientMessage>(&text) {
                     match client_msg {
                         ClientMessage::Watch { resource_id, resource_type, team_id } => {
-                            broadcaster_clone
-                                .add_presence(resource_id, user_id, team_id)
-                                .await;
+                            broadcaster_clone.add_presence(resource_id, user_id, team_id).await;
 
-                            let watchers = broadcaster_clone
-                                .get_watchers(resource_id, team_id)
-                                .await;
+                            let watcher_ids = broadcaster_clone.get_watchers(resource_id, team_id).await;
+                            let mut watcher_names = Vec::with_capacity(watcher_ids.len());
+                            for wid in &watcher_ids {
+                                if let Ok(Some(u)) = user_repository::find_by_id(&pool, *wid).await {
+                                    watcher_names.push(u.username);
+                                }
+                            }
 
                             broadcaster_clone.broadcast(WsEvent::PresenceUpdate {
                                 resource_id,
                                 resource_type,
-                                watchers: watchers.iter().map(|id| id.to_string()).collect(),
+                                watchers: watcher_names,
                             });
                         }
                         ClientMessage::Unwatch { resource_id, resource_type, team_id } => {
@@ -192,14 +194,18 @@ async fn handle_socket(
                                 .remove_presence(resource_id, user_id, team_id)
                                 .await;
 
-                            let watchers = broadcaster_clone
-                                .get_watchers(resource_id, team_id)
-                                .await;
+                            let watcher_ids = broadcaster_clone.get_watchers(resource_id, team_id).await;
+                            let mut watcher_names = Vec::with_capacity(watcher_ids.len());
+                            for wid in &watcher_ids {
+                                if let Ok(Some(u)) = user_repository::find_by_id(&pool, *wid).await {
+                                    watcher_names.push(u.username);
+                                }
+                            }
 
                             broadcaster_clone.broadcast(WsEvent::PresenceUpdate {
                                 resource_id,
                                 resource_type,
-                                watchers: watchers.iter().map(|id| id.to_string()).collect(),
+                                watchers: watcher_names,
                             });
                         }
                     }
