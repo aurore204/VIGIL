@@ -133,9 +133,7 @@ export default function IncidentsPage() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)' }}>Incidents</div>
-          <div style={{ fontSize: '13px', color: 'oklch(0.60 0.01 260)', marginTop: '4px' }}>
-            {filtered.length} incident{filtered.length > 1 ? 's' : ''} · {activeCount} actif{activeCount > 1 ? 's' : ''}
-          </div>
+          
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>

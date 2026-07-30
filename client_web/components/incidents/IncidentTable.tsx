@@ -62,7 +62,6 @@ export function IncidentTable({ incidents, teams }: IncidentTableProps) {
                   {incident.title}
                 </div>
                 <div style={{ fontSize: '11px', fontFamily: 'ui-monospace, monospace', color: 'oklch(0.48 0.012 260)', marginTop: '1px' }}>
-                  #{incident.id.slice(0, 8)}
                 </div>
               </div>
             </div>

@@ -126,21 +126,20 @@ export default function IncidentDetailPage() {
           cursor: 'pointer', fontSize: '12px', fontWeight: 600, marginBottom: '18px', padding: 0,
         }}
       >
-        ← Retour
+         Retour
       </button>
 
       <div style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
           <SeverityBadge severity={incident.severity} />
           <IncidentStateBadge state={incident.state} />
-          <SeverityBadge severity={incident.severity} />
-          <IncidentStateBadge state={incident.state} />
+          
         </div>
         <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(0.95 0.005 260)', marginBottom: '6px' }}>
           {incident.title}
         </div>
         <div style={{ fontSize: '12.5px', color: 'oklch(0.55 0.01 260)' }}>
-          {team?.name} · INC-{incident.id.slice(0, 4).toUpperCase()} · Créé le {new Date(incident.created_at).toLocaleString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+          {team?.name}  ,Créé le {new Date(incident.created_at).toLocaleString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
 
