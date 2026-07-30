@@ -12,6 +12,7 @@ pub struct Broadcaster {
     sender: broadcast::Sender<WsEvent>,
     presence: Arc<RwLock<HashMap<Uuid, HashMap<Uuid, Vec<Uuid>>>>>,
     user_senders: Arc<RwLock<HashMap<Uuid, broadcast::Sender<WsEvent>>>>,
+    online_users: Arc<RwLock<HashMap<Uuid, String>>>,
 }
 
 impl Broadcaster {
@@ -21,6 +22,7 @@ impl Broadcaster {
             sender,
             presence: Arc::new(RwLock::new(HashMap::new())),
             user_senders: Arc::new(RwLock::new(HashMap::new())),
+            online_users: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -37,19 +39,50 @@ impl Broadcaster {
         }
     }
 
-    // Enregistre un sender pour un user spécifique
-    pub async fn register_user(&self, user_id: Uuid) -> broadcast::Receiver<WsEvent> {
+    // Enregistre un sender pour un user spécifique et le marque en ligne
+    pub async fn register_user(&self, user_id: Uuid, username: String) -> broadcast::Receiver<WsEvent> {
         let mut senders = self.user_senders.write().await;
         let sender = senders
             .entry(user_id)
             .or_insert_with(|| broadcast::channel(BROADCAST_CAPACITY).0);
-        sender.subscribe()
+        let rx = sender.subscribe();
+        drop(senders);
+
+        {
+            let mut online = self.online_users.write().await;
+            online.insert(user_id, username);
+        }
+
+        self.broadcast_online_users().await;
+        rx
     }
 
     // Désenregistre un user
-    pub async fn unregister_user(&self, user_id: Uuid) {
+      pub async fn unregister_user(&self, user_id: Uuid) {
         let mut senders = self.user_senders.write().await;
         senders.remove(&user_id);
+        drop(senders);
+
+        {
+            let mut online = self.online_users.write().await;
+            online.remove(&user_id);
+        }
+
+        self.broadcast_online_users().await;
+    }
+
+
+
+    // Liste des usernames actuellement connectés (tous, tous teams confondus)
+    pub async fn online_usernames(&self) -> Vec<String> {
+        let online = self.online_users.read().await;
+        online.values().cloned().collect()
+    }
+
+    async fn broadcast_online_users(&self) {
+        let usernames = self.online_usernames().await;
+        tracing::info!(" Diffusion presence_online: {:?}", usernames);
+        self.broadcast(WsEvent::PresenceOnline { usernames });
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<WsEvent> {
@@ -82,6 +115,8 @@ impl Broadcaster {
             .cloned()
             .unwrap_or_default()
     }
+
+    
 }
 
 impl Default for Broadcaster {

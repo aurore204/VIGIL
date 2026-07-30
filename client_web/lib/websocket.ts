@@ -58,8 +58,6 @@ class VIGILWebSocket {
     };
   }
 
-
-
     private startHeartbeat() {
     this.stopHeartbeat(); // évite les doublons si appelé plusieurs fois
     this.heartbeatInterval = setInterval(() => {
