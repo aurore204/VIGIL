@@ -42,6 +42,7 @@ export default function IncidentDetailPage() {
 
   useEffect(() => {
     load();
+
     const handleState = (e: WsEvent) => {
       if (e.type !== 'incident_state_changed' || e.incident_id !== id) return;
       load();
@@ -54,15 +55,28 @@ export default function IncidentDetailPage() {
       if (e.type !== 'presence_update' || e.resource_id !== id) return;
       setWatchers(e.watchers);
     };
+
     vigilWs.on('incident_state_changed', handleState);
     vigilWs.on('timeline_entry_added', handleTimeline);
     vigilWs.on('presence_update', handlePresence);
+
     return () => {
       vigilWs.off('incident_state_changed', handleState);
       vigilWs.off('timeline_entry_added', handleTimeline);
       vigilWs.off('presence_update', handlePresence);
     };
-  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id]); 
+
+  // Signale au serveur qu'on regarde cet incident, dès que l'incident (et donc son team_id) est connu.
+  useEffect(() => {
+    if (!incident?.team_id) return;
+
+    vigilWs.watch(id, 'incident', incident.team_id);
+
+    return () => {
+      vigilWs.unwatch(id, 'incident', incident.team_id);
+    };
+  }, [id, incident?.team_id]);
 
   if (loading || !incident) return (
     <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>Chargement...</div>
@@ -118,7 +132,7 @@ export default function IncidentDetailPage() {
   };
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: '1200px' }}>
+    <div style={{ padding: '28px 32px', maxWidth: '1200px', fontFamily: 'Inter, system-ui, sans-serif' }}>
       <button
         onClick={() => router.push('/incidents')}
         style={{

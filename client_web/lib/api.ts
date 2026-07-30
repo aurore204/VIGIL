@@ -196,6 +196,10 @@ export const api = {
   validateStep: (releaseId: string, stepId: string) =>
     request<Release>(`/releases/${releaseId}/steps/${stepId}/validate`, { method: 'PATCH' }),
 
+  // Présence
+  getOnlineUsers: () => request<string[]>('/presence/online'),
+
+  
   // Messages privés
   sendMessage: (userId: string, content: string) =>
     request<PrivateMessage>(`/users/${userId}/messages`, {
@@ -208,4 +212,6 @@ export const api = {
 
   markAsRead: (messageId: string) =>
     request<void>(`/messages/${messageId}/read`, { method: 'PATCH' }),
+  
+  
 };
