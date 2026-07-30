@@ -9,7 +9,7 @@ mod release_routes;
 
 use crate::middleware::auth_middleware::require_auth;
 use crate::state::AppState;
-use crate::websocket::handler::ws_handler;
+use crate::websocket::handler::{ws_handler, get_online_users};
 
 pub fn create_router(state: AppState) -> Router {
     let public_routes = Router::new()
@@ -24,6 +24,7 @@ pub fn create_router(state: AppState) -> Router {
         .merge(reaction_routes::protected_reaction_routes())
         .merge(message_routes::message_routes())
         .merge(release_routes::release_routes())
+        .route("/presence/online", get(get_online_users))
         .layer(middleware::from_fn_with_state(
             state.pool.clone(),
             require_auth,
