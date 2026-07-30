@@ -183,8 +183,7 @@ export default function IncidentDetailPage() {
           incident={incident}
           canAcknowledge={isResponder && incident.state === 'open'}
           canEscalate={isResponder && incident.state === 'acknowledged'}
-          canResolve={isManager && (incident.state === 'acknowledged' || incident.state === 'escalated')}
-          canAssign={isManager && incident.state !== 'resolved'}
+          canResolve={isManager && (incident.state === 'acknowledged' || incident.state === 'escalated')}            canAssign={isManager && incident.state !== 'resolved'}
           canDelete={isManager}
           onAcknowledge={handleAcknowledge}
           onEscalate={handleEscalate}

@@ -20,7 +20,7 @@ pub struct AddReactionRequest {
 }
 
 // Ce qu'on renvoie pour les réactions agrégées d'une entrée
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize,Clone)]
 pub struct ReactionSummary {
     pub emoji: String,
     pub count: i64,

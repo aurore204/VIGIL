@@ -52,6 +52,8 @@ pub struct TimelineEntry {
     pub content: String,
     pub edited_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
+    #[sqlx(default)] // permet à query_as! de ne pas exiger cette colonne en SQL
+    pub reactions: Option<Vec<crate::models::reaction::ReactionSummary>>,
 }
 
 // Ce qu'on reçoit pour créer un incident

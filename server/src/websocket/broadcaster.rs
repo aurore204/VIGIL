@@ -109,14 +109,17 @@ impl Broadcaster {
     }
 
     pub async fn add_presence(&self, resource_id: Uuid, user_id: Uuid, team_id: Uuid) {
-        let mut presence = self.presence.write().await;
-        presence
-            .entry(team_id)
-            .or_default()
-            .entry(resource_id)
-            .or_default()
-            .push(user_id);
+    let mut presence = self.presence.write().await;
+    let watchers = presence
+        .entry(team_id)
+        .or_default()
+        .entry(resource_id)
+        .or_default();
+
+    if !watchers.contains(&user_id) {
+        watchers.push(user_id);
     }
+}
 
     pub async fn remove_presence(&self, resource_id: Uuid, user_id: Uuid, team_id: Uuid) {
         let mut presence = self.presence.write().await;

@@ -17,6 +17,15 @@ interface IncidentTimelineProps {
   description?: string | null;
 }
 
+const emojiMap: Record<string, string> = {
+  '+1': '👍',
+  '-1': '👎',
+  eyes: '👀',
+  warning: '⚠️',
+  check: '✅',
+  fire: '🔥',
+};
+
 export function IncidentTimeline({
   timeline,
   canComment,
@@ -33,6 +42,7 @@ export function IncidentTimeline({
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [hoveredEntryId, setHoveredEntryId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +74,7 @@ export function IncidentTimeline({
       background: 'oklch(0.195 0.015 260)',
       border: '1px solid oklch(0.30 0.02 260)',
       borderRadius: '10px', padding: '18px',
+      overflow: 'hidden',
     }}>
       <div style={{ fontSize: '13px', fontWeight: 700, color: 'oklch(0.90 0.005 260)', marginBottom: '16px' }}>
         Timeline
@@ -86,13 +97,24 @@ export function IncidentTimeline({
           Aucune entrée dans la timeline
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
           {timeline.map(entry => {
             const isAuthor = entry.author_id === currentUserId;
             const isEditing = editingId === entry.id;
+            const postedReactions = (entry.reactions ?? []).filter(r => r.count > 0);
+            const isHovered = hoveredEntryId === entry.id;
+            const canPick = isResponder && !isEditing;
 
             return (
-              <div key={entry.id} style={{ display: 'flex', gap: '10px' }}>
+              <div
+                key={entry.id}
+                style={{
+                  display: 'flex', gap: '10px', width: '100%',
+                  flexDirection: isAuthor ? 'row-reverse' : 'row',
+                }}
+                onMouseEnter={() => setHoveredEntryId(entry.id)}
+                onMouseLeave={() => setHoveredEntryId(null)}
+              >
                 <div style={{
                   width: '28px', height: '28px', borderRadius: '50%',
                   background: 'oklch(0.30 0.03 255)',
@@ -103,8 +125,15 @@ export function IncidentTimeline({
                   {entry.author_username.slice(0, 2).toUpperCase()}
                 </div>
 
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                <div style={{
+                  minWidth: 0, maxWidth: '75%',
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: isAuthor ? 'flex-end' : 'flex-start',
+                }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap',
+                    flexDirection: isAuthor ? 'row-reverse' : 'row',
+                  }}>
                     <span style={{ fontSize: '13px', fontWeight: 600, color: 'oklch(0.90 0.005 260)' }}>
                       {entry.author_username}
                     </span>
@@ -125,7 +154,7 @@ export function IncidentTimeline({
                   </div>
 
                   {isEditing ? (
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
                       <input
                         value={editContent}
                         onChange={e => setEditContent(e.target.value)}
@@ -136,50 +165,89 @@ export function IncidentTimeline({
                       <Button variant="secondary" onClick={() => setEditingId(null)}>Annuler</Button>
                     </div>
                   ) : (
-                    <div style={{ fontSize: '13px', color: 'oklch(0.80 0.005 260)', lineHeight: 1.5 }}>
-                      {entry.content}
-                    </div>
-                  )}
+                    <div style={{ position: 'relative', maxWidth: '100%' }}>
+                      {/* Palette au survol, pour ajouter une réaction */}
+                      {canPick && isHovered && (
+                        <div style={{
+                          position: 'absolute', top: '-34px',
+                          right: isAuthor ? 0 : undefined,
+                          left: isAuthor ? undefined : 0,
+                          display: 'flex', gap: '2px',
+                          background: 'oklch(0.24 0.018 260)',
+                          border: '1px solid oklch(0.32 0.02 260)',
+                          borderRadius: '18px', padding: '4px 6px',
+                          boxShadow: '0 3px 10px oklch(0 0 0 / 0.4)',
+                          zIndex: 3,
+                        }}>
+                          {availableReactions.map(emoji => {
+                            const existing = entry.reactions?.find(r => r.emoji === emoji);
+                            const hasReacted = existing?.users.includes(currentUsername) ?? false;
+                            return (
+                              <button
+                                key={emoji}
+                                onClick={() => onReaction(entry.id, emoji, hasReacted)}
+                                title={emojiMap[emoji] ?? emoji}
+                                style={{
+                                  background: hasReacted ? 'oklch(0.30 0.05 255)' : 'transparent',
+                                  border: 'none', borderRadius: '10px',
+                                  padding: '3px 5px', cursor: 'pointer', fontSize: '15px',
+                                  transition: 'transform 0.1s ease',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.25)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                              >
+                                {emojiMap[emoji] ?? emoji}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
 
-                  {!isEditing && (
-                    <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
-                      {entry.reactions?.map(r => {
-                        const hasReacted = r.users.includes(currentUsername);
-                        return (
-                          <button
-                            key={r.emoji}
-                            onClick={() => onReaction(entry.id, r.emoji, hasReacted)}
-                            title={r.users.join(', ')}
-                            style={{
-                              fontSize: '11px',
-                              background: hasReacted ? 'oklch(0.28 0.04 255)' : 'oklch(0.235 0.015 260)',
-                              border: `1px solid ${hasReacted ? 'oklch(0.45 0.12 255)' : 'oklch(0.30 0.02 260)'}`,
-                              borderRadius: '10px', padding: '2px 8px',
-                              cursor: 'pointer', color: 'oklch(0.90 0.005 260)',
-                            }}
-                          >
-                            {r.emoji} {r.count}
-                          </button>
-                        );
-                      })}
-                      {isResponder && availableReactions.map(emoji => {
-                        const existing = entry.reactions?.find(r => r.emoji === emoji);
-                        if (existing) return null;
-                        return (
-                          <button
-                            key={emoji}
-                            onClick={() => onReaction(entry.id, emoji, false)}
-                            style={{
-                              fontSize: '11px', background: 'transparent',
-                              border: '1px solid oklch(0.27 0.015 260)',
-                              borderRadius: '10px', padding: '2px 8px',
-                              cursor: 'pointer', color: 'oklch(0.52 0.012 260)', opacity: 0.6,
-                            }}
-                          >
-                            {emoji}
-                          </button>
-                        );
-                      })}
+                      <div style={{
+                        fontSize: '13px', lineHeight: 1.5,
+                        color: isAuthor ? 'oklch(0.98 0.005 260)' : 'oklch(0.80 0.005 260)',
+                        background: isAuthor ? 'oklch(0.55 0.16 255)' : 'oklch(0.22 0.017 260)',
+                        border: isAuthor ? 'none' : '1px solid oklch(0.30 0.02 260)',
+                        borderRadius: '14px',
+                        padding: '10px 14px',
+                        wordBreak: 'break-word',
+                        maxWidth: '100%',
+                      }}>
+                        {entry.content}
+                      </div>
+
+                      {/* Réactions déjà posées, toujours visibles, attachées sous la bulle */}
+                      {postedReactions.length > 0 && (
+                        <div style={{
+                          display: 'flex', gap: '4px', marginTop: '5px', flexWrap: 'wrap',
+                          justifyContent: isAuthor ? 'flex-end' : 'flex-start',
+                        }}>
+                          {postedReactions.map(r => {
+                            const hasReacted = r.users.includes(currentUsername);
+                            return (
+                              <button
+                                key={r.emoji}
+                                onClick={isResponder ? () => onReaction(entry.id, r.emoji, hasReacted) : undefined}
+                                disabled={!isResponder}
+                                title={r.users.join(', ')}
+                                style={{
+                                  fontSize: '11.5px',
+                                  background: hasReacted ? 'oklch(0.28 0.04 255)' : 'oklch(0.24 0.018 260)',
+                                  border: `1px solid ${hasReacted ? 'oklch(0.50 0.13 255)' : 'oklch(0.32 0.02 260)'}`,
+                                  borderRadius: '11px', padding: '2px 8px',
+                                  cursor: isResponder ? 'pointer' : 'default',
+                                  color: 'oklch(0.92 0.005 260)',
+                                  fontFamily: 'Inter, system-ui, sans-serif',
+                                  display: 'flex', alignItems: 'center', gap: '3px',
+                                }}
+                              >
+                                <span>{emojiMap[r.emoji] ?? r.emoji}</span>
+                                <span style={{ fontSize: '10.5px', fontWeight: 600 }}>{r.count}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -193,7 +261,7 @@ export function IncidentTimeline({
         <form
           onSubmit={handleSubmit}
           style={{
-            display: 'flex', gap: '8px', marginTop: '16px',
+            display: 'flex', gap: '8px', marginTop: '24px',
             paddingTop: '16px', borderTop: '1px solid oklch(0.27 0.015 260)',
           }}
         >
