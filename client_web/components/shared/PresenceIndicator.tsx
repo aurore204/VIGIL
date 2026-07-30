@@ -1,7 +1,8 @@
+
 interface PresenceIndicatorProps {
   watchers: string[];
 }
-
+import { shadow } from '@/lib/tokens';
 export function PresenceIndicator({ watchers }: PresenceIndicatorProps) {
   return (
     <div style={{
@@ -12,6 +13,7 @@ export function PresenceIndicator({ watchers }: PresenceIndicatorProps) {
       marginBottom: '20px',
       display: 'flex',
       alignItems: 'center',
+      boxShadow: shadow.card,
       gap: '14px',
       flexWrap: 'wrap',
     }}>

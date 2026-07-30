@@ -10,9 +10,9 @@ import { IncidentStateBadge, SeverityBadge } from '@/components/ui/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { IncidentTimeline } from '@/components/incidents/IncidentTimeline';
 import { IncidentActions } from '@/components/incidents/IncidentActions';
-import { IncidentInfo } from '@/components/incidents/IncidentInfo';
 import { PresenceIndicator } from '@/components/shared/PresenceIndicator';
 import { AssignModal } from '@/components/shared/AssignModal';
+import { shadow } from '@/lib/tokens';
 
 export default function IncidentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -65,17 +65,12 @@ export default function IncidentDetailPage() {
       vigilWs.off('timeline_entry_added', handleTimeline);
       vigilWs.off('presence_update', handlePresence);
     };
-  }, [id]); 
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Signale au serveur qu'on regarde cet incident, dès que l'incident (et donc son team_id) est connu.
   useEffect(() => {
     if (!incident?.team_id) return;
-
     vigilWs.watch(id, 'incident', incident.team_id);
-
-    return () => {
-      vigilWs.unwatch(id, 'incident', incident.team_id);
-    };
+    return () => { vigilWs.unwatch(id, 'incident', incident.team_id); };
   }, [id, incident?.team_id]);
 
   if (loading || !incident) return (
@@ -91,38 +86,28 @@ export default function IncidentDetailPage() {
     try { await api.acknowledgeIncident(id); showToast('Incident acquitté', 'success'); load(); }
     catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
   };
-
   const handleEscalate = async () => {
     try { await api.escalateIncident(id, incident.severity === 'high' ? 'critical' : 'high'); showToast('Incident escaladé', 'warning'); load(); }
     catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
   };
-
   const handleResolve = async () => {
     try { await api.resolveIncident(id); showToast('Incident résolu', 'success'); load(); }
     catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
   };
-
   const handleDelete = async () => {
     try { await api.deleteIncident(id); showToast('Incident supprimé', 'success'); router.push('/incidents'); }
     catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
   };
-
   const handleAssign = async (userId: string) => {
     try { await api.assignResponder(id, userId); showToast('Responder assigné', 'success'); setShowAssign(false); load(); }
     catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
   };
-
-  const handleAddEntry = async (content: string) => {
-    await api.addTimelineEntry(id, content);
-    load();
-  };
-
+  const handleAddEntry = async (content: string) => { await api.addTimelineEntry(id, content); load(); };
   const handleEditEntry = async (entryId: string, content: string) => {
     await api.editTimelineEntry(id, entryId, content);
     showToast('Entrée modifiée', 'success');
     load();
   };
-
   const handleReaction = async (entryId: string, emoji: string, hasReacted: boolean) => {
     try {
       if (hasReacted) await api.removeReaction(id, entryId, emoji);
@@ -138,59 +123,76 @@ export default function IncidentDetailPage() {
         style={{
           display: 'flex', alignItems: 'center', gap: '6px',
           background: 'none', border: 'none', color: 'oklch(0.60 0.01 260)',
-          cursor: 'pointer', fontSize: '12px', fontWeight: 600, marginBottom: '16px', padding: 0,
+          cursor: 'pointer', fontSize: '12px', fontWeight: 600, marginBottom: '18px', padding: 0,
         }}
       >
         ← Retour
       </button>
 
       <div style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '6px' }}>
-          <div style={{ fontSize: '12px', fontFamily: 'ui-monospace, monospace', color: 'oklch(0.55 0.01 260)' }}>
-            {incident.id.slice(0, 8)}
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
+          <SeverityBadge severity={incident.severity} />
+          <IncidentStateBadge state={incident.state} />
           <SeverityBadge severity={incident.severity} />
           <IncidentStateBadge state={incident.state} />
         </div>
-        <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)', marginBottom: '6px' }}>
+        <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(0.95 0.005 260)', marginBottom: '6px' }}>
           {incident.title}
         </div>
-        <div style={{ fontSize: '12px', color: 'oklch(0.55 0.01 260)' }}>
-          {team?.name} · Créé le {new Date(incident.created_at).toLocaleDateString('fr-FR')}
+        <div style={{ fontSize: '12.5px', color: 'oklch(0.55 0.01 260)' }}>
+          {team?.name} · INC-{incident.id.slice(0, 4).toUpperCase()} · Créé le {new Date(incident.created_at).toLocaleString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
 
       <PresenceIndicator watchers={watchers} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '20px' }}>
-        <IncidentTimeline
-          timeline={incident.timeline}
-          canComment={isResponder && incident.state !== 'resolved'}
-          isResponder={isResponder}
-          currentUserId={user?.id ?? ''}
-          currentUsername={user?.username ?? ''}
-          availableReactions={availableReactions}
-          onAddEntry={handleAddEntry}
-          onEditEntry={handleEditEntry}
-          onReaction={handleReaction}
-          description={incident.description}
-        />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <IncidentActions
-            incident={incident}
-            canAcknowledge={isResponder && incident.state === 'open'}
-            canEscalate={isResponder && incident.state === 'acknowledged'}
-            canResolve={isManager && (incident.state === 'acknowledged' || incident.state === 'escalated')}
-            canAssign={isManager && incident.state !== 'resolved'}
-            canDelete={isManager}
-            onAcknowledge={handleAcknowledge}
-            onEscalate={handleEscalate}
-            onResolve={handleResolve}
-            onAssign={() => setShowAssign(true)}
-            onDelete={handleDelete}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '20px', alignItems: 'start' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {incident.description && (
+            <div style={{
+              background: 'oklch(0.195 0.015 260)', border: '1px solid oklch(0.30 0.02 260)',
+              borderRadius: '12px', padding: '18px',
+              boxShadow: shadow.card,
+            }}>
+              <div style={{
+                fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '0.03em', color: 'oklch(0.55 0.01 260)', marginBottom: '10px',
+              }}>
+                Description
+              </div>
+              <div style={{ fontSize: '13.5px', color: 'oklch(0.80 0.005 260)', lineHeight: 1.6 }}>
+                {incident.description}
+              </div>
+            </div>
+          )}
+
+          <IncidentTimeline
+            timeline={incident.timeline}
+            canComment={isResponder && incident.state !== 'resolved'}
+            isResponder={isResponder}
+            currentUserId={user?.id ?? ''}
+            currentUsername={user?.username ?? ''}
+            availableReactions={availableReactions}
+            onAddEntry={handleAddEntry}
+            onEditEntry={handleEditEntry}
+            onReaction={handleReaction}
+            description={null}
           />
-          <IncidentInfo incident={incident} team={team} />
         </div>
+
+        <IncidentActions
+          incident={incident}
+          canAcknowledge={isResponder && incident.state === 'open'}
+          canEscalate={isResponder && incident.state === 'acknowledged'}
+          canResolve={isManager && (incident.state === 'acknowledged' || incident.state === 'escalated')}
+          canAssign={isManager && incident.state !== 'resolved'}
+          canDelete={isManager}
+          onAcknowledge={handleAcknowledge}
+          onEscalate={handleEscalate}
+          onResolve={handleResolve}
+          onAssign={() => setShowAssign(true)}
+          onDelete={handleDelete}
+        />
       </div>
 
       {showAssign && (
