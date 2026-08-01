@@ -518,13 +518,20 @@ pub async fn update_incident(
     Json(req): Json<UpdateIncidentRequest>,
 ) -> impl IntoResponse {
     match incident_service::update_incident(&state.pool, incident_id, auth_user.id, req).await {
-        Ok(incident) => (
-            StatusCode::OK,
-            Json(serde_json::json!(ApiResponse::success(
-                "Incident mis à jour avec succès",
-                incident
-            ))),
-        ),
+       Ok(incident) => {
+            state.broadcaster.broadcast(WsEvent::IncidentStateChanged {
+                incident_id,
+                new_state: format!("{:?}", incident.state).to_lowercase(),
+                by: "system".to_string(),
+            });
+            (
+                StatusCode::OK,
+                Json(serde_json::json!(ApiResponse::success(
+                    "Incident mis à jour avec succès",
+                    incident
+                ))),
+            )
+        }
         Err(IncidentError::IncidentNotFound) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!(ApiError::new(
