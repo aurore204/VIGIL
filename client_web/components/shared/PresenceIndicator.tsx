@@ -4,6 +4,7 @@ interface PresenceIndicatorProps {
 }
 import { shadow } from '@/lib/tokens';
 export function PresenceIndicator({ watchers }: PresenceIndicatorProps) {
+  const uniqueWatchers = Array.from(new Set(watchers));
   return (
     <div style={{
       background: 'oklch(0.195 0.015 260)',

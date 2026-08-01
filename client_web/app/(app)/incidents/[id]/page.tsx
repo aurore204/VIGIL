@@ -12,6 +12,7 @@ import { IncidentTimeline } from '@/components/incidents/IncidentTimeline';
 import { IncidentActions } from '@/components/incidents/IncidentActions';
 import { PresenceIndicator } from '@/components/shared/PresenceIndicator';
 import { AssignModal } from '@/components/shared/AssignModal';
+import { EditIncidentModal } from '@/components/incidents/EditIncidentModal';
 import { shadow } from '@/lib/tokens';
 
 export default function IncidentDetailPage() {
@@ -25,6 +26,7 @@ export default function IncidentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [watchers, setWatchers] = useState<string[]>([]);
   const [showAssign, setShowAssign] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [availableReactions, setAvailableReactions] = useState<string[]>([]);
 
   const load = async () => {
@@ -51,6 +53,18 @@ export default function IncidentDetailPage() {
       if (e.type !== 'timeline_entry_added' || e.incident_id !== id) return;
       load();
     };
+    const handleTimelineEdited = (e: WsEvent) => {
+      if (e.type !== 'timeline_entry_edited' || e.incident_id !== id) return;
+      load();
+    };
+    const handleReactionAdded = (e: WsEvent) => {
+      if (e.type !== 'reaction_added' || e.incident_id !== id) return;
+      load();
+    };
+    const handleReactionRemoved = (e: WsEvent) => {
+      if (e.type !== 'reaction_removed' || e.incident_id !== id) return;
+      load();
+    };
     const handlePresence = (e: WsEvent) => {
       if (e.type !== 'presence_update' || e.resource_id !== id) return;
       setWatchers(e.watchers);
@@ -58,11 +72,17 @@ export default function IncidentDetailPage() {
 
     vigilWs.on('incident_state_changed', handleState);
     vigilWs.on('timeline_entry_added', handleTimeline);
+    vigilWs.on('timeline_entry_edited', handleTimelineEdited);
+    vigilWs.on('reaction_added', handleReactionAdded);
+    vigilWs.on('reaction_removed', handleReactionRemoved);
     vigilWs.on('presence_update', handlePresence);
 
     return () => {
       vigilWs.off('incident_state_changed', handleState);
       vigilWs.off('timeline_entry_added', handleTimeline);
+      vigilWs.off('timeline_entry_edited', handleTimelineEdited);
+      vigilWs.off('reaction_added', handleReactionAdded);
+      vigilWs.off('reaction_removed', handleReactionRemoved);
       vigilWs.off('presence_update', handlePresence);
     };
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -102,6 +122,15 @@ export default function IncidentDetailPage() {
     try { await api.assignResponder(id, userId); showToast('Responder assigné', 'success'); setShowAssign(false); load(); }
     catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
   };
+
+  const handleEditIncident = async (data: { title?: string; description?: string; severity?: import('@/lib/types').IncidentSeverity }) => {
+  try {
+    await api.updateIncident(id, data);
+    showToast('Incident modifié', 'success');
+    setShowEdit(false);
+    load();
+  } catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
+};
   const handleAddEntry = async (content: string) => { await api.addTimelineEntry(id, content); load(); };
   const handleEditEntry = async (entryId: string, content: string) => {
     await api.editTimelineEntry(id, entryId, content);
@@ -126,20 +155,19 @@ export default function IncidentDetailPage() {
           cursor: 'pointer', fontSize: '12px', fontWeight: 600, marginBottom: '18px', padding: 0,
         }}
       >
-         Retour
+        Retour
       </button>
 
       <div style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
           <SeverityBadge severity={incident.severity} />
           <IncidentStateBadge state={incident.state} />
-          
         </div>
         <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(0.95 0.005 260)', marginBottom: '6px' }}>
           {incident.title}
         </div>
         <div style={{ fontSize: '12.5px', color: 'oklch(0.55 0.01 260)' }}>
-          {team?.name}  ,Créé le {new Date(incident.created_at).toLocaleString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+          {team?.name} · Créé le {new Date(incident.created_at).toLocaleString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
 
@@ -185,11 +213,13 @@ export default function IncidentDetailPage() {
           canEscalate={isResponder && incident.state === 'acknowledged'}
           canResolve={isManager && (incident.state === 'acknowledged' || incident.state === 'escalated')}
           canAssign={isManager && incident.state !== 'resolved'}
+          canEdit={isManager}
           canDelete={isManager}
           onAcknowledge={handleAcknowledge}
           onEscalate={handleEscalate}
           onResolve={handleResolve}
           onAssign={() => setShowAssign(true)}
+          onEdit={() => setShowEdit(true)}
           onDelete={handleDelete}
         />
       </div>
@@ -199,6 +229,14 @@ export default function IncidentDetailPage() {
           responders={responders}
           onClose={() => setShowAssign(false)}
           onAssign={handleAssign}
+        />
+      )}
+
+      {showEdit && (
+        <EditIncidentModal
+          incident={incident}
+          onClose={() => setShowEdit(false)}
+          onSubmit={handleEditIncident}
         />
       )}
     </div>

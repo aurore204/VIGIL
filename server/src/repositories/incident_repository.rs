@@ -173,8 +173,7 @@ pub async fn add_timeline_entry(
     author_id: Uuid,
     content: &str,
 ) -> Result<TimelineEntry, sqlx::Error> {
-    sqlx::query_as!(
-        TimelineEntry,
+    let row = sqlx::query!(
         r#"
         INSERT INTO incident_timeline (incident_id, author_id, content)
         VALUES ($1, $2, $3)
@@ -192,7 +191,18 @@ pub async fn add_timeline_entry(
         content
     )
     .fetch_one(pool)
-    .await
+    .await?;
+
+    Ok(TimelineEntry {
+        id: row.id,
+        incident_id: row.incident_id,
+        author_id: row.author_id,
+        author_username: row.author_username,
+        content: row.content,
+        edited_at: row.edited_at,
+        created_at: row.created_at,
+        reactions: None,
+    })
 }
 
 // Récupère la timeline d'un incident
@@ -200,8 +210,7 @@ pub async fn get_timeline(
     pool: &PgPool,
     incident_id: Uuid,
 ) -> Result<Vec<TimelineEntry>, sqlx::Error> {
-    sqlx::query_as!(
-        TimelineEntry,
+    let rows = sqlx::query!(
         r#"
         SELECT
             it.id,
@@ -219,16 +228,49 @@ pub async fn get_timeline(
         incident_id
     )
     .fetch_all(pool)
-    .await
+    .await?;
+
+    let mut entries = Vec::with_capacity(rows.len());
+    for row in rows {
+        let raw_reactions = crate::repositories::reaction_repository::get_reactions_for_entry(pool, row.id)
+            .await?;
+
+        let mut summary: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+        for (emoji, username) in raw_reactions {
+            summary.entry(emoji).or_default().push(username);
+        }
+
+        let reactions = summary
+            .into_iter()
+            .map(|(emoji, users)| crate::models::reaction::ReactionSummary {
+                count: users.len() as i64,
+                emoji,
+                users,
+            })
+            .collect();
+
+        entries.push(TimelineEntry {
+            id: row.id,
+            incident_id: row.incident_id,
+            author_id: row.author_id,
+            author_username: row.author_username,
+            content: row.content,
+            edited_at: row.edited_at,
+            created_at: row.created_at,
+            reactions: Some(reactions),
+        });
+    }
+
+    Ok(entries)
 }
+
 
 // Trouve une entrée de timeline par son id
 pub async fn find_timeline_entry(
     pool: &PgPool,
     entry_id: Uuid,
 ) -> Result<Option<TimelineEntry>, sqlx::Error> {
-    sqlx::query_as!(
-        TimelineEntry,
+    let row = sqlx::query!(
         r#"
         SELECT
             it.id,
@@ -245,7 +287,18 @@ pub async fn find_timeline_entry(
         entry_id
     )
     .fetch_optional(pool)
-    .await
+    .await?;
+
+    Ok(row.map(|row| TimelineEntry {
+        id: row.id,
+        incident_id: row.incident_id,
+        author_id: row.author_id,
+        author_username: row.author_username,
+        content: row.content,
+        edited_at: row.edited_at,
+        created_at: row.created_at,
+        reactions: None,
+    }))
 }
 
 // Édite une entrée de timeline (auteur uniquement)
@@ -254,8 +307,7 @@ pub async fn edit_timeline_entry(
     entry_id: Uuid,
     content: &str,
 ) -> Result<TimelineEntry, sqlx::Error> {
-    sqlx::query_as!(
-        TimelineEntry,
+    let row = sqlx::query!(
         r#"
         UPDATE incident_timeline
         SET content = $1, edited_at = NOW()
@@ -273,9 +325,19 @@ pub async fn edit_timeline_entry(
         entry_id
     )
     .fetch_one(pool)
-    .await
-}
+    .await?;
 
+    Ok(TimelineEntry {
+        id: row.id,
+        incident_id: row.incident_id,
+        author_id: row.author_id,
+        author_username: row.author_username,
+        content: row.content,
+        edited_at: row.edited_at,
+        created_at: row.created_at,
+        reactions: None,
+    })
+}
 // Récupère un incident complet avec sa timeline
 pub async fn get_incident_with_timeline(
     pool: &PgPool,

@@ -2,7 +2,7 @@ import type { Incident } from '@/lib/types';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useState } from 'react';
 import { shadow } from '@/lib/tokens';
-import { CheckCircle2, ArrowUpCircle, UserPlus, Trash2 } from 'lucide-react';
+import { CheckCircle2, ArrowUpCircle, UserPlus, Trash2, Pencil } from 'lucide-react';
 
 interface IncidentActionsProps {
   incident: Incident;
@@ -10,11 +10,13 @@ interface IncidentActionsProps {
   canEscalate: boolean;
   canResolve: boolean;
   canAssign: boolean;
+  canEdit: boolean;
   canDelete: boolean;
   onAcknowledge: () => void;
   onEscalate: () => void;
   onResolve: () => void;
   onAssign: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }
 
@@ -54,10 +56,12 @@ export function IncidentActions({
   canEscalate,
   canResolve,
   canAssign,
+  canEdit,
   canDelete,
   onAcknowledge,
   onEscalate,
   onResolve,
+  onEdit,
   onAssign,
   onDelete,
 }: IncidentActionsProps) {
@@ -82,7 +86,7 @@ export function IncidentActions({
         {canAcknowledge && <ActionButton Icon={CheckCircle2} label="Acquitter" onClick={onAcknowledge} />}
         {canEscalate && <ActionButton Icon={ArrowUpCircle} label="Escalader" onClick={onEscalate} />}
         {canAssign && <ActionButton Icon={UserPlus} label="Assigner un intervenant" onClick={onAssign} />}
-
+        {canEdit && <ActionButton Icon={Pencil} label="Modifier l'incident" onClick={onEdit} />}
         {noActions && (
           <div style={{ fontSize: '12px', color: 'oklch(0.52 0.012 260)', fontStyle: 'italic', padding: '4px 0' }}>
             Aucune action disponible
