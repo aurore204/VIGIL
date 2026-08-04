@@ -59,6 +59,10 @@ export default function TeamDetailPage() {
     if (e.type !== 'member_banned' || e.team_id !== id) return;
     load();
   };
+  const onMemberUnbanned = (e: WsEvent) => {
+  if (e.type !== 'member_unbanned' || e.team_id !== id) return;
+  load();
+  };
   const onPresenceOnline = (e: WsEvent) => {
     if (e.type !== 'presence_online') return;
     setOnlineUsernames(e.usernames);
@@ -66,11 +70,13 @@ export default function TeamDetailPage() {
 
   vigilWs.on('member_kicked', onMemberKicked);
   vigilWs.on('member_banned', onMemberBanned);
+  vigilWs.on('member_unbanned', onMemberUnbanned);
   vigilWs.on('presence_online', onPresenceOnline);
 
   return () => {
     vigilWs.off('member_kicked', onMemberKicked);
     vigilWs.off('member_banned', onMemberBanned);
+    vigilWs.off('member_unbanned', onMemberUnbanned);
     vigilWs.off('presence_online', onPresenceOnline);
   };
 }, [id]); 

@@ -200,6 +200,13 @@ export interface WsMemberBanned {
   by: string;
 }
 
+export interface WsMemberUnbanned {
+  type: 'member_unbanned';
+  team_id: string;
+  member: string;
+  by: string;
+}
+
 export interface WsPrivateMessageReceived {
   type: 'private_message_received';
   from: string;
@@ -241,6 +248,7 @@ export type WsEvent =
   | WsReleaseStepValidated
   | WsMemberKicked
   | WsMemberBanned
+  | WsMemberUnbanned
   | WsPrivateMessageReceived
   | WsReactionAdded
   | WsReactionRemoved;
