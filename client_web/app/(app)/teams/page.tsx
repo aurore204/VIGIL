@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/shared/Modal';
 import { TeamCard } from '@/components/teams/TeamCard';
+import { Plus } from 'lucide-react';
 
 export default function TeamsPage() {
   const { user } = useAuthStore();
@@ -155,7 +156,10 @@ export default function TeamsPage() {
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <Button variant="secondary" onClick={() => setShowJoin(true)}>Rejoindre</Button>
-          <Button onClick={() => setShowCreate(true)}>+ Créer une team</Button>
+          <Button onClick={() => setShowCreate(true)}>
+            <Plus size={14} aria-hidden="true" style={{ marginRight: '6px' }} />
+            Créer une team
+          </Button>
         </div>
       </div>
 

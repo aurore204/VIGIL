@@ -194,16 +194,16 @@ export default function ReleaseDetailPage() {
                     {step.name}
                   </div>
                   
-                  {{step.validated_at && (
-                      <div style={{ fontSize: '11px', color: 'oklch(0.52 0.012 260)', marginTop: '2px' }}>
-                        Validé le {new Date(step.validated_at).toLocaleString('fr-FR')}
-                        {step.validated_by && (
-                          <> par <span style={{ color: 'oklch(0.72 0.14 150)', fontWeight: 600 }}>
-                            {team?.members.find(m => m.user_id === step.validated_by)?.username ?? 'utilisateur inconnu'}
-                          </span></>
-                        )}
-                      </div>
-                    )}
+                 {step.validated_at && (
+                    <div style={{ fontSize: '11px', color: 'oklch(0.52 0.012 260)', marginTop: '2px' }}>
+                      Validé le {new Date(step.validated_at).toLocaleString('fr-FR')}
+                      {step.validated_by && (
+                        <> par <span style={{ color: 'oklch(0.72 0.14 150)', fontWeight: 600 }}>
+                          {team?.members.find(m => m.user_id === step.validated_by)?.username ?? 'utilisateur inconnu'}
+                        </span></>
+                      )}
+                    </div>
+                  )}
                 </div>
                 </div>
 

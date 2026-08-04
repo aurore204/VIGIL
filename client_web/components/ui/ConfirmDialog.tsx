@@ -10,6 +10,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   loading?: boolean;
+  children?: React.ReactNode;
 }
 
 export function ConfirmDialog({
@@ -21,6 +22,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   loading = false,
+  children,
 }: ConfirmDialogProps) {
   const cancelRef = useRef<HTMLButtonElement>(null);
 
@@ -70,11 +72,12 @@ export function ConfirmDialog({
         </h2>
         <p
           id="dialog-description"
-          style={{ fontSize: '13px', color: 'oklch(0.72 0.01 260)', margin: '0 0 20px' }}
+          style={{ fontSize: '13px', color: 'oklch(0.72 0.01 260)', margin: children ? '0 0 12px' : '0 0 20px' }}
         >
           {description}
         </p>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+        {children}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: children ? '4px' : 0 }}>
           <Button ref={cancelRef} variant="secondary" onClick={onCancel} disabled={loading}>
             {cancelLabel}
           </Button>
