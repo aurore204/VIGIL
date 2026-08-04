@@ -2,7 +2,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::models::team::{
-    Team, TeamInvitation, TeamMember, TeamMemberWithUser, TeamRole,
+    Team, TeamInvitation, TeamMember, TeamMemberWithUser, TeamRole, BannedMember
 };
 
 // Crée une nouvelle team et ajoute le créateur comme Manager
@@ -435,4 +435,43 @@ pub async fn delete_team(
     .execute(pool)
     .await?;
     Ok(())
+}
+
+pub async fn get_banned_members(
+    pool: &PgPool,
+    team_id: Uuid,
+) -> Result<Vec<BannedMember>, sqlx::Error> {
+    let rows = sqlx::query!(
+        r#"
+        SELECT
+            tb.user_id,
+            u.username,
+            u.email,
+            tb.banned_by,
+            banner.username as banned_by_username,
+            tb.expires_at,
+            tb.reason,
+            tb.created_at
+        FROM team_bans tb
+        JOIN users u ON u.id = tb.user_id
+        JOIN users banner ON banner.id = tb.banned_by
+        WHERE tb.team_id = $1
+        AND (tb.expires_at IS NULL OR tb.expires_at > NOW())
+        ORDER BY tb.created_at DESC
+        "#,
+        team_id
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|r| BannedMember {
+        user_id: r.user_id,
+        username: r.username,
+        email: r.email,
+        banned_by: r.banned_by,
+        banned_by_username: r.banned_by_username,
+        expires_at: r.expires_at,
+        reason: r.reason,
+        created_at: r.created_at,
+    }).collect())
 }
