@@ -139,6 +139,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     load();
+    api.getOnlineUsers().then(setOnlineUsernames).catch(() => {});
 
     const handleUpdate = (e: WsEvent) => {
       if (
