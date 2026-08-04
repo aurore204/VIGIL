@@ -42,6 +42,11 @@ pub enum WsEvent {
         until: Option<DateTime<Utc>>,
         by: String,
     },
+     MemberUnbanned {
+        team_id: Uuid,
+        member: String,
+        by: String,
+    },
     TimelineEntryEdited {
         incident_id: Uuid,
         entry_id: Uuid,
@@ -75,9 +80,10 @@ pub enum WsEvent {
         release_id: Uuid,
         new_state: String,
     },
-
+   
     PresenceOnline { usernames: Vec<String> },
-
+    
+   
     // Phase 2
     RuleTriggered {
         rule_name: String,
