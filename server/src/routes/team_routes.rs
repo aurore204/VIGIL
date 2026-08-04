@@ -22,4 +22,5 @@ pub fn team_routes() -> Router<AppState> {
         .route("/teams/:team_id/members/:user_id/ban", post(team_handler::ban_member))
         .route("/teams/:team_id/members/:user_id/ban", delete(team_handler::unban_member))
         .route("/teams/:team_id/leave", delete(team_handler::leave_team))
+        .route("/teams/:team_id/bans", get(team_handler::get_banned_members))
 }

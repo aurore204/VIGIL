@@ -607,3 +607,42 @@ pub async fn get_team_members(
         ),
     }
 }
+
+
+// GET /teams/:team_id/bans
+pub async fn get_banned_members(
+    State(state): State<AppState>,
+    Extension(auth_user): Extension<AuthenticatedUser>,
+    Path(team_id): Path<Uuid>,
+) -> impl IntoResponse {
+    match team_service::get_banned_members(&state.pool, team_id, auth_user.id).await {
+        Ok(banned) => (
+            StatusCode::OK,
+            Json(serde_json::json!(ApiResponse::success(
+                "Membres bannis récupérés avec succès",
+                banned
+            ))),
+        ),
+        Err(TeamError::NotMember) => (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!(ApiError::new(
+                "Vous n'êtes pas membre de cette team",
+                "NOT_MEMBER"
+            ))),
+        ),
+        Err(TeamError::NotManager) => (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!(ApiError::new(
+                "Seul le Manager peut voir les membres bannis",
+                "NOT_MANAGER"
+            ))),
+        ),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!(ApiError::new(
+                "Erreur interne du serveur",
+                "INTERNAL_ERROR"
+            ))),
+        ),
+    }
+}

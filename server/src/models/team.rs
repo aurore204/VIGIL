@@ -101,3 +101,15 @@ pub struct UpdateTeamRequest {
     pub name: Option<String>,
     pub description: Option<String>,
 }
+
+#[derive(Debug, Serialize)]
+pub struct BannedMember {
+    pub user_id: Uuid,
+    pub username: String,
+    pub email: String,
+    pub banned_by: Uuid,
+    pub banned_by_username: String,
+    pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub reason: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}

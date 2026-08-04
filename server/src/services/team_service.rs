@@ -2,10 +2,9 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::models::team::{
-    CreateTeamRequest, JoinTeamRequest, TeamResponse, TeamRole, TransferManagerRequest,
+    CreateTeamRequest, JoinTeamRequest, TeamResponse, TeamRole, TransferManagerRequest,UpdateTeamRequest,BannedMember,
 };
 use crate::repositories::team_repository;
-use crate::models::team::UpdateTeamRequest;
 
 #[derive(Debug)]
 pub enum TeamError {
@@ -445,6 +444,25 @@ pub async fn delete_team(
     }
 
     team_repository::delete_team(pool, team_id)
+        .await
+        .map_err(TeamError::DatabaseError)
+}
+
+    pub async fn get_banned_members(
+        pool: &PgPool,
+        team_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<Vec<BannedMember>, TeamError> {     
+    let role = team_repository::get_member_role(pool, team_id, user_id)
+        .await
+        .map_err(TeamError::DatabaseError)?
+        .ok_or(TeamError::NotMember)?;
+
+    if role != TeamRole::Manager {
+        return Err(TeamError::NotManager);
+    }
+
+    team_repository::get_banned_members(pool, team_id)
         .await
         .map_err(TeamError::DatabaseError)
 }
