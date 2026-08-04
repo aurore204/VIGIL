@@ -139,6 +139,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     load();
+    api.getOnlineUsers().then(setOnlineUsernames).catch(() => {});
 
     const handleUpdate = (e: WsEvent) => {
       if (
@@ -236,7 +237,7 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600 }}>
                 <AlertTriangle size={15} color={COLORS.blueText} aria-hidden="true" />
-                Incidents actifs
+                Derniers incidents
               </div>
               <Link href="/incidents" style={{ fontSize: '12px', color: COLORS.blueText, textDecoration: 'none' }}>
                 Voir tout
@@ -333,7 +334,7 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600 }}>
                 <Rocket size={15} color={COLORS.greenText} aria-hidden="true" />
-                Releases en cours
+                Releases actives
               </div>
               <Link href="/releases" style={{ fontSize: '12px', color: COLORS.blueText, textDecoration: 'none' }}>
                 Voir tout

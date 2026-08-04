@@ -13,6 +13,7 @@ import { StepList } from '@/components/releases/StepList';
 import { useToast } from '@/components/ui/Toast';
 import { shadow } from '@/lib/tokens';
 import { ArrowLeft, Play, CheckCircle2, Lock, ShieldAlert } from 'lucide-react';
+import { PresenceIndicator } from '@/components/shared/PresenceIndicator';
 
 export default function ReleaseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +25,7 @@ export default function ReleaseDetailPage() {
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmAction, setConfirmAction] = useState<'cancel' | null>(null);
+  const [watchers, setWatchers] = useState<string[]>([]);
 
   const load = async () => {
     try {
@@ -37,22 +39,34 @@ export default function ReleaseDetailPage() {
   };
 
   useEffect(() => {
+  load();
+  const handleState = (e: WsEvent) => {
+    if (e.type !== 'release_state_changed' || e.release_id !== id) return;
     load();
-    const handleState = (e: WsEvent) => {
-      if (e.type !== 'release_state_changed' || e.release_id !== id) return;
-      load();
-    };
-    const handleStep = (e: WsEvent) => {
-      if (e.type !== 'release_step_validated' || e.release_id !== id) return;
-      load();
-    };
-    vigilWs.on('release_state_changed', handleState);
-    vigilWs.on('release_step_validated', handleStep);
-    return () => {
-      vigilWs.off('release_state_changed', handleState);
-      vigilWs.off('release_step_validated', handleStep);
-    };
-  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  };
+  const handleStep = (e: WsEvent) => {
+    if (e.type !== 'release_step_validated' || e.release_id !== id) return;
+    load();
+  };
+  const handlePresence = (e: WsEvent) => {
+    if (e.type !== 'presence_update' || e.resource_id !== id) return;
+    setWatchers(e.watchers);
+  };
+  vigilWs.on('release_state_changed', handleState);
+  vigilWs.on('release_step_validated', handleStep);
+  vigilWs.on('presence_update', handlePresence);
+  return () => {
+    vigilWs.off('release_state_changed', handleState);
+    vigilWs.off('release_step_validated', handleStep);
+    vigilWs.off('presence_update', handlePresence);
+  };
+}, [id]); 
+
+useEffect(() => {
+  if (!release?.team_id) return;
+  vigilWs.watch(id, 'release', release.team_id);
+  return () => { vigilWs.unwatch(id, 'release', release.team_id); };
+}, [id, release?.team_id]);
 
   if (loading || !release) return (
     <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>Chargement...</div>
@@ -128,6 +142,8 @@ export default function ReleaseDetailPage() {
           </div>
         )}
       </div>
+
+      <PresenceIndicator watchers={watchers} />
 
       {release.description && (
         <div style={{

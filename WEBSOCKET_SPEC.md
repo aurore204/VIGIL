@@ -4,17 +4,23 @@
 
 **Endpoint :** `ws://localhost:8080/ws`
 
-**Authentification :** Token JWT via header `Authorization: Bearer <token>` ou query parameter `?token=<token>`
+**Authentification :** Token JWT transmis via le paramètre de requête `?token=<token>` (ou header `Authorization: Bearer <token>` en repli si le paramètre est absent).
 
 **Une connexion WebSocket par client.**
 
-La reconnexion automatique est gérée côté client.
+**Format des timestamps :** Tous les champs temporels (`at`, `edited_at`, `until`) sont sérialisés au format **ISO 8601** (ex: `"2026-08-04T10:30:00Z"`), et non en timestamp Unix numérique comme illustré à titre d'exemple dans le brief projet. Ce choix a été fait pour la lisibilité et la compatibilité native avec l'objet `Date` en JavaScript/TypeScript côté client, évitant une conversion manuelle sur chaque réception d'événement.
+
+**Reconnexion automatique :** Le client détecte la fermeture de la connexion (`onclose`) et relance une nouvelle tentative avec un délai croissant (backoff exponentiel, de 1 seconde jusqu'à 30 secondes maximum), réinitialisé à chaque reconnexion réussie.
+
+**Heartbeat :** Le client envoie un message `{ "type": "ping" }` toutes les 25 secondes pour maintenir la connexion active et éviter les déconnexions par timeout d'inactivité.
 
 ---
 
 ## Messages envoyés par le client
 
-### Watch — S'abonner à une ressource
+### watch — S'abonner à la présence sur une ressource
+
+Signale au serveur que ce client consulte activement une ressource (incident ou release), afin d'apparaître dans la liste des observateurs diffusée aux autres membres.
 
 ```json
 {
@@ -25,7 +31,11 @@ La reconnexion automatique est gérée côté client.
 }
 ```
 
-### Unwatch — Se désabonner d'une ressource
+`resource_type` accepte `"incident"` ou `"release"`.
+
+### unwatch — Se désabonner d'une ressource
+
+Envoyé à la fermeture ou au changement de page, pour retirer ce client de la liste des observateurs.
 
 ```json
 {
@@ -42,9 +52,9 @@ La reconnexion automatique est gérée côté client.
 
 ### incident_state_changed
 
-**Déclencheur :** Un incident change d'état (acknowledged, escalated, resolved)
+**Déclencheur :** Un incident change d'état (`acknowledged`, `escalated`, `resolved`), ou est modifié par un Manager (titre, description, sévérité).
 
-**Destinataires :** Tous les clients connectés
+**Destinataires :** Tous les clients connectés.
 
 ```json
 {
@@ -59,9 +69,9 @@ La reconnexion automatique est gérée côté client.
 
 ### incident_escalated
 
-**Déclencheur :** Un incident est escaladé avec une nouvelle sévérité
+**Déclencheur :** Un incident est escaladé avec une nouvelle sévérité.
 
-**Destinataires :** Tous les clients connectés
+**Destinataires :** Tous les clients connectés.
 
 ```json
 {
@@ -76,9 +86,9 @@ La reconnexion automatique est gérée côté client.
 
 ### incident_assigned
 
-**Déclencheur :** Un Manager assigne un Responder à un incident
+**Déclencheur :** Un Manager assigne un Responder à un incident.
 
-**Destinataires :** Tous les clients connectés
+**Destinataires :** Tous les clients connectés.
 
 ```json
 {
@@ -92,9 +102,9 @@ La reconnexion automatique est gérée côté client.
 
 ### timeline_entry_added
 
-**Déclencheur :** Un membre ajoute une entrée dans la timeline d'un incident
+**Déclencheur :** Un membre (Responder ou Manager) ajoute une entrée dans la timeline d'un incident.
 
-**Destinataires :** Tous les clients connectés
+**Destinataires :** Tous les clients connectés.
 
 ```json
 {
@@ -103,7 +113,7 @@ La reconnexion automatique est gérée côté client.
   "entry": {
     "content": "Investigation en cours",
     "author": "username",
-    "at": 1718000000
+    "at": "2026-08-04T10:30:00Z"
   }
 }
 ```
@@ -112,9 +122,9 @@ La reconnexion automatique est gérée côté client.
 
 ### timeline_entry_edited
 
-**Déclencheur :** L'auteur modifie une entrée de timeline
+**Déclencheur :** L'auteur d'une entrée modifie son contenu. Seul l'auteur original peut éditer.
 
-**Destinataires :** Tous les clients connectés
+**Destinataires :** Tous les clients connectés.
 
 ```json
 {
@@ -122,7 +132,7 @@ La reconnexion automatique est gérée côté client.
   "incident_id": "uuid",
   "entry_id": "uuid",
   "new_content": "Contenu modifié",
-  "edited_at": 1718000000
+  "edited_at": "2026-08-04T10:32:15Z"
 }
 ```
 
@@ -130,9 +140,9 @@ La reconnexion automatique est gérée côté client.
 
 ### presence_update
 
-**Déclencheur :** Un client envoie un message watch ou unwatch
+**Déclencheur :** Un client envoie un message `watch` ou `unwatch` sur une ressource (incident ou release).
 
-**Destinataires :** Tous les clients connectés
+**Destinataires :** Tous les clients connectés.
 
 ```json
 {
@@ -145,11 +155,26 @@ La reconnexion automatique est gérée côté client.
 
 ---
 
+### presence_online
+
+**Déclencheur :** Un client se connecte ou se déconnecte du serveur WebSocket.
+
+**Destinataires :** Tous les clients connectés.
+
+```json
+{
+  "type": "presence_online",
+  "usernames": ["alice", "bob"]
+}
+```
+
+---
+
 ### release_state_changed
 
-**Déclencheur :** Une release change d'état (in_progress, completed, cancelled, blocked)
+**Déclencheur :** Une release change d'état (`in_progress`, `completed`, `cancelled`, `blocked`), notamment lorsqu'elle est automatiquement bloquée par un incident actif ou débloquée à sa résolution.
 
-**Destinataires :** Tous les clients connectés
+**Destinataires :** Tous les clients connectés.
 
 ```json
 {
@@ -163,9 +188,9 @@ La reconnexion automatique est gérée côté client.
 
 ### release_step_validated
 
-**Déclencheur :** Un membre valide une étape d'une release
+**Déclencheur :** Un membre (Responder ou Manager) valide une étape d'une release.
 
-**Destinataires :** Tous les clients connectés
+**Destinataires :** Tous les clients connectés.
 
 ```json
 {
@@ -180,9 +205,9 @@ La reconnexion automatique est gérée côté client.
 
 ### member_kicked
 
-**Déclencheur :** Un Manager retire un membre de la team
+**Déclencheur :** Un Manager retire un membre de la team. Le membre conserve son historique (entrées de timeline, validations) mais perd l'accès immédiat ; il peut revenir via un nouveau code d'invitation.
 
-**Destinataires :** Tous les clients connectés
+**Destinataires :** Tous les clients connectés.
 
 ```json
 {
@@ -197,18 +222,35 @@ La reconnexion automatique est gérée côté client.
 
 ### member_banned
 
-**Déclencheur :** Un Manager bannit un membre de la team
+**Déclencheur :** Un Manager bannit un membre de la team, temporairement ou définitivement.
 
-**Destinataires :** Tous les clients connectés
+**Destinataires :** Tous les clients connectés.
 
-**Note :** `until` est `null` pour les bans permanents
+**Note :** `until` vaut `null` pour un bannissement permanent.
 
 ```json
 {
   "type": "member_banned",
   "team_id": "uuid",
   "member": "username",
-  "until": null,
+  "until": "2026-08-15T14:30:00Z",
+  "by": "username"
+}
+```
+
+---
+
+### member_unbanned
+
+**Déclencheur :** Un Manager lève manuellement un ban (temporaire ou permanent) sur un membre.
+
+**Destinataires :** Tous les clients connectés.
+
+```json
+{
+  "type": "member_unbanned",
+  "team_id": "uuid",
+  "member": "username",
   "by": "username"
 }
 ```
@@ -217,9 +259,9 @@ La reconnexion automatique est gérée côté client.
 
 ### private_message_received
 
-**Déclencheur :** Un membre envoie un message privé à un autre membre
+**Déclencheur :** Un membre envoie un message privé à un autre membre partageant au moins une team.
 
-**Destinataires :** Uniquement le sender et le receiver (pas broadcast à toute la team)
+**Destinataires :** Uniquement l'expéditeur et le destinataire (envoi ciblé, jamais diffusé à toute la team).
 
 ```json
 {
@@ -227,7 +269,7 @@ La reconnexion automatique est gérée côté client.
   "from": "alice",
   "to": "bob",
   "content": "Bonjour !",
-  "at": 1718000000
+  "at": "2026-08-04T10:30:00Z"
 }
 ```
 
@@ -235,9 +277,9 @@ La reconnexion automatique est gérée côté client.
 
 ### reaction_added
 
-**Déclencheur :** Un membre ajoute une réaction sur une entrée de timeline
+**Déclencheur :** Un membre ajoute une réaction sur une entrée de timeline. Un utilisateur ne peut pas ajouter deux fois le même emoji sur la même entrée.
 
-**Destinataires :** Tous les clients connectés
+**Destinataires :** Tous les clients connectés.
 
 ```json
 {
@@ -253,9 +295,9 @@ La reconnexion automatique est gérée côté client.
 
 ### reaction_removed
 
-**Déclencheur :** Un membre retire sa réaction d'une entrée de timeline
+**Déclencheur :** Un membre retire sa propre réaction d'une entrée de timeline.
 
-**Destinataires :** Tous les clients connectés
+**Destinataires :** Tous les clients connectés.
 
 ```json
 {
@@ -269,11 +311,11 @@ La reconnexion automatique est gérée côté client.
 
 ---
 
-### rule_triggered (Phase 2)
+### rule_triggered *(Phase 2)*
 
-**Déclencheur :** Une règle Action→REAction se déclenche avec succès
+**Déclencheur :** Une règle Action → REAction se déclenche avec succès.
 
-**Destinataires :** Tous les clients connectés
+**Destinataires :** Tous les clients connectés.
 
 ```json
 {
@@ -286,11 +328,11 @@ La reconnexion automatique est gérée côté client.
 
 ---
 
-### rule_failed (Phase 2)
+### rule_failed *(Phase 2)*
 
-**Déclencheur :** Une règle Action→REAction échoue
+**Déclencheur :** Une règle Action → REAction échoue lors de son exécution.
 
-**Destinataires :** Tous les clients connectés
+**Destinataires :** Tous les clients connectés.
 
 ```json
 {

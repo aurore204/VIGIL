@@ -32,8 +32,21 @@ export interface Team {
   created_at: string;
 }
 
+
+
 export interface TeamInvitation {
   code: string;
+}
+
+export interface BannedMember {
+  user_id: string;
+  username: string;
+  email: string;
+  banned_by: string;
+  banned_by_username: string;
+  expires_at: string | null;
+  reason: string | null;
+  created_at: string;
 }
 
 // Incidents
@@ -187,6 +200,13 @@ export interface WsMemberBanned {
   by: string;
 }
 
+export interface WsMemberUnbanned {
+  type: 'member_unbanned';
+  team_id: string;
+  member: string;
+  by: string;
+}
+
 export interface WsPrivateMessageReceived {
   type: 'private_message_received';
   from: string;
@@ -228,6 +248,7 @@ export type WsEvent =
   | WsReleaseStepValidated
   | WsMemberKicked
   | WsMemberBanned
+  | WsMemberUnbanned
   | WsPrivateMessageReceived
   | WsReactionAdded
   | WsReactionRemoved;

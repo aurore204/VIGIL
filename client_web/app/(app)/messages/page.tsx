@@ -19,6 +19,7 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [onlineUsernames, setOnlineUsernames] = useState<string[]>([]);
 
   const load = async () => {
     try {
@@ -48,19 +49,28 @@ export default function MessagesPage() {
 
   useEffect(() => {
     load();
+    api.getOnlineUsers().then(setOnlineUsernames).catch(() => {});
   }, []);
 
   // Abonnement WS 
-  useEffect(() => {
-    const handleMessage = (e: WsEvent) => {
-      if (e.type !== 'private_message_received') return;
-      if (selectedContact && (e.from === selectedContact.username || e.to === selectedContact.username)) {
-        loadConversation(selectedContact);
-      }
-    };
-    vigilWs.on('private_message_received', handleMessage);
-    return () => vigilWs.off('private_message_received', handleMessage);
-  }, [selectedContact]); 
+ useEffect(() => {
+  const handleMessage = (e: WsEvent) => {
+    if (e.type !== 'private_message_received') return;
+    if (selectedContact && (e.from === selectedContact.username || e.to === selectedContact.username)) {
+      loadConversation(selectedContact);
+    }
+  };
+  const handlePresence = (e: WsEvent) => {
+    if (e.type !== 'presence_online') return;
+    setOnlineUsernames(e.usernames);
+  };
+  vigilWs.on('private_message_received', handleMessage);
+  vigilWs.on('presence_online', handlePresence);
+  return () => {
+    vigilWs.off('private_message_received', handleMessage);
+    vigilWs.off('presence_online', handlePresence);
+  };
+}, [selectedContact]);
 
   // Chargement de la conversation à chaque changement de contact sélectionné
   useEffect(() => {
@@ -118,14 +128,28 @@ export default function MessagesPage() {
                   borderBottom: '1px solid oklch(0.27 0.015 260)',
                 }}
               >
+                <div style={{ position: 'relative', flexShrink: 0 }}>
                 <div style={{
                   width: '32px', height: '32px', borderRadius: '50%',
                   background: 'oklch(0.30 0.03 255)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '11px', fontWeight: 700, color: 'oklch(0.85 0.05 255)', flexShrink: 0,
+                  fontSize: '11px', fontWeight: 700, color: 'oklch(0.85 0.05 255)',
                 }}>
                   {contact.username.slice(0, 2).toUpperCase()}
                 </div>
+                {onlineUsernames.includes(contact.username) && (
+                  <span
+                    aria-label="En ligne"
+                    title="En ligne"
+                    style={{
+                      position: 'absolute', bottom: '-1px', right: '-1px',
+                      width: '10px', height: '10px', borderRadius: '50%',
+                      background: 'oklch(0.72 0.14 150)',
+                      border: '2px solid oklch(0.14 0.015 260)',
+                    }}
+                  />
+                )}
+              </div>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 600, color: 'oklch(0.90 0.005 260)' }}>
                     {contact.username}
@@ -149,6 +173,7 @@ export default function MessagesPage() {
             display: 'flex', alignItems: 'center', gap: '10px',
             background: 'oklch(0.195 0.015 260)',
           }}>
+            <div style={{ position: 'relative', flexShrink: 0 }}>
             <div style={{
               width: '32px', height: '32px', borderRadius: '50%',
               background: 'oklch(0.30 0.03 255)',
@@ -156,6 +181,19 @@ export default function MessagesPage() {
               fontSize: '11px', fontWeight: 700, color: 'oklch(0.85 0.05 255)',
             }}>
               {selectedContact.username.slice(0, 2).toUpperCase()}
+            </div>
+            {onlineUsernames.includes(selectedContact.username) && (
+              <span
+                aria-label="En ligne"
+                title="En ligne"
+                style={{
+                  position: 'absolute', bottom: '-1px', right: '-1px',
+                  width: '10px', height: '10px', borderRadius: '50%',
+                  background: 'oklch(0.72 0.14 150)',
+                  border: '2px solid oklch(0.14 0.015 260)',
+                }}
+              />
+            )}
             </div>
             <div>
               <div style={{ fontSize: '14px', fontWeight: 700, color: 'oklch(0.95 0.005 260)' }}>
@@ -174,26 +212,46 @@ export default function MessagesPage() {
                 Commencez la conversation
               </div>
             ) : (
-              messages.map(msg => {
+              messages.map((msg, i) => {
                 const isMe = msg.sender_id === user?.id;
+                const msgDate = new Date(msg.created_at);
+                const prevDate = i > 0 ? new Date(messages[i - 1].created_at) : null;
+                const showDateSeparator = !prevDate || msgDate.toDateString() !== prevDate.toDateString();
+
+                const formatDateLabel = (d: Date) => {
+                  const today = new Date();
+                  const yesterday = new Date(today);
+                  yesterday.setDate(today.getDate() - 1);
+                  if (d.toDateString() === today.toDateString()) return "Aujourd'hui";
+                  if (d.toDateString() === yesterday.toDateString()) return 'Hier';
+                  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                };
+
                 return (
-                  <div
-                    key={msg.id}
-                    style={{
+                  <div key={msg.id}>
+                    {showDateSeparator && (
+                      <div style={{
+                        textAlign: 'center', fontSize: '11px', fontWeight: 600,
+                        color: 'oklch(0.52 0.012 260)', margin: '16px 0 10px',
+                      }}>
+                        {formatDateLabel(msgDate)}
+                      </div>
+                    )}
+                    <div style={{
                       display: 'flex', flexDirection: 'column',
                       alignItems: isMe ? 'flex-end' : 'flex-start',
-                    }}
-                  >
-                    <div style={{
-                      maxWidth: '70%', padding: '10px 14px', borderRadius: '12px',
-                      background: isMe ? 'oklch(0.50 0.14 255)' : 'oklch(0.235 0.015 260)',
-                      color: 'oklch(0.95 0.005 260)', fontSize: '13px', lineHeight: 1.5,
                     }}>
-                      {msg.content}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'oklch(0.45 0.01 260)', marginTop: '4px' }}>
-                      {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                      {msg.read_at && isMe && <span style={{ marginLeft: '6px' }}>✓✓</span>}
+                      <div style={{
+                        maxWidth: '70%', padding: '10px 14px', borderRadius: '12px',
+                        background: isMe ? 'oklch(0.50 0.14 255)' : 'oklch(0.235 0.015 260)',
+                        color: 'oklch(0.95 0.005 260)', fontSize: '13px', lineHeight: 1.5,
+                      }}>
+                        {msg.content}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'oklch(0.45 0.01 260)', marginTop: '4px' }}>
+                        {msgDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        {msg.read_at && isMe && <span style={{ marginLeft: '6px' }}>✓✓</span>}
+                      </div>
                     </div>
                   </div>
                 );

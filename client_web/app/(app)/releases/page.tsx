@@ -16,7 +16,7 @@ export default function ReleasesPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [onlineUsernames, setOnlineUsernames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-
+  
   const load = async () => {
     try {
       const teamsData = await api.getTeams();
