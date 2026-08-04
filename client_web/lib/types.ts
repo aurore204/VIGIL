@@ -32,8 +32,21 @@ export interface Team {
   created_at: string;
 }
 
+
+
 export interface TeamInvitation {
   code: string;
+}
+
+export interface BannedMember {
+  user_id: string;
+  username: string;
+  email: string;
+  banned_by: string;
+  banned_by_username: string;
+  expires_at: string | null;
+  reason: string | null;
+  created_at: string;
 }
 
 // Incidents

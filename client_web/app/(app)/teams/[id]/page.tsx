@@ -12,6 +12,8 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { MemberRow } from '@/components/teams/MemberRow';
 import { InviteCodeBanner } from '@/components/teams/InviteCodeBanner';
 import { ArrowLeft } from 'lucide-react';
+import { BannedMemberRow } from '@/components/teams/BannedMemberRow';
+import type { BannedMember } from '@/lib/types';
 
 export default function TeamDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,19 +27,25 @@ export default function TeamDetailPage() {
   const [banType, setBanType] = useState<'temporary' | 'permanent'>('permanent');
   const [banDate, setBanDate] = useState('');
   const [onlineUsernames, setOnlineUsernames] = useState<string[]>([]);
+  const [bannedMembers, setBannedMembers] = useState<BannedMember[]>([]);
 
   const load = async () => {
-    try {
-      const data = await api.getTeam(id);
-      setTeam(data);
-    } catch {
-      // on n'a plus accès à cette team (ex: on vient d'en être kické/banni)
-      showToast('Vous n\'avez plus accès à cette team', 'warning');
-      router.push('/teams');
-    } finally {
-      setLoading(false);
+  try {
+    const data = await api.getTeam(id);
+    setTeam(data);
+    if (data.manager_id === user?.id) {
+      try {
+        const banned = await api.getBannedMembers(id);
+        setBannedMembers(banned);
+      } catch { }
     }
-  };
+  } catch {
+    showToast('Vous n\'avez plus accès à cette team', 'warning');
+    router.push('/teams');
+  } finally {
+    setLoading(false);
+  }
+};
 
  useEffect(() => {
   load();
@@ -117,6 +125,16 @@ export default function TeamDetailPage() {
   } catch (err) {
     showToast(err instanceof Error ? err.message : 'Erreur', 'error');
     setConfirm(null);
+  }
+  };
+  
+  const handleUnban = async (userId: string, username: string) => {
+  try {
+    await api.unbanMember(id, userId);
+    showToast(`${username} débanni`, 'success');
+    load();
+  } catch (err) {
+    showToast(err instanceof Error ? err.message : 'Erreur', 'error');
   }
 };
 
@@ -198,7 +216,30 @@ export default function TeamDetailPage() {
           </div>
         ))}
       </div>
-
+      {isManager && bannedMembers.length > 0 && (
+  <div style={{
+    marginTop: '20px',
+    background: 'oklch(0.195 0.015 260)',
+    border: '1px solid oklch(0.30 0.02 260)',
+    borderRadius: '10px', overflow: 'hidden',
+  }}>
+    <div style={{
+      padding: '12px 16px',
+      borderBottom: '1px solid oklch(0.30 0.02 260)',
+      fontSize: '13px', fontWeight: 700, color: 'oklch(0.90 0.005 260)',
+    }}>
+      Membres bannis ({bannedMembers.length})
+    </div>
+    {bannedMembers.map((banned, i) => (
+      <div
+        key={banned.user_id}
+        style={{ borderBottom: i < bannedMembers.length - 1 ? '1px solid oklch(0.27 0.015 260)' : 'none' }}
+      >
+        <BannedMemberRow banned={banned} canUnban={isManager} onUnban={handleUnban} />
+      </div>
+    ))}
+  </div>
+)}
       <ConfirmDialog
   isOpen={!!confirm}
   title="Confirmer l'action"
@@ -223,18 +264,18 @@ export default function TeamDetailPage() {
               Bannissement temporaire jusqu&apos;au :
             </label>
             {banType === 'temporary' && (
-              <input
-                type="date"
-                value={banDate}
-                onChange={e => setBanDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-                style={{
-                  padding: '8px 10px', borderRadius: '6px',
-                  border: '1px solid oklch(0.34 0.02 260)', background: 'oklch(0.16 0.015 260)',
-                  color: 'oklch(0.95 0.005 260)', fontSize: '13px', outline: 'none',
-                }}
-              />
-            )}
+            <input
+              type="datetime-local"
+              value={banDate}
+              onChange={e => setBanDate(e.target.value)}
+              min={new Date().toISOString().slice(0, 16)}
+              style={{
+                padding: '8px 10px', borderRadius: '6px',
+                border: '1px solid oklch(0.34 0.02 260)', background: 'oklch(0.16 0.015 260)',
+                color: 'oklch(0.95 0.005 260)', fontSize: '13px', outline: 'none',
+              }}
+            />
+          )}
           </div>
         )}
       </ConfirmDialog>

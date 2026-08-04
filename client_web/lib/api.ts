@@ -1,4 +1,4 @@
-import type { AuthResponse, Team, Incident, Release, PrivateMessage } from './types';
+import type { AuthResponse, Team, Incident, Release, PrivateMessage,BannedMember } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -103,7 +103,9 @@ export const api = {
 
   unbanMember: (teamId: string, userId: string) =>
     request<void>(`/teams/${teamId}/members/${userId}/ban`, { method: 'DELETE' }),
-
+  
+  getBannedMembers: (teamId: string) =>
+    request<BannedMember[]>(`/teams/${teamId}/bans`),
   // Incidents
   getIncidents: (teamId: string) =>
     request<Incident[]>(`/teams/${teamId}/incidents`),
