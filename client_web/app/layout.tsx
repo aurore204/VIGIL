@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import { ToastProvider } from '@/components/ui/Toast';
-
-const inter = Inter({ subsets: ['latin'] });
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'VIGIL',
@@ -12,8 +10,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
-      <body style={{ margin: 0, padding: 0, background: 'oklch(0.16 0.015 260)' }} className={inter.className}>
-         <ToastProvider>
+      <body style={{
+        margin: 0,
+        padding: 0,
+        background: 'oklch(0.16 0.015 260)',
+        fontFamily: "'Times New Roman', Times, serif",
+        fontSize: '13px',
+      }}>
+        <ToastProvider>
           {children}
         </ToastProvider>
       </body>

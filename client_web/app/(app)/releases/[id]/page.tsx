@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StepList } from '@/components/releases/StepList';
 import { useToast } from '@/components/ui/Toast';
+import { shadow } from '@/lib/tokens';
+import { ArrowLeft, Play, CheckCircle2, Lock, ShieldAlert } from 'lucide-react';
 
 export default function ReleaseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -79,7 +81,7 @@ export default function ReleaseDetailPage() {
   const currentStepIndex = release.steps.findIndex(s => s.state === 'pending');
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: '900px' }}>
+    <div style={{ padding: '28px clamp(16px, 4vw, 32px)', maxWidth: '900px', fontFamily: 'Inter, system-ui, sans-serif' }}>
       <button
         onClick={() => router.push('/releases')}
         style={{
@@ -88,15 +90,15 @@ export default function ReleaseDetailPage() {
           cursor: 'pointer', fontSize: '12px', fontWeight: 600, marginBottom: '16px', padding: 0,
         }}
       >
-        ← Retour
+        <ArrowLeft size={19} aria-hidden="true" />
+        Retour
       </button>
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
             <div style={{ fontSize: '12px', fontFamily: 'ui-monospace, monospace', color: 'oklch(0.55 0.01 260)' }}>
-              {release.id.slice(0, 8)}
             </div>
             <ReleaseStateBadge state={release.state} />
           </div>
@@ -104,14 +106,21 @@ export default function ReleaseDetailPage() {
             {release.title}
           </div>
           <div style={{ fontSize: '12px', color: 'oklch(0.55 0.01 260)' }}>
-            {team?.name} · {completedSteps}/{release.steps.length} étapes · Créé le {new Date(release.created_at).toLocaleDateString('fr-FR')}
+            {team?.name} · {completedSteps}/{release.steps.length} étapes · Créée par{' '}
+            <strong style={{ color: 'oklch(0.75 0.01 260)' }}>
+              {team?.members.find(m => m.user_id === release.created_by)?.username ?? 'inconnu'}
+            </strong>
+            {' '}le {new Date(release.created_at).toLocaleDateString('fr-FR')}
           </div>
         </div>
 
         {isManager && (
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {release.state === 'created' && (
-              <Button onClick={handleStart}>▶ Démarrer</Button>
+              <Button onClick={handleStart}>
+                <Play size={14} aria-hidden="true" style={{ marginRight: '6px' }} />
+                Démarrer
+              </Button>
             )}
             {(release.state === 'created' || release.state === 'in_progress') && (
               <Button variant="danger" onClick={() => setConfirmAction('cancel')}>Annuler</Button>
@@ -134,17 +143,19 @@ export default function ReleaseDetailPage() {
       <div style={{
         background: 'oklch(0.195 0.015 260)',
         border: '1px solid oklch(0.30 0.02 260)',
-        borderRadius: '10px', overflow: 'hidden',
+        borderRadius: '12px', overflow: 'hidden',
+        boxShadow: shadow.card,
       }}>
         <div style={{
           padding: '12px 16px', borderBottom: '1px solid oklch(0.30 0.02 260)',
-          fontSize: '13px', fontWeight: 700, color: 'oklch(0.90 0.005 260)',
+          fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em',
+          color: 'oklch(0.55 0.01 260)',
         }}>
           Étapes
         </div>
 
         <div style={{ padding: '16px' }}>
-          <StepList steps={release.steps} />
+          <StepList steps={release.steps} members={team?.members ?? []} />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -158,12 +169,12 @@ export default function ReleaseDetailPage() {
                 key={step.id}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '14px 16px',
+                  padding: '14px 16px', gap: '12px', flexWrap: 'wrap',
                   borderTop: '1px solid oklch(0.27 0.015 260)',
                   background: isCurrentStep ? 'oklch(0.20 0.025 255)' : 'transparent',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                   <div style={{
                     width: '28px', height: '28px', borderRadius: '50%',
                     background: isCompleted ? 'oklch(0.72 0.14 150)' : isCurrentStep ? 'oklch(0.66 0.16 255)' : 'oklch(0.27 0.015 260)',
@@ -172,35 +183,45 @@ export default function ReleaseDetailPage() {
                     color: isCompleted || isCurrentStep ? 'oklch(0.16 0.015 260)' : 'oklch(0.55 0.01 260)',
                     flexShrink: 0,
                   }}>
-                    {isCompleted ? '✓' : i + 1}
+                    {isCompleted ? <CheckCircle2 size={16} aria-hidden="true" /> : i + 1}
                   </div>
-                  <div>
-                    <div style={{
-                      fontSize: '13px', fontWeight: 600,
-                      color: isLocked ? 'oklch(0.45 0.01 260)' : 'oklch(0.90 0.005 260)',
-                    }}>
-                      {step.name}
-                    </div>
-                    {step.validated_at && (
+                  <div style={{ minWidth: 0 }}>
+                  <div style={{
+                    fontSize: '13px', fontWeight: 600,
+                    color: isLocked ? 'oklch(0.45 0.01 260)' : 'oklch(0.90 0.005 260)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {step.name}
+                  </div>
+                  
+                  {{step.validated_at && (
                       <div style={{ fontSize: '11px', color: 'oklch(0.52 0.012 260)', marginTop: '2px' }}>
                         Validé le {new Date(step.validated_at).toLocaleString('fr-FR')}
+                        {step.validated_by && (
+                          <> par <span style={{ color: 'oklch(0.72 0.14 150)', fontWeight: 600 }}>
+                            {team?.members.find(m => m.user_id === step.validated_by)?.username ?? 'utilisateur inconnu'}
+                          </span></>
+                        )}
                       </div>
                     )}
-                  </div>
+                </div>
                 </div>
 
                 {isCurrentStep && isResponder && release.state === 'in_progress' && (
                   <Button onClick={() => handleValidateStep(step.id)}>
-                    ✓ Valider
+                    <CheckCircle2 size={14} aria-hidden="true" style={{ marginRight: '6px' }} />
+                    Valider
                   </Button>
                 )}
                 {isCompleted && (
-                  <span style={{ fontSize: '12px', color: 'oklch(0.72 0.14 150)', fontWeight: 600 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'oklch(0.72 0.14 150)', fontWeight: 600 }}>
+                    <CheckCircle2 size={13} aria-hidden="true" />
                     Complété
                   </span>
                 )}
                 {isLocked && (
-                  <span style={{ fontSize: '12px', color: 'oklch(0.45 0.01 260)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'oklch(0.45 0.01 260)' }}>
+                    <Lock size={13} aria-hidden="true" />
                     Verrouillé
                   </span>
                 )}
@@ -215,8 +236,10 @@ export default function ReleaseDetailPage() {
           marginTop: '16px', padding: '14px 16px', borderRadius: '10px',
           background: 'oklch(0.20 0.04 25)', border: '1px solid oklch(0.45 0.15 25)',
           fontSize: '13px', color: 'oklch(0.78 0.14 25)', fontWeight: 600,
+          display: 'flex', alignItems: 'center', gap: '8px',
         }}>
-          ⊠ Release bloquée par un incident actif. La release reprendra automatiquement à la résolution de l&apos;incident.
+          <ShieldAlert size={16} aria-hidden="true" style={{ flexShrink: 0 }} />
+          Release bloquée par un incident actif. La release reprendra automatiquement à la résolution de l&apos;incident.
         </div>
       )}
 
