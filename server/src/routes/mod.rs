@@ -6,6 +6,7 @@ mod team_routes;
 mod reaction_routes;
 mod message_routes;
 mod release_routes;
+mod webhook_routes;
 
 use crate::middleware::auth_middleware::require_auth;
 use crate::state::AppState;
@@ -14,8 +15,8 @@ use crate::websocket::handler::{ws_handler, get_online_users};
 pub fn create_router(state: AppState) -> Router {
     let public_routes = Router::new()
         .merge(auth_routes::public_routes())
-        .merge(reaction_routes::public_reaction_routes());
-
+        .merge(reaction_routes::public_reaction_routes())
+        .merge(webhook_routes::webhook_routes());
 
     let protected_routes = Router::new()
         .merge(auth_routes::protected_routes())

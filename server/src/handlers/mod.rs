@@ -4,3 +4,4 @@ pub mod incident_handler;
 pub mod reaction_handler;
 pub mod message_handler;
 pub mod release_handler;
+pub mod webhook_handler;
