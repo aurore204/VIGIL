@@ -6,3 +6,4 @@ pub mod reaction;
 pub mod message;
 pub mod release;
 pub mod rule;
+pub mod token;

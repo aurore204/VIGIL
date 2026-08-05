@@ -6,3 +6,4 @@ pub mod message_repository;
 pub mod release_repository;
 pub mod webhook_repository;
 pub mod rule_repository;
+pub mod token_repository;

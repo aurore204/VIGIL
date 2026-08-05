@@ -7,3 +7,4 @@ pub mod release_service;
 pub mod crypto_service;
 pub mod webhook_verify;
 pub mod rule_engine_service;
+pub mod token_service;

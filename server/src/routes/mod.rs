@@ -7,6 +7,7 @@ mod reaction_routes;
 mod message_routes;
 mod release_routes;
 mod webhook_routes;
+mod token_routes;
 
 use crate::middleware::auth_middleware::require_auth;
 use crate::state::AppState;
@@ -25,6 +26,7 @@ pub fn create_router(state: AppState) -> Router {
         .merge(reaction_routes::protected_reaction_routes())
         .merge(message_routes::message_routes())
         .merge(release_routes::release_routes())
+        .merge(token_routes::token_routes())
         .route("/presence/online", get(get_online_users))
         .layer(middleware::from_fn_with_state(
             state.pool.clone(),
