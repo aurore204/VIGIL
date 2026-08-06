@@ -1,5 +1,5 @@
-use sqlx::PgPool;
 use crate::websocket::broadcaster::Broadcaster;
+use sqlx::PgPool;
 
 #[derive(Clone)]
 pub struct AppState {

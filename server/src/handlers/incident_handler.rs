@@ -7,15 +7,15 @@ use axum::{
 use uuid::Uuid;
 
 use crate::middleware::auth_middleware::AuthenticatedUser;
+use crate::models::incident::UpdateIncidentRequest;
 use crate::models::incident::{
     AddTimelineEntryRequest, AssignIncidentRequest, CreateIncidentRequest,
     EditTimelineEntryRequest, EscalateIncidentRequest,
 };
-use crate::models::incident::UpdateIncidentRequest;
-use crate::services::release_service;
 use crate::models::response::{ApiError, ApiResponse};
 use crate::repositories::user_repository;
 use crate::services::incident_service::{self, IncidentError};
+use crate::services::release_service;
 use crate::state::AppState;
 use crate::websocket::events::{TimelineEntryPayload, WsEvent};
 
@@ -281,13 +281,17 @@ pub async fn resolve_incident(
             });
 
             // Débloquer automatiquement les releases liées
-            if let Ok(linked_releases) = crate::repositories::release_repository::get_releases_by_incident(
-                &state.pool, incident_id
-            ).await {
+            if let Ok(linked_releases) =
+                crate::repositories::release_repository::get_releases_by_incident(
+                    &state.pool,
+                    incident_id,
+                )
+                .await
+            {
                 for release_id in linked_releases {
-                    if let Ok(unblocked) = release_service::unblock_release_if_resolved(
-                        &state.pool, release_id
-                    ).await {
+                    if let Ok(unblocked) =
+                        release_service::unblock_release_if_resolved(&state.pool, release_id).await
+                    {
                         if unblocked {
                             state.broadcaster.broadcast(WsEvent::ReleaseStateChanged {
                                 release_id,
@@ -518,7 +522,7 @@ pub async fn update_incident(
     Json(req): Json<UpdateIncidentRequest>,
 ) -> impl IntoResponse {
     match incident_service::update_incident(&state.pool, incident_id, auth_user.id, req).await {
-       Ok(incident) => {
+        Ok(incident) => {
             state.broadcaster.broadcast(WsEvent::IncidentStateChanged {
                 incident_id,
                 new_state: format!("{:?}", incident.state).to_lowercase(),

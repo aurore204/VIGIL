@@ -1,6 +1,6 @@
-use vigil_server::websocket::events::{TimelineEntryPayload, WsEvent};
-use uuid::Uuid;
 use chrono::Utc;
+use uuid::Uuid;
+use vigil_server::websocket::events::{TimelineEntryPayload, WsEvent};
 
 #[test]
 fn test_incident_state_changed_serializes_correctly() {

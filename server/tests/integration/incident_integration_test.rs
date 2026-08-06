@@ -1,12 +1,12 @@
 use sqlx::PgPool;
 use vigil_server::models::incident::{
-    AddTimelineEntryRequest, AssignIncidentRequest, CreateIncidentRequest,
-    EscalateIncidentRequest, IncidentSeverity, IncidentState,
+    AddTimelineEntryRequest, AssignIncidentRequest, CreateIncidentRequest, EscalateIncidentRequest,
+    IncidentSeverity, IncidentState,
 };
 use vigil_server::models::team::CreateTeamRequest;
 use vigil_server::models::user::RegisterRequest;
-use vigil_server::services::{auth_service, incident_service, team_service};
 use vigil_server::repositories::team_repository;
+use vigil_server::services::{auth_service, incident_service, team_service};
 
 async fn setup_pool() -> PgPool {
     dotenv::dotenv().ok();
@@ -31,16 +31,25 @@ async fn setup_team_with_responder(pool: &PgPool) -> (uuid::Uuid, uuid::Uuid, uu
 
     let team = team_service::create_team(
         pool,
-        CreateTeamRequest { name: format!("Team {}", id), description: None },
+        CreateTeamRequest {
+            name: format!("Team {}", id),
+            description: None,
+        },
         manager_id,
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
-    let code = team_service::generate_invitation(pool, team.id, manager_id).await.unwrap();
+    let code = team_service::generate_invitation(pool, team.id, manager_id)
+        .await
+        .unwrap();
     team_service::join_team(
         pool,
         vigil_server::models::team::JoinTeamRequest { code },
         responder_id,
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     // Promouvoir en Responder
     sqlx::query!(
@@ -79,12 +88,16 @@ async fn test_create_incident_as_observer_fails() {
 
     let id = uuid::Uuid::new_v4().to_string();
     let (observer_id, _) = create_user(&pool, &format!("obs_{}", id)).await;
-    let code = team_service::generate_invitation(&pool, team_id, manager_id).await.unwrap();
+    let code = team_service::generate_invitation(&pool, team_id, manager_id)
+        .await
+        .unwrap();
     team_service::join_team(
         &pool,
         vigil_server::models::team::JoinTeamRequest { code },
         observer_id,
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     let req = CreateIncidentRequest {
         title: "Test".to_string(),
@@ -102,13 +115,17 @@ async fn test_acknowledge_incident_as_responder_succeeds() {
     let (team_id, manager_id, responder_id) = setup_team_with_responder(&pool).await;
 
     let incident = incident_service::create_incident(
-        &pool, team_id, manager_id,
+        &pool,
+        team_id,
+        manager_id,
         CreateIncidentRequest {
             title: "Test".to_string(),
             description: None,
             severity: IncidentSeverity::Low,
         },
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     let result = incident_service::acknowledge_incident(&pool, incident.id, responder_id).await;
     assert!(result.is_ok());
@@ -122,21 +139,29 @@ async fn test_acknowledge_incident_as_observer_fails() {
 
     let id = uuid::Uuid::new_v4().to_string();
     let (observer_id, _) = create_user(&pool, &format!("obs_{}", id)).await;
-    let code = team_service::generate_invitation(&pool, team_id, manager_id).await.unwrap();
+    let code = team_service::generate_invitation(&pool, team_id, manager_id)
+        .await
+        .unwrap();
     team_service::join_team(
         &pool,
         vigil_server::models::team::JoinTeamRequest { code },
         observer_id,
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     let incident = incident_service::create_incident(
-        &pool, team_id, manager_id,
+        &pool,
+        team_id,
+        manager_id,
         CreateIncidentRequest {
             title: "Test".to_string(),
             description: None,
             severity: IncidentSeverity::Low,
         },
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     let result = incident_service::acknowledge_incident(&pool, incident.id, observer_id).await;
     assert!(result.is_err());
@@ -148,30 +173,42 @@ async fn test_full_lifecycle_open_to_resolved() {
     let (team_id, manager_id, responder_id) = setup_team_with_responder(&pool).await;
 
     let incident = incident_service::create_incident(
-        &pool, team_id, manager_id,
+        &pool,
+        team_id,
+        manager_id,
         CreateIncidentRequest {
             title: "Test".to_string(),
             description: None,
             severity: IncidentSeverity::Medium,
         },
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     // open → acknowledged
     let incident = incident_service::acknowledge_incident(&pool, incident.id, responder_id)
-        .await.unwrap();
+        .await
+        .unwrap();
     assert_eq!(incident.state, IncidentState::Acknowledged);
 
     // acknowledged → escalated
     let incident = incident_service::escalate_incident(
-        &pool, incident.id, responder_id,
-        EscalateIncidentRequest { severity: IncidentSeverity::Critical },
-    ).await.unwrap();
+        &pool,
+        incident.id,
+        responder_id,
+        EscalateIncidentRequest {
+            severity: IncidentSeverity::Critical,
+        },
+    )
+    .await
+    .unwrap();
     assert_eq!(incident.state, IncidentState::Escalated);
     assert_eq!(incident.severity, IncidentSeverity::Critical);
 
     // escalated → resolved
     let incident = incident_service::resolve_incident(&pool, incident.id, manager_id)
-        .await.unwrap();
+        .await
+        .unwrap();
     assert_eq!(incident.state, IncidentState::Resolved);
     assert!(incident.resolved_at.is_some());
 }
@@ -182,16 +219,24 @@ async fn test_invalid_transition_resolved_to_acknowledged_fails() {
     let (team_id, manager_id, responder_id) = setup_team_with_responder(&pool).await;
 
     let incident = incident_service::create_incident(
-        &pool, team_id, manager_id,
+        &pool,
+        team_id,
+        manager_id,
         CreateIncidentRequest {
             title: "Test".to_string(),
             description: None,
             severity: IncidentSeverity::Low,
         },
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
-    incident_service::acknowledge_incident(&pool, incident.id, responder_id).await.unwrap();
-    incident_service::resolve_incident(&pool, incident.id, manager_id).await.unwrap();
+    incident_service::acknowledge_incident(&pool, incident.id, responder_id)
+        .await
+        .unwrap();
+    incident_service::resolve_incident(&pool, incident.id, manager_id)
+        .await
+        .unwrap();
 
     // Essayer d'acquitter un incident déjà résolu
     let result = incident_service::acknowledge_incident(&pool, incident.id, responder_id).await;
@@ -204,18 +249,27 @@ async fn test_add_timeline_entry_as_responder_succeeds() {
     let (team_id, manager_id, responder_id) = setup_team_with_responder(&pool).await;
 
     let incident = incident_service::create_incident(
-        &pool, team_id, manager_id,
+        &pool,
+        team_id,
+        manager_id,
         CreateIncidentRequest {
             title: "Test".to_string(),
             description: None,
             severity: IncidentSeverity::Low,
         },
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     let result = incident_service::add_timeline_entry(
-        &pool, incident.id, responder_id,
-        AddTimelineEntryRequest { content: "Investigation en cours".to_string() },
-    ).await;
+        &pool,
+        incident.id,
+        responder_id,
+        AddTimelineEntryRequest {
+            content: "Investigation en cours".to_string(),
+        },
+    )
+    .await;
 
     assert!(result.is_ok());
     let entry = result.unwrap();
@@ -229,25 +283,38 @@ async fn test_edit_timeline_entry_by_author_succeeds() {
     let (team_id, manager_id, responder_id) = setup_team_with_responder(&pool).await;
 
     let incident = incident_service::create_incident(
-        &pool, team_id, manager_id,
+        &pool,
+        team_id,
+        manager_id,
         CreateIncidentRequest {
             title: "Test".to_string(),
             description: None,
             severity: IncidentSeverity::Low,
         },
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     let entry = incident_service::add_timeline_entry(
-        &pool, incident.id, responder_id,
-        AddTimelineEntryRequest { content: "Contenu original".to_string() },
-    ).await.unwrap();
+        &pool,
+        incident.id,
+        responder_id,
+        AddTimelineEntryRequest {
+            content: "Contenu original".to_string(),
+        },
+    )
+    .await
+    .unwrap();
 
     let result = incident_service::edit_timeline_entry(
-        &pool, entry.id, responder_id,
+        &pool,
+        entry.id,
+        responder_id,
         vigil_server::models::incident::EditTimelineEntryRequest {
             content: "Contenu modifié".to_string(),
         },
-    ).await;
+    )
+    .await;
 
     assert!(result.is_ok());
     let updated = result.unwrap();
@@ -261,26 +328,39 @@ async fn test_edit_timeline_entry_by_non_author_fails() {
     let (team_id, manager_id, responder_id) = setup_team_with_responder(&pool).await;
 
     let incident = incident_service::create_incident(
-        &pool, team_id, manager_id,
+        &pool,
+        team_id,
+        manager_id,
         CreateIncidentRequest {
             title: "Test".to_string(),
             description: None,
             severity: IncidentSeverity::Low,
         },
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     let entry = incident_service::add_timeline_entry(
-        &pool, incident.id, responder_id,
-        AddTimelineEntryRequest { content: "Contenu".to_string() },
-    ).await.unwrap();
+        &pool,
+        incident.id,
+        responder_id,
+        AddTimelineEntryRequest {
+            content: "Contenu".to_string(),
+        },
+    )
+    .await
+    .unwrap();
 
     // Manager essaie d'éditer l'entrée du Responder
     let result = incident_service::edit_timeline_entry(
-        &pool, entry.id, manager_id,
+        &pool,
+        entry.id,
+        manager_id,
         vigil_server::models::incident::EditTimelineEntryRequest {
             content: "Tentative de modification".to_string(),
         },
-    ).await;
+    )
+    .await;
 
     assert!(result.is_err());
 }
@@ -291,13 +371,17 @@ async fn test_update_incident_as_manager_succeeds() {
     let (team_id, manager_id, _) = setup_team_with_responder(&pool).await;
 
     let incident = incident_service::create_incident(
-        &pool, team_id, manager_id,
+        &pool,
+        team_id,
+        manager_id,
         CreateIncidentRequest {
             title: "Titre original".to_string(),
             description: None,
             severity: IncidentSeverity::Low,
         },
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     let result = incident_service::update_incident(
         &pool,
@@ -308,7 +392,8 @@ async fn test_update_incident_as_manager_succeeds() {
             description: Some("Description ajoutée".to_string()),
             severity: Some(IncidentSeverity::High),
         },
-    ).await;
+    )
+    .await;
 
     assert!(result.is_ok());
     let updated = result.unwrap();
@@ -322,13 +407,17 @@ async fn test_update_incident_as_responder_fails() {
     let (team_id, manager_id, responder_id) = setup_team_with_responder(&pool).await;
 
     let incident = incident_service::create_incident(
-        &pool, team_id, manager_id,
+        &pool,
+        team_id,
+        manager_id,
         CreateIncidentRequest {
             title: "Test".to_string(),
             description: None,
             severity: IncidentSeverity::Low,
         },
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     let result = incident_service::update_incident(
         &pool,
@@ -339,7 +428,8 @@ async fn test_update_incident_as_responder_fails() {
             description: None,
             severity: None,
         },
-    ).await;
+    )
+    .await;
 
     assert!(result.is_err());
 }
@@ -350,13 +440,17 @@ async fn test_cancel_incident_as_manager_succeeds() {
     let (team_id, manager_id, _) = setup_team_with_responder(&pool).await;
 
     let incident = incident_service::create_incident(
-        &pool, team_id, manager_id,
+        &pool,
+        team_id,
+        manager_id,
         CreateIncidentRequest {
             title: "Test".to_string(),
             description: None,
             severity: IncidentSeverity::Low,
         },
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     let result = incident_service::cancel_incident(&pool, incident.id, manager_id).await;
     assert!(result.is_ok());
@@ -368,13 +462,17 @@ async fn test_cancel_incident_as_responder_fails() {
     let (team_id, manager_id, responder_id) = setup_team_with_responder(&pool).await;
 
     let incident = incident_service::create_incident(
-        &pool, team_id, manager_id,
+        &pool,
+        team_id,
+        manager_id,
         CreateIncidentRequest {
             title: "Test".to_string(),
             description: None,
             severity: IncidentSeverity::Low,
         },
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     let result = incident_service::cancel_incident(&pool, incident.id, responder_id).await;
     assert!(result.is_err());

@@ -103,7 +103,8 @@ async fn get_entry_reactions(
         .map_err(ReactionError::DatabaseError)?;
 
     // Agréger par emoji
-    let mut summary: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+    let mut summary: std::collections::HashMap<String, Vec<String>> =
+        std::collections::HashMap::new();
     for (emoji, username) in reactions {
         summary.entry(emoji).or_default().push(username);
     }

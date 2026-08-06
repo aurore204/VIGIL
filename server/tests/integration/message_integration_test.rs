@@ -27,12 +27,21 @@ async fn setup_two_users_in_team(pool: &PgPool) -> (uuid::Uuid, uuid::Uuid) {
 
     let team = team_service::create_team(
         pool,
-        CreateTeamRequest { name: format!("Team {}", id), description: None },
+        CreateTeamRequest {
+            name: format!("Team {}", id),
+            description: None,
+        },
         user1_id,
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
-    let code = team_service::generate_invitation(pool, team.id, user1_id).await.unwrap();
-    team_service::join_team(pool, JoinTeamRequest { code }, user2_id).await.unwrap();
+    let code = team_service::generate_invitation(pool, team.id, user1_id)
+        .await
+        .unwrap();
+    team_service::join_team(pool, JoinTeamRequest { code }, user2_id)
+        .await
+        .unwrap();
 
     (user1_id, user2_id)
 }
@@ -43,9 +52,14 @@ async fn test_send_message_between_team_members_succeeds() {
     let (user1_id, user2_id) = setup_two_users_in_team(&pool).await;
 
     let result = message_service::send_message(
-        &pool, user1_id, user2_id,
-        SendMessageRequest { content: "Bonjour !".to_string() },
-    ).await;
+        &pool,
+        user1_id,
+        user2_id,
+        SendMessageRequest {
+            content: "Bonjour !".to_string(),
+        },
+    )
+    .await;
 
     assert!(result.is_ok());
     let message = result.unwrap();
@@ -62,9 +76,14 @@ async fn test_send_message_without_shared_team_fails() {
     let (user2_id, _) = create_user(&pool, &format!("u2_{}", id)).await;
 
     let result = message_service::send_message(
-        &pool, user1_id, user2_id,
-        SendMessageRequest { content: "Bonjour !".to_string() },
-    ).await;
+        &pool,
+        user1_id,
+        user2_id,
+        SendMessageRequest {
+            content: "Bonjour !".to_string(),
+        },
+    )
+    .await;
 
     assert!(result.is_err());
 }
@@ -76,9 +95,14 @@ async fn test_send_message_to_self_fails() {
     let (user_id, _) = create_user(&pool, &id).await;
 
     let result = message_service::send_message(
-        &pool, user_id, user_id,
-        SendMessageRequest { content: "Bonjour !".to_string() },
-    ).await;
+        &pool,
+        user_id,
+        user_id,
+        SendMessageRequest {
+            content: "Bonjour !".to_string(),
+        },
+    )
+    .await;
 
     assert!(result.is_err());
 }
@@ -89,9 +113,14 @@ async fn test_send_message_too_long_fails() {
     let (user1_id, user2_id) = setup_two_users_in_team(&pool).await;
 
     let result = message_service::send_message(
-        &pool, user1_id, user2_id,
-        SendMessageRequest { content: "a".repeat(2001) },
-    ).await;
+        &pool,
+        user1_id,
+        user2_id,
+        SendMessageRequest {
+            content: "a".repeat(2001),
+        },
+    )
+    .await;
 
     assert!(result.is_err());
 }
@@ -102,16 +131,30 @@ async fn test_get_conversation_returns_messages_in_order() {
     let (user1_id, user2_id) = setup_two_users_in_team(&pool).await;
 
     message_service::send_message(
-        &pool, user1_id, user2_id,
-        SendMessageRequest { content: "Message 1".to_string() },
-    ).await.unwrap();
+        &pool,
+        user1_id,
+        user2_id,
+        SendMessageRequest {
+            content: "Message 1".to_string(),
+        },
+    )
+    .await
+    .unwrap();
 
     message_service::send_message(
-        &pool, user2_id, user1_id,
-        SendMessageRequest { content: "Message 2".to_string() },
-    ).await.unwrap();
+        &pool,
+        user2_id,
+        user1_id,
+        SendMessageRequest {
+            content: "Message 2".to_string(),
+        },
+    )
+    .await
+    .unwrap();
 
-    let conversation = message_service::get_conversation(&pool, user1_id, user2_id).await.unwrap();
+    let conversation = message_service::get_conversation(&pool, user1_id, user2_id)
+        .await
+        .unwrap();
     assert_eq!(conversation.len(), 2);
     assert_eq!(conversation[0].content, "Message 1");
     assert_eq!(conversation[1].content, "Message 2");

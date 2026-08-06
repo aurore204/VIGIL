@@ -1,6 +1,6 @@
+use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;
-use chrono::Utc;
 
 use crate::models::incident::{
     Incident, IncidentResponse, IncidentSeverity, IncidentState, TimelineEntry,
@@ -37,10 +37,7 @@ pub async fn create_incident(
 }
 
 // Trouve un incident par son id
-pub async fn find_by_id(
-    pool: &PgPool,
-    incident_id: Uuid,
-) -> Result<Option<Incident>, sqlx::Error> {
+pub async fn find_by_id(pool: &PgPool, incident_id: Uuid) -> Result<Option<Incident>, sqlx::Error> {
     sqlx::query_as!(
         Incident,
         r#"
@@ -59,10 +56,7 @@ pub async fn find_by_id(
 }
 
 // Récupère tous les incidents d'une team
-pub async fn find_by_team(
-    pool: &PgPool,
-    team_id: Uuid,
-) -> Result<Vec<Incident>, sqlx::Error> {
+pub async fn find_by_team(pool: &PgPool, team_id: Uuid) -> Result<Vec<Incident>, sqlx::Error> {
     sqlx::query_as!(
         Incident,
         r#"
@@ -232,10 +226,11 @@ pub async fn get_timeline(
 
     let mut entries = Vec::with_capacity(rows.len());
     for row in rows {
-        let raw_reactions = crate::repositories::reaction_repository::get_reactions_for_entry(pool, row.id)
-            .await?;
+        let raw_reactions =
+            crate::repositories::reaction_repository::get_reactions_for_entry(pool, row.id).await?;
 
-        let mut summary: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+        let mut summary: std::collections::HashMap<String, Vec<String>> =
+            std::collections::HashMap::new();
         for (emoji, username) in raw_reactions {
             summary.entry(emoji).or_default().push(username);
         }
@@ -263,7 +258,6 @@ pub async fn get_timeline(
 
     Ok(entries)
 }
-
 
 // Trouve une entrée de timeline par son id
 pub async fn find_timeline_entry(
@@ -399,15 +393,9 @@ pub async fn update_incident(
     .await
 }
 // Supprime un incident
-pub async fn delete_incident(
-    pool: &PgPool,
-    incident_id: Uuid,
-) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        r#"DELETE FROM incidents WHERE id = $1"#,
-        incident_id
-    )
-    .execute(pool)
-    .await?;
+pub async fn delete_incident(pool: &PgPool, incident_id: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query!(r#"DELETE FROM incidents WHERE id = $1"#, incident_id)
+        .execute(pool)
+        .await?;
     Ok(())
 }

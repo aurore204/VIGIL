@@ -7,7 +7,6 @@ use uuid::Uuid;
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Type)]
 #[sqlx(type_name = "team_role", rename_all = "lowercase")]
 #[serde(rename_all = "lowercase")]
-
 pub enum TeamRole {
     Observer,
     Responder,

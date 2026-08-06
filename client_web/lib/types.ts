@@ -236,6 +236,19 @@ export interface WsPresenceOnline {
   usernames: string[];
 }
 
+export interface WsRuleTriggered {
+  type: 'rule_triggered';
+  rule_name: string;
+  result: string;
+  incident_id: string | null;
+}
+
+export interface WsRuleFailed {
+  type: 'rule_failed';
+  rule_name: string;
+  error: string;
+}
+
 export type WsEvent =
   | WsIncidentStateChanged
   | WsIncidentEscalated
@@ -251,7 +264,9 @@ export type WsEvent =
   | WsMemberUnbanned
   | WsPrivateMessageReceived
   | WsReactionAdded
-  | WsReactionRemoved;
+  | WsReactionRemoved
+  | WsRuleTriggered
+  | WsRuleFailed;
 
 // API Response
 export interface ApiResponse<T> {

@@ -37,13 +37,21 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 
 #ws
-futures-util ="0.3"
+futures-util = "0.3"
 tower-http = { version = "0.5", features = ["cors"] }
+
+# Chiffrement des tokens
+aes-gcm = "0.10"
+base64 = "0.22"
+
+# Vérification HMAC des webhooks
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+
+# Appels HTTP sortants (REAction http_post)
+reqwest = { version = "0.12", features = ["json"] }
 
 [dev-dependencies]
 tokio-test = "0.4"
 axum-test = "15"
-
-#cors
-tower-http = { version = "0.5", features = ["cors"] }
-

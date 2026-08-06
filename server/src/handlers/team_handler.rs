@@ -8,15 +8,15 @@ use uuid::Uuid;
 
 use crate::middleware::auth_middleware::AuthenticatedUser;
 use crate::models::response::{ApiError, ApiResponse};
+use crate::models::team::UpdateTeamRequest;
 use crate::models::team::{
     BanMemberRequest, CreateTeamRequest, JoinTeamRequest, TransferManagerRequest,
     UpdateMemberRoleRequest,
 };
-use crate::models::team::UpdateTeamRequest;
 use crate::repositories::user_repository;
-use crate::websocket::events::WsEvent;
 use crate::services::team_service::{self, TeamError};
 use crate::state::AppState;
+use crate::websocket::events::WsEvent;
 
 pub async fn create_team(
     State(state): State<AppState>,
@@ -182,7 +182,6 @@ pub async fn generate_invitation(
     }
 }
 
-
 // DELETE /teams/:team_id/leave
 pub async fn leave_team(
     State(state): State<AppState>,
@@ -227,7 +226,9 @@ pub async fn transfer_manager(
 ) -> impl IntoResponse {
     match team_service::transfer_manager(&state.pool, team_id, auth_user.id, req).await {
         Ok(team) => {
-            let new_manager = team.members.iter()
+            let new_manager = team
+                .members
+                .iter()
                 .find(|m| m.user_id == team.manager_id)
                 .map(|m| m.username.clone())
                 .unwrap_or_default();
@@ -340,7 +341,9 @@ pub async fn update_member_role(
     Path((team_id, user_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<UpdateMemberRoleRequest>,
 ) -> impl IntoResponse {
-    match team_service::update_member_role(&state.pool, team_id, auth_user.id, user_id, req.role).await {
+    match team_service::update_member_role(&state.pool, team_id, auth_user.id, user_id, req.role)
+        .await
+    {
         Ok(_) => (
             StatusCode::OK,
             Json(serde_json::json!(ApiResponse::<()>::success_no_data(
@@ -412,7 +415,9 @@ pub async fn ban_member(
         user_id,
         req.expires_at,
         req.reason,
-    ).await {
+    )
+    .await
+    {
         Ok(_) => {
             state.broadcaster.broadcast(WsEvent::MemberBanned {
                 team_id,
@@ -628,7 +633,6 @@ pub async fn get_team_members(
         ),
     }
 }
-
 
 // GET /teams/:team_id/bans
 pub async fn get_banned_members(

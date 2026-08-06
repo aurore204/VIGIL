@@ -64,10 +64,7 @@ async fn test_get_user_teams_returns_200() {
         .json(&json!({"name": "Team Test"}))
         .await;
 
-    let response = server
-        .get("/teams")
-        .add_header(name, value)
-        .await;
+    let response = server.get("/teams").add_header(name, value).await;
 
     response.assert_status(axum::http::StatusCode::OK);
     let body: serde_json::Value = response.json();
@@ -254,9 +251,12 @@ async fn test_transfer_manager_returns_200() {
         .await;
 
     let body: serde_json::Value = join_response.json();
-    
+
     // Afficher la réponse pour déboguer
-    println!("JOIN RESPONSE: {}", serde_json::to_string_pretty(&body).unwrap());
+    println!(
+        "JOIN RESPONSE: {}",
+        serde_json::to_string_pretty(&body).unwrap()
+    );
 
     let new_manager_id = body["data"]["members"]
         .as_array()

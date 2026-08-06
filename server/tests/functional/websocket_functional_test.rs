@@ -39,8 +39,8 @@ async fn test_ws_endpoint_requires_auth() {
     let response = server.get("/ws").await;
     assert!(
         response.status_code() == axum::http::StatusCode::UNAUTHORIZED
-        || response.status_code() == axum::http::StatusCode::BAD_REQUEST
-        || response.status_code() == axum::http::StatusCode::METHOD_NOT_ALLOWED
+            || response.status_code() == axum::http::StatusCode::BAD_REQUEST
+            || response.status_code() == axum::http::StatusCode::METHOD_NOT_ALLOWED
     );
 }
 

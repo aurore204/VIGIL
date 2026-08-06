@@ -1,3 +1,3 @@
-mod unit;
-mod integration;
 mod functional;
+mod integration;
+mod unit;

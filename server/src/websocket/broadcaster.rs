@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock};
 use uuid::Uuid;
+type PresenceMap = HashMap<Uuid, HashMap<Uuid, Vec<Uuid>>>;
 
 use super::events::WsEvent;
 
@@ -16,7 +17,7 @@ struct UserConnection {
 #[derive(Clone)]
 pub struct Broadcaster {
     sender: broadcast::Sender<WsEvent>,
-    presence: Arc<RwLock<HashMap<Uuid, HashMap<Uuid, Vec<Uuid>>>>>,
+    presence: Arc<RwLock<PresenceMap>>,
     user_senders: Arc<RwLock<HashMap<Uuid, UserConnection>>>,
     online_users: Arc<RwLock<HashMap<Uuid, String>>>,
     generation_counter: Arc<AtomicU64>,
@@ -46,26 +47,34 @@ impl Broadcaster {
     }
 
     /// Enregistre une nouvelle connexion pour un user. Retourne le receiver
-    pub async fn register_user(&self, user_id: Uuid, username: String) -> (broadcast::Receiver<WsEvent>, u64) {
-    let generation = self.generation_counter.fetch_add(1, Ordering::SeqCst);
+    pub async fn register_user(
+        &self,
+        user_id: Uuid,
+        username: String,
+    ) -> (broadcast::Receiver<WsEvent>, u64) {
+        let generation = self.generation_counter.fetch_add(1, Ordering::SeqCst);
 
-    let (new_sender, rx) = broadcast::channel(BROADCAST_CAPACITY);
+        let (new_sender, rx) = broadcast::channel(BROADCAST_CAPACITY);
 
-    {
-        let mut senders = self.user_senders.write().await;
-        senders.insert(user_id, UserConnection { sender: new_sender, generation });
+        {
+            let mut senders = self.user_senders.write().await;
+            senders.insert(
+                user_id,
+                UserConnection {
+                    sender: new_sender,
+                    generation,
+                },
+            );
+        }
+
+        {
+            let mut online = self.online_users.write().await;
+            online.insert(user_id, username);
+        }
+
+        self.broadcast_online_users().await;
+        (rx, generation)
     }
-
-    {
-        let mut online = self.online_users.write().await;
-        online.insert(user_id, username);
-    }
-
-    self.broadcast_online_users().await;
-    (rx, generation)
-}
-
-  
 
     /// Désenregistre un user, MAIS uniquement si la génération correspond à la connexion qui se ferme réellement. Une connexion plus ancienne
     pub async fn unregister_user(&self, user_id: Uuid, generation: u64) {
@@ -109,17 +118,17 @@ impl Broadcaster {
     }
 
     pub async fn add_presence(&self, resource_id: Uuid, user_id: Uuid, team_id: Uuid) {
-    let mut presence = self.presence.write().await;
-    let watchers = presence
-        .entry(team_id)
-        .or_default()
-        .entry(resource_id)
-        .or_default();
+        let mut presence = self.presence.write().await;
+        let watchers = presence
+            .entry(team_id)
+            .or_default()
+            .entry(resource_id)
+            .or_default();
 
-    if !watchers.contains(&user_id) {
-        watchers.push(user_id);
+        if !watchers.contains(&user_id) {
+            watchers.push(user_id);
+        }
     }
-}
 
     pub async fn remove_presence(&self, resource_id: Uuid, user_id: Uuid, team_id: Uuid) {
         let mut presence = self.presence.write().await;

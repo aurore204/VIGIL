@@ -38,14 +38,22 @@ pub async fn create_release(
     }
 
     let release = release_repository::create_release(
-        pool, team_id, user_id, &req.title, req.description.as_deref(),
+        pool,
+        team_id,
+        user_id,
+        &req.title,
+        req.description.as_deref(),
     )
     .await
     .map_err(ReleaseError::DatabaseError)?;
 
     for (i, step) in req.steps.iter().enumerate() {
         release_repository::create_step(
-            pool, release.id, &step.name, step.description.as_deref(), (i + 1) as i32,
+            pool,
+            release.id,
+            &step.name,
+            step.description.as_deref(),
+            (i + 1) as i32,
         )
         .await
         .map_err(ReleaseError::DatabaseError)?;
@@ -185,11 +193,14 @@ pub async fn validate_step(
         .await
         .map_err(ReleaseError::DatabaseError)?;
 
-    let step = steps.iter().find(|s| s.id == step_id)
+    let step = steps
+        .iter()
+        .find(|s| s.id == step_id)
         .ok_or(ReleaseError::StepNotFound)?;
 
     // Vérifier que toutes les étapes précédentes sont complétées
-    let previous_steps_completed = steps.iter()
+    let previous_steps_completed = steps
+        .iter()
         .filter(|s| s.position < step.position)
         .all(|s| s.state == StepState::Completed);
 
@@ -206,7 +217,9 @@ pub async fn validate_step(
         .await
         .map_err(ReleaseError::DatabaseError)?;
 
-    let all_completed = updated_steps.iter().all(|s| s.state == StepState::Completed);
+    let all_completed = updated_steps
+        .iter()
+        .all(|s| s.state == StepState::Completed);
 
     if all_completed {
         release_repository::update_state(pool, release_id, ReleaseState::Completed)

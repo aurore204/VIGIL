@@ -29,10 +29,7 @@ pub async fn create_user(
 }
 
 // Trouve un utilisateur par son email
-pub async fn find_by_email(
-    pool: &PgPool,
-    email: &str,
-) -> Result<Option<User>, sqlx::Error> {
+pub async fn find_by_email(pool: &PgPool, email: &str) -> Result<Option<User>, sqlx::Error> {
     let user = sqlx::query_as!(
         User,
         r#"
@@ -50,10 +47,7 @@ pub async fn find_by_email(
 }
 
 // Trouve un utilisateur par son id
-pub async fn find_by_id(
-    pool: &PgPool,
-    id: Uuid,
-) -> Result<Option<UserPublic>, sqlx::Error> {
+pub async fn find_by_id(pool: &PgPool, id: Uuid) -> Result<Option<UserPublic>, sqlx::Error> {
     let user = sqlx::query_as!(
         UserPublic,
         r#"
@@ -70,10 +64,7 @@ pub async fn find_by_id(
 }
 
 // Invalide tous les tokens d'un utilisateur en mettant à jour token_invalidated_at
-pub async fn invalidate_tokens(
-    pool: &PgPool,
-    user_id: Uuid,
-) -> Result<(), sqlx::Error> {
+pub async fn invalidate_tokens(pool: &PgPool, user_id: Uuid) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         UPDATE users
@@ -112,9 +103,7 @@ pub async fn is_token_valid(
             // Pas d'invalidation → token valide
             None => Ok(true),
             // Token émis avant l'invalidation → invalide
-            Some(invalidated_at) => {
-                Ok(token_issued_at > invalidated_at.timestamp())
-            }
+            Some(invalidated_at) => Ok(token_issued_at > invalidated_at.timestamp()),
         },
     }
 }

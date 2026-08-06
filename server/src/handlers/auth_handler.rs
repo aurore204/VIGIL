@@ -1,9 +1,4 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::IntoResponse,
-    Extension, Json,
-};
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Extension, Json};
 
 use crate::middleware::auth_middleware::AuthenticatedUser;
 use crate::models::response::{ApiError, ApiResponse};
@@ -19,7 +14,10 @@ pub async fn register(
     match auth_service::register(&state.pool, req).await {
         Ok(response) => (
             StatusCode::CREATED,
-            Json(serde_json::json!(ApiResponse::success("Inscription réussie", response))),
+            Json(serde_json::json!(ApiResponse::success(
+                "Inscription réussie",
+                response
+            ))),
         ),
         Err(AuthError::EmailAlreadyExists) => (
             StatusCode::CONFLICT,
@@ -45,7 +43,10 @@ pub async fn login(
     match auth_service::login(&state.pool, req).await {
         Ok(response) => (
             StatusCode::OK,
-            Json(serde_json::json!(ApiResponse::success("Connexion réussie", response))),
+            Json(serde_json::json!(ApiResponse::success(
+                "Connexion réussie",
+                response
+            ))),
         ),
         Err(AuthError::InvalidCredentials) => (
             StatusCode::UNAUTHORIZED,

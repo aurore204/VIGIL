@@ -1,6 +1,6 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 // Tous les événements WebSocket possibles
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -42,7 +42,7 @@ pub enum WsEvent {
         until: Option<DateTime<Utc>>,
         by: String,
     },
-     MemberUnbanned {
+    MemberUnbanned {
         team_id: Uuid,
         member: String,
         by: String,
@@ -80,10 +80,11 @@ pub enum WsEvent {
         release_id: Uuid,
         new_state: String,
     },
-   
-    PresenceOnline { usernames: Vec<String> },
-    
-   
+
+    PresenceOnline {
+        usernames: Vec<String>,
+    },
+
     // Phase 2
     RuleTriggered {
         rule_name: String,

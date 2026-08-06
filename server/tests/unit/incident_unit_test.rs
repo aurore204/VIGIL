@@ -58,10 +58,10 @@ fn validate_transition(current: &IncidentState, next: &IncidentState) -> bool {
     matches!(
         (current, next),
         (IncidentState::Open, IncidentState::Acknowledged)
-        | (IncidentState::Acknowledged, IncidentState::Escalated)
-        | (IncidentState::Escalated, IncidentState::Resolved)
-        | (IncidentState::Acknowledged, IncidentState::Resolved)
-        | (IncidentState::Open, IncidentState::Resolved)
+            | (IncidentState::Acknowledged, IncidentState::Escalated)
+            | (IncidentState::Escalated, IncidentState::Resolved)
+            | (IncidentState::Acknowledged, IncidentState::Resolved)
+            | (IncidentState::Open, IncidentState::Resolved)
     )
 }
 
@@ -85,5 +85,8 @@ fn test_update_incident_request_accepts_severity_change() {
         severity: Some(vigil_server::models::incident::IncidentSeverity::Critical),
     };
     assert!(req.severity.is_some());
-    assert_eq!(req.severity.unwrap(), vigil_server::models::incident::IncidentSeverity::Critical);
+    assert_eq!(
+        req.severity.unwrap(),
+        vigil_server::models::incident::IncidentSeverity::Critical
+    );
 }

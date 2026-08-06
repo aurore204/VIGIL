@@ -6,8 +6,7 @@ use vigil_server::services::{auth_service, team_service};
 
 async fn setup_pool() -> PgPool {
     dotenv::dotenv().ok();
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL doit être défini");
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL doit être défini");
     PgPool::connect(&database_url).await.unwrap()
 }
 
@@ -38,7 +37,10 @@ async fn test_create_team_adds_creator_as_manager() {
     let team = result.unwrap();
     assert_eq!(team.manager_id, user_id);
     assert_eq!(team.members.len(), 1);
-    assert_eq!(team.members[0].role, vigil_server::models::team::TeamRole::Manager);
+    assert_eq!(
+        team.members[0].role,
+        vigil_server::models::team::TeamRole::Manager
+    );
 }
 
 #[tokio::test]
@@ -51,13 +53,19 @@ async fn test_generate_invitation_only_for_manager() {
         name: format!("Team {}", uuid::Uuid::new_v4()),
         description: None,
     };
-    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
+    let team = team_service::create_team(&pool, req, manager_id)
+        .await
+        .unwrap();
 
     // Générer un code pour faire rejoindre l'observer
-    let code = team_service::generate_invitation(&pool, team.id, manager_id).await.unwrap();
+    let code = team_service::generate_invitation(&pool, team.id, manager_id)
+        .await
+        .unwrap();
 
     // Observer rejoint la team
-    team_service::join_team(&pool, JoinTeamRequest { code }, observer_id).await.unwrap();
+    team_service::join_team(&pool, JoinTeamRequest { code }, observer_id)
+        .await
+        .unwrap();
 
     // Observer ne peut pas générer un code d'invitation
     let result = team_service::generate_invitation(&pool, team.id, observer_id).await;
@@ -74,8 +82,12 @@ async fn test_join_team_with_valid_code() {
         name: format!("Team {}", uuid::Uuid::new_v4()),
         description: None,
     };
-    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
-    let code = team_service::generate_invitation(&pool, team.id, manager_id).await.unwrap();
+    let team = team_service::create_team(&pool, req, manager_id)
+        .await
+        .unwrap();
+    let code = team_service::generate_invitation(&pool, team.id, manager_id)
+        .await
+        .unwrap();
 
     let result = team_service::join_team(&pool, JoinTeamRequest { code }, user_id).await;
 
@@ -91,9 +103,12 @@ async fn test_join_team_with_invalid_code_fails() {
 
     let result = team_service::join_team(
         &pool,
-        JoinTeamRequest { code: "INVALID00".to_string() },
+        JoinTeamRequest {
+            code: "INVALID00".to_string(),
+        },
         user_id,
-    ).await;
+    )
+    .await;
 
     assert!(result.is_err());
 }
@@ -108,10 +123,16 @@ async fn test_join_team_already_member_fails() {
         name: format!("Team {}", uuid::Uuid::new_v4()),
         description: None,
     };
-    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
-    let code = team_service::generate_invitation(&pool, team.id, manager_id).await.unwrap();
+    let team = team_service::create_team(&pool, req, manager_id)
+        .await
+        .unwrap();
+    let code = team_service::generate_invitation(&pool, team.id, manager_id)
+        .await
+        .unwrap();
 
-    team_service::join_team(&pool, JoinTeamRequest { code: code.clone() }, user_id).await.unwrap();
+    team_service::join_team(&pool, JoinTeamRequest { code: code.clone() }, user_id)
+        .await
+        .unwrap();
 
     // Essayer de rejoindre une 2ème fois
     let result = team_service::join_team(&pool, JoinTeamRequest { code }, user_id).await;
@@ -128,16 +149,23 @@ async fn test_transfer_manager_role() {
         name: format!("Team {}", uuid::Uuid::new_v4()),
         description: None,
     };
-    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
-    let code = team_service::generate_invitation(&pool, team.id, manager_id).await.unwrap();
-    team_service::join_team(&pool, JoinTeamRequest { code }, user_id).await.unwrap();
+    let team = team_service::create_team(&pool, req, manager_id)
+        .await
+        .unwrap();
+    let code = team_service::generate_invitation(&pool, team.id, manager_id)
+        .await
+        .unwrap();
+    team_service::join_team(&pool, JoinTeamRequest { code }, user_id)
+        .await
+        .unwrap();
 
     let result = team_service::transfer_manager(
         &pool,
         team.id,
         manager_id,
         TransferManagerRequest { user_id },
-    ).await;
+    )
+    .await;
 
     assert!(result.is_ok());
     let updated_team = result.unwrap();
@@ -153,14 +181,19 @@ async fn test_transfer_manager_to_self_fails() {
         name: format!("Team {}", uuid::Uuid::new_v4()),
         description: None,
     };
-    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
+    let team = team_service::create_team(&pool, req, manager_id)
+        .await
+        .unwrap();
 
     let result = team_service::transfer_manager(
         &pool,
         team.id,
         manager_id,
-        TransferManagerRequest { user_id: manager_id },
-    ).await;
+        TransferManagerRequest {
+            user_id: manager_id,
+        },
+    )
+    .await;
 
     assert!(result.is_err());
 }
@@ -175,13 +208,19 @@ async fn test_ban_prevents_joining() {
         name: format!("Team {}", uuid::Uuid::new_v4()),
         description: None,
     };
-    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
+    let team = team_service::create_team(&pool, req, manager_id)
+        .await
+        .unwrap();
 
     // Bannir le user
-    team_service::ban_member(&pool, team.id, manager_id, user_id, None, None).await.unwrap();
+    team_service::ban_member(&pool, team.id, manager_id, user_id, None, None)
+        .await
+        .unwrap();
 
     // Générer un code
-    let code = team_service::generate_invitation(&pool, team.id, manager_id).await.unwrap();
+    let code = team_service::generate_invitation(&pool, team.id, manager_id)
+        .await
+        .unwrap();
 
     // Le user banni ne peut pas rejoindre même avec un code valide
     let result = team_service::join_team(&pool, JoinTeamRequest { code }, user_id).await;
@@ -198,15 +237,23 @@ async fn test_kick_member_removes_from_team() {
         name: format!("Team {}", uuid::Uuid::new_v4()),
         description: None,
     };
-    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
-    let code = team_service::generate_invitation(&pool, team.id, manager_id).await.unwrap();
-    team_service::join_team(&pool, JoinTeamRequest { code }, user_id).await.unwrap();
+    let team = team_service::create_team(&pool, req, manager_id)
+        .await
+        .unwrap();
+    let code = team_service::generate_invitation(&pool, team.id, manager_id)
+        .await
+        .unwrap();
+    team_service::join_team(&pool, JoinTeamRequest { code }, user_id)
+        .await
+        .unwrap();
 
     let result = team_service::kick_member(&pool, team.id, manager_id, user_id).await;
 
     assert!(result.is_ok());
 
-    let is_member = team_repository::is_member(&pool, team.id, user_id).await.unwrap();
+    let is_member = team_repository::is_member(&pool, team.id, user_id)
+        .await
+        .unwrap();
     assert!(!is_member);
 }
 
@@ -219,7 +266,9 @@ async fn test_update_team_as_manager_succeeds() {
         name: "Team originale".to_string(),
         description: None,
     };
-    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
+    let team = team_service::create_team(&pool, req, manager_id)
+        .await
+        .unwrap();
 
     let result = team_service::update_team(
         &pool,
@@ -229,7 +278,8 @@ async fn test_update_team_as_manager_succeeds() {
             name: Some("Team renommée".to_string()),
             description: Some("Nouvelle description".to_string()),
         },
-    ).await;
+    )
+    .await;
 
     assert!(result.is_ok());
     let updated = result.unwrap();
@@ -246,9 +296,19 @@ async fn test_update_team_as_non_manager_fails() {
         name: "Team".to_string(),
         description: None,
     };
-    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
-    let code = team_service::generate_invitation(&pool, team.id, manager_id).await.unwrap();
-    team_service::join_team(&pool, vigil_server::models::team::JoinTeamRequest { code }, observer_id).await.unwrap();
+    let team = team_service::create_team(&pool, req, manager_id)
+        .await
+        .unwrap();
+    let code = team_service::generate_invitation(&pool, team.id, manager_id)
+        .await
+        .unwrap();
+    team_service::join_team(
+        &pool,
+        vigil_server::models::team::JoinTeamRequest { code },
+        observer_id,
+    )
+    .await
+    .unwrap();
 
     let result = team_service::update_team(
         &pool,
@@ -258,7 +318,8 @@ async fn test_update_team_as_non_manager_fails() {
             name: Some("Tentative".to_string()),
             description: None,
         },
-    ).await;
+    )
+    .await;
 
     assert!(result.is_err());
 }
@@ -272,7 +333,9 @@ async fn test_delete_team_as_manager_succeeds() {
         name: "Team à supprimer".to_string(),
         description: None,
     };
-    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
+    let team = team_service::create_team(&pool, req, manager_id)
+        .await
+        .unwrap();
 
     let result = team_service::delete_team(&pool, team.id, manager_id).await;
     assert!(result.is_ok());
@@ -288,9 +351,19 @@ async fn test_delete_team_as_non_manager_fails() {
         name: "Team".to_string(),
         description: None,
     };
-    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
-    let code = team_service::generate_invitation(&pool, team.id, manager_id).await.unwrap();
-    team_service::join_team(&pool, vigil_server::models::team::JoinTeamRequest { code }, observer_id).await.unwrap();
+    let team = team_service::create_team(&pool, req, manager_id)
+        .await
+        .unwrap();
+    let code = team_service::generate_invitation(&pool, team.id, manager_id)
+        .await
+        .unwrap();
+    team_service::join_team(
+        &pool,
+        vigil_server::models::team::JoinTeamRequest { code },
+        observer_id,
+    )
+    .await
+    .unwrap();
 
     let result = team_service::delete_team(&pool, team.id, observer_id).await;
     assert!(result.is_err());
@@ -306,14 +379,27 @@ async fn test_leave_team_as_observer_succeeds() {
         name: format!("Team {}", uuid::Uuid::new_v4()),
         description: None,
     };
-    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
-    let code = team_service::generate_invitation(&pool, team.id, manager_id).await.unwrap();
-    team_service::join_team(&pool, vigil_server::models::team::JoinTeamRequest { code }, observer_id).await.unwrap();
+    let team = team_service::create_team(&pool, req, manager_id)
+        .await
+        .unwrap();
+    let code = team_service::generate_invitation(&pool, team.id, manager_id)
+        .await
+        .unwrap();
+    team_service::join_team(
+        &pool,
+        vigil_server::models::team::JoinTeamRequest { code },
+        observer_id,
+    )
+    .await
+    .unwrap();
 
     let result = team_service::leave_team(&pool, team.id, observer_id).await;
     assert!(result.is_ok());
 
-    let is_member = vigil_server::repositories::team_repository::is_member(&pool, team.id, observer_id).await.unwrap();
+    let is_member =
+        vigil_server::repositories::team_repository::is_member(&pool, team.id, observer_id)
+            .await
+            .unwrap();
     assert!(!is_member);
 }
 
@@ -326,7 +412,9 @@ async fn test_leave_team_as_manager_fails() {
         name: format!("Team {}", uuid::Uuid::new_v4()),
         description: None,
     };
-    let team = team_service::create_team(&pool, req, manager_id).await.unwrap();
+    let team = team_service::create_team(&pool, req, manager_id)
+        .await
+        .unwrap();
 
     let result = team_service::leave_team(&pool, team.id, manager_id).await;
     assert!(result.is_err());
