@@ -5,6 +5,7 @@ pub mod message_service;
 pub mod reaction_service;
 pub mod release_service;
 pub mod rule_engine_service;
+pub mod rule_service;
 pub mod team_service;
 pub mod token_service;
 pub mod webhook_verify;

@@ -5,6 +5,7 @@ mod incident_routes;
 mod message_routes;
 mod reaction_routes;
 mod release_routes;
+mod rule_routes;
 mod team_routes;
 mod token_routes;
 mod webhook_routes;
@@ -18,7 +19,8 @@ pub fn create_router(state: AppState) -> Router {
     let public_routes = Router::new()
         .merge(auth_routes::public_routes())
         .merge(reaction_routes::public_reaction_routes())
-        .merge(webhook_routes::webhook_routes());
+        .merge(webhook_routes::webhook_routes())
+        .merge(rule_routes::rule_routes());
 
     let protected_routes = Router::new()
         .merge(auth_routes::protected_routes())
