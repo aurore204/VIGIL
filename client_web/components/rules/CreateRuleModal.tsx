@@ -100,7 +100,7 @@ export function CreateRuleModal({ teamId, onClose, onCreated }: CreateRuleModalP
           <div style={{ fontSize: '12px', fontWeight: 700, color: 'oklch(0.85 0.005 260)', marginBottom: '10px' }}>
             Quand
           </div>
-          <label htmlFor="ci-outcome" style={labelStyle}>Le build (CI) sur GitHub...</label>
+          <label htmlFor="ci-outcome" style={labelStyle}>Le build sur GitHub...</label>
           <select id="ci-outcome" value={ciOutcome} onChange={e => setCiOutcome(e.target.value as 'failure' | 'success')} style={selectStyle}>
             <option value="failure">...échoue</option>
             <option value="success">...réussit</option>

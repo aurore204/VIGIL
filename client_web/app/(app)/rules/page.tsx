@@ -10,6 +10,26 @@ import { Zap, CheckCircle2, XCircle, KeyRound } from 'lucide-react';
 import { CreateRuleModal } from '@/components/rules/CreateRuleModal';
 import { WebhookSecretModal } from '@/components/rules/WebhookSecretModal';
 
+function describeTrigger(trigger: Rule['trigger']): string {
+  if (trigger.service === 'github' && trigger.event === 'workflow_run') {
+    return trigger.filters.conclusion === 'success'
+      ? 'Quand le build réussit sur GitHub'
+      : 'Quand le build échoue sur GitHub';
+  }
+  return `Quand un événement survient sur ${trigger.service}`;
+}
+
+function describeReaction(reaction: Rule['reaction']): string {
+  switch (reaction.type) {
+    case 'vigil_create_incident':
+      return 'un incident est créé automatiquement';
+    case 'http_post':
+      return 'une alerte est envoyée vers un service externe';
+    default:
+      return 'une action est déclenchée';
+  }
+}
+
 export default function RulesPage() {
   const { user } = useAuthStore();
   const { showToast } = useToast();
@@ -35,7 +55,10 @@ export default function RulesPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (!user) return;
+    load();
+  }, [user]);
 
   const loadRules = async (teamId: string) => {
     try {
@@ -136,7 +159,7 @@ export default function RulesPage() {
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'oklch(0.90 0.005 260)' }}>{rule.name}</div>
                 <div style={{ fontSize: '11px', color: 'oklch(0.52 0.012 260)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <Zap size={11} aria-hidden="true" />
-                  {rule.trigger.service} / {rule.trigger.event} → {rule.reaction.type}
+                  {describeTrigger(rule.trigger)}, {describeReaction(rule.reaction)}
                 </div>
               </div>
             </div>
