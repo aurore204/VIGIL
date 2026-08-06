@@ -53,8 +53,8 @@ pub async fn ws_handler(
         t
     } else if let Some(auth) = headers.get("Authorization") {
         let auth_str = auth.to_str().unwrap_or("");
-        if auth_str.starts_with("Bearer ") {
-            auth_str[7..].to_string()
+        if let Some(stripped) = auth_str.strip_prefix("Bearer ") {
+            stripped.to_string()
         } else {
             tracing::warn!("Header Authorization présent mais mal formé");
             return (StatusCode::UNAUTHORIZED, "Token manquant").into_response();

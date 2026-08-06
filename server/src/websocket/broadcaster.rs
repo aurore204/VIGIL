@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock};
 use uuid::Uuid;
+type PresenceMap = HashMap<Uuid, HashMap<Uuid, Vec<Uuid>>>;
 
 use super::events::WsEvent;
 
@@ -16,7 +17,7 @@ struct UserConnection {
 #[derive(Clone)]
 pub struct Broadcaster {
     sender: broadcast::Sender<WsEvent>,
-    presence: Arc<RwLock<HashMap<Uuid, HashMap<Uuid, Vec<Uuid>>>>>,
+    presence: Arc<RwLock<PresenceMap>>,
     user_senders: Arc<RwLock<HashMap<Uuid, UserConnection>>>,
     online_users: Arc<RwLock<HashMap<Uuid, String>>>,
     generation_counter: Arc<AtomicU64>,
