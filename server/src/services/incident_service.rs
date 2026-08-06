@@ -1,6 +1,7 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::models::incident::UpdateIncidentRequest;
 use crate::models::incident::{
     AddTimelineEntryRequest, AssignIncidentRequest, CreateIncidentRequest,
     EditTimelineEntryRequest, EscalateIncidentRequest, IncidentResponse, IncidentState,
@@ -8,7 +9,6 @@ use crate::models::incident::{
 };
 use crate::models::team::TeamRole;
 use crate::repositories::{incident_repository, team_repository};
-use crate::models::incident::UpdateIncidentRequest;
 
 #[derive(Debug)]
 pub enum IncidentError {
@@ -20,17 +20,14 @@ pub enum IncidentError {
 }
 
 // Valide qu'une transition d'état est autorisée
-fn validate_state_transition(
-    current: &IncidentState,
-    next: &IncidentState,
-) -> bool {
+fn validate_state_transition(current: &IncidentState, next: &IncidentState) -> bool {
     matches!(
         (current, next),
         (IncidentState::Open, IncidentState::Acknowledged)
-        | (IncidentState::Acknowledged, IncidentState::Escalated)
-        | (IncidentState::Escalated, IncidentState::Resolved)
-        | (IncidentState::Acknowledged, IncidentState::Resolved)
-        | (IncidentState::Open, IncidentState::Resolved)
+            | (IncidentState::Acknowledged, IncidentState::Escalated)
+            | (IncidentState::Escalated, IncidentState::Resolved)
+            | (IncidentState::Acknowledged, IncidentState::Resolved)
+            | (IncidentState::Open, IncidentState::Resolved)
     )
 }
 
@@ -242,7 +239,6 @@ pub async fn cancel_incident(
         .await
         .map_err(IncidentError::DatabaseError)
 }
-
 
 // Escalade un incident avec nouvelle sévérité (Responder ou Manager)
 pub async fn escalate_incident(

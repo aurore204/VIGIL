@@ -196,7 +196,9 @@ pub async fn validate_step(
 
     match release_service::validate_step(&state.pool, release_id, step_id, auth_user.id).await {
         Ok(release) => {
-            let step_name = release.steps.iter()
+            let step_name = release
+                .steps
+                .iter()
                 .find(|s| s.id == step_id)
                 .map(|s| s.name.clone())
                 .unwrap_or_default();
@@ -327,7 +329,11 @@ pub async fn link_incident(
             (
                 StatusCode::OK,
                 Json(serde_json::json!(ApiResponse::<()>::success_no_data(
-                    if blocked { "Release bloquée par l'incident" } else { "Incident lié à la release" }
+                    if blocked {
+                        "Release bloquée par l'incident"
+                    } else {
+                        "Incident lié à la release"
+                    }
                 ))),
             )
         }

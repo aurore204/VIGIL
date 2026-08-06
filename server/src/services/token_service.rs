@@ -27,9 +27,16 @@ pub async fn save_token(
     let key = load_encryption_key()?;
     let (encrypted_access, nonce_access) = encrypt(access_token, &key)?;
 
-    token_repository::upsert_token(pool, user_id, service_name, token_type, &encrypted_access, &nonce_access)
-        .await
-        .map_err(TokenError::DatabaseError)
+    token_repository::upsert_token(
+        pool,
+        user_id,
+        service_name,
+        token_type,
+        &encrypted_access,
+        &nonce_access,
+    )
+    .await
+    .map_err(TokenError::DatabaseError)
 }
 
 //Récupère le token chiffré via le repository, puis le déchiffre.
@@ -53,6 +60,9 @@ pub async fn get_decrypted_token(
     Ok(Some(decrypted))
 }
 
-pub async fn list_connected_services(pool: &PgPool, user_id: Uuid) -> Result<Vec<String>, sqlx::Error> {
+pub async fn list_connected_services(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<Vec<String>, sqlx::Error> {
     token_repository::list_connected_services(pool, user_id).await
 }

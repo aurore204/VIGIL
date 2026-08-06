@@ -13,8 +13,13 @@ pub async fn process_incoming_event(
     payload: Value,
 ) {
     let rules = match crate::repositories::rule_repository::find_matching_rules(
-        &state.pool, team_id, service, event_type,
-    ).await {
+        &state.pool,
+        team_id,
+        service,
+        event_type,
+    )
+    .await
+    {
         Ok(r) => r,
         Err(e) => {
             tracing::error!("Erreur lors de la recherche de règles: {:?}", e);
@@ -43,8 +48,13 @@ pub async fn process_incoming_event(
         };
 
         let _ = crate::repositories::rule_repository::log_execution(
-            &state.pool, rule.id, status.clone(), &result_str, incident_id,
-        ).await;
+            &state.pool,
+            rule.id,
+            status.clone(),
+            &result_str,
+            incident_id,
+        )
+        .await;
 
         match result {
             Ok(incident_id) => {
@@ -68,7 +78,7 @@ pub async fn process_incoming_event(
 fn filters_match(trigger: &Value, payload: &Value) -> bool {
     let filters = match trigger.get("filters").and_then(|f| f.as_object()) {
         Some(f) => f,
-        None => return true, 
+        None => return true,
     };
 
     for (key, expected_value) in filters {
@@ -105,17 +115,29 @@ async fn execute_reaction(
     rule: &crate::models::rule::Rule,
     payload: &Value,
 ) -> Result<Option<Uuid>, String> {
-    let reaction_type = rule.reaction.get("type").and_then(|t| t.as_str()).unwrap_or("");
+    let reaction_type = rule
+        .reaction
+        .get("type")
+        .and_then(|t| t.as_str())
+        .unwrap_or("");
     let reaction_payload = rule.reaction.get("payload").cloned().unwrap_or(Value::Null);
 
     match reaction_type {
         "vigil_create_incident" => {
             let title = interpolate(
-                reaction_payload.get("title").and_then(|t| t.as_str()).unwrap_or("Incident automatique"),
+                reaction_payload
+                    .get("title")
+                    .and_then(|t| t.as_str())
+                    .unwrap_or("Incident automatique"),
                 payload,
             );
-            let severity_str = reaction_payload.get("severity").and_then(|s| s.as_str()).unwrap_or("medium");
-            let description = reaction_payload.get("body").and_then(|b| b.as_str())
+            let severity_str = reaction_payload
+                .get("severity")
+                .and_then(|s| s.as_str())
+                .unwrap_or("medium");
+            let description = reaction_payload
+                .get("body")
+                .and_then(|b| b.as_str())
                 .map(|b| interpolate(b, payload));
 
             let severity = match severity_str {
@@ -126,8 +148,15 @@ async fn execute_reaction(
             };
 
             match crate::repositories::incident_repository::create_incident(
-                &state.pool, rule.team_id, rule.created_by, &title, description.as_deref(), severity,
-            ).await {
+                &state.pool,
+                rule.team_id,
+                rule.created_by,
+                &title,
+                description.as_deref(),
+                severity,
+            )
+            .await
+            {
                 Ok(incident) => {
                     state.broadcaster.broadcast(WsEvent::IncidentStateChanged {
                         incident_id: incident.id,
@@ -140,13 +169,18 @@ async fn execute_reaction(
             }
         }
         "http_post" => {
-            let url = reaction_payload.get("url").and_then(|u| u.as_str())
+            let url = reaction_payload
+                .get("url")
+                .and_then(|u| u.as_str())
                 .ok_or_else(|| "URL manquante pour la REAction http_post".to_string())?;
 
             let client = reqwest::Client::new();
             match client.post(url).json(payload).send().await {
                 Ok(resp) if resp.status().is_success() => Ok(None),
-                Ok(resp) => Err(format!("Le service HTTP a répondu avec le statut {}", resp.status())),
+                Ok(resp) => Err(format!(
+                    "Le service HTTP a répondu avec le statut {}",
+                    resp.status()
+                )),
                 Err(_) => Err("service_unavailable".to_string()),
             }
         }
@@ -157,7 +191,11 @@ async fn execute_reaction(
 // Remplace les placeholders dans un template par les valeurs du payload.
 fn interpolate(template: &str, payload: &Value) -> String {
     let mut result = template.to_string();
-    if let Some(repo_name) = payload.get("repository").and_then(|r| r.get("full_name")).and_then(|n| n.as_str()) {
+    if let Some(repo_name) = payload
+        .get("repository")
+        .and_then(|r| r.get("full_name"))
+        .and_then(|n| n.as_str())
+    {
         result = result.replace("{{repository.name}}", repo_name);
     }
     if let Some(workflow) = payload.get("workflow_run") {

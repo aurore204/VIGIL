@@ -59,7 +59,10 @@ pub async fn find_token(
 }
 
 // Liste les noms de services connectés (jamais le token lui-même)
-pub async fn list_connected_services(pool: &PgPool, user_id: Uuid) -> Result<Vec<String>, sqlx::Error> {
+pub async fn list_connected_services(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<Vec<String>, sqlx::Error> {
     let rows = sqlx::query!(
         r#"SELECT service_name FROM user_tokens WHERE user_id = $1"#,
         user_id

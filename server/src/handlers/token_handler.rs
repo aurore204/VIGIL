@@ -13,15 +13,26 @@ pub async fn save_token(
     Json(req): Json<SaveTokenRequest>,
 ) -> impl IntoResponse {
     match token_service::save_token(
-        &state.pool, auth_user.id, &req.service_name, &req.token_type, &req.access_token,
-    ).await {
+        &state.pool,
+        auth_user.id,
+        &req.service_name,
+        &req.token_type,
+        &req.access_token,
+    )
+    .await
+    {
         Ok(_) => (
             StatusCode::CREATED,
-            Json(serde_json::json!(ApiResponse::<()>::success_no_data("Token enregistré avec succès"))),
+            Json(serde_json::json!(ApiResponse::<()>::success_no_data(
+                "Token enregistré avec succès"
+            ))),
         ),
         Err(_) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!(ApiError::new("Erreur lors de l'enregistrement du token", "TOKEN_SAVE_ERROR"))),
+            Json(serde_json::json!(ApiError::new(
+                "Erreur lors de l'enregistrement du token",
+                "TOKEN_SAVE_ERROR"
+            ))),
         ),
     }
 }
@@ -41,7 +52,10 @@ pub async fn list_connected_services(
         ),
         Err(_) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!(ApiError::new("Erreur interne", "INTERNAL_ERROR"))),
+            Json(serde_json::json!(ApiError::new(
+                "Erreur interne",
+                "INTERNAL_ERROR"
+            ))),
         ),
     }
 }

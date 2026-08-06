@@ -16,8 +16,13 @@ async fn main() {
             "http://localhost:3000".parse::<HeaderValue>().unwrap(),
             "http://localhost:3005".parse::<HeaderValue>().unwrap(),
         ])
-        
-        .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE, Method::OPTIONS])
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PATCH,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
         .allow_headers([
             HeaderName::from_static("content-type"),
             HeaderName::from_static("authorization"),

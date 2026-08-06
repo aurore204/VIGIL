@@ -2,7 +2,8 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::models::team::{
-    CreateTeamRequest, JoinTeamRequest, TeamResponse, TeamRole, TransferManagerRequest,UpdateTeamRequest,BannedMember,
+    BannedMember, CreateTeamRequest, JoinTeamRequest, TeamResponse, TeamRole,
+    TransferManagerRequest, UpdateTeamRequest,
 };
 use crate::repositories::team_repository;
 
@@ -24,14 +25,10 @@ pub async fn create_team(
     req: CreateTeamRequest,
     manager_id: Uuid,
 ) -> Result<TeamResponse, TeamError> {
-    let team = team_repository::create_team(
-        pool,
-        &req.name,
-        req.description.as_deref(),
-        manager_id,
-    )
-    .await
-    .map_err(TeamError::DatabaseError)?;
+    let team =
+        team_repository::create_team(pool, &req.name, req.description.as_deref(), manager_id)
+            .await
+            .map_err(TeamError::DatabaseError)?;
 
     let members = team_repository::get_members(pool, team.id)
         .await
@@ -81,10 +78,7 @@ pub async fn get_team(
 }
 
 // Récupère toutes les teams d'un utilisateur
-pub async fn get_user_teams(
-    pool: &PgPool,
-    user_id: Uuid,
-) -> Result<Vec<TeamResponse>, TeamError> {
+pub async fn get_user_teams(pool: &PgPool, user_id: Uuid) -> Result<Vec<TeamResponse>, TeamError> {
     let teams = team_repository::get_user_teams(pool, user_id)
         .await
         .map_err(TeamError::DatabaseError)?;
@@ -334,9 +328,16 @@ pub async fn ban_member(
     }
 
     // Appliquer le ban
-    team_repository::ban_member(pool, team_id, manager_id, target_user_id, expires_at, reason)
-        .await
-        .map_err(TeamError::DatabaseError)?;
+    team_repository::ban_member(
+        pool,
+        team_id,
+        manager_id,
+        target_user_id,
+        expires_at,
+        reason,
+    )
+    .await
+    .map_err(TeamError::DatabaseError)?;
 
     Ok(())
 }
@@ -369,11 +370,7 @@ pub async fn unban_member(
 }
 
 // Quitter une team
-pub async fn leave_team(
-    pool: &PgPool,
-    team_id: Uuid,
-    user_id: Uuid,
-) -> Result<(), TeamError> {
+pub async fn leave_team(pool: &PgPool, team_id: Uuid, user_id: Uuid) -> Result<(), TeamError> {
     let role = team_repository::get_member_role(pool, team_id, user_id)
         .await
         .map_err(TeamError::DatabaseError)?
@@ -429,11 +426,7 @@ pub async fn update_team(
 }
 
 // Supprime une team (Manager uniquement)
-pub async fn delete_team(
-    pool: &PgPool,
-    team_id: Uuid,
-    user_id: Uuid,
-) -> Result<(), TeamError> {
+pub async fn delete_team(pool: &PgPool, team_id: Uuid, user_id: Uuid) -> Result<(), TeamError> {
     let role = team_repository::get_member_role(pool, team_id, user_id)
         .await
         .map_err(TeamError::DatabaseError)?
@@ -448,11 +441,11 @@ pub async fn delete_team(
         .map_err(TeamError::DatabaseError)
 }
 
-    pub async fn get_banned_members(
-        pool: &PgPool,
-        team_id: Uuid,
-        user_id: Uuid,
-    ) -> Result<Vec<BannedMember>, TeamError> {     
+pub async fn get_banned_members(
+    pool: &PgPool,
+    team_id: Uuid,
+    user_id: Uuid,
+) -> Result<Vec<BannedMember>, TeamError> {
     let role = team_repository::get_member_role(pool, team_id, user_id)
         .await
         .map_err(TeamError::DatabaseError)?

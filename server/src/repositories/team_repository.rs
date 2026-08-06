@@ -2,7 +2,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::models::team::{
-    Team, TeamInvitation, TeamMember, TeamMemberWithUser, TeamRole, BannedMember
+    BannedMember, Team, TeamInvitation, TeamMember, TeamMemberWithUser, TeamRole,
 };
 
 // Crée une nouvelle team et ajoute le créateur comme Manager
@@ -42,10 +42,7 @@ pub async fn create_team(
 }
 
 // Trouve une team par son id
-pub async fn find_by_id(
-    pool: &PgPool,
-    team_id: Uuid,
-) -> Result<Option<Team>, sqlx::Error> {
+pub async fn find_by_id(pool: &PgPool, team_id: Uuid) -> Result<Option<Team>, sqlx::Error> {
     let team = sqlx::query_as!(
         Team,
         r#"
@@ -111,10 +108,7 @@ pub async fn get_members(
 }
 
 // Récupère toutes les teams d'un utilisateur
-pub async fn get_user_teams(
-    pool: &PgPool,
-    user_id: Uuid,
-) -> Result<Vec<Team>, sqlx::Error> {
+pub async fn get_user_teams(pool: &PgPool, user_id: Uuid) -> Result<Vec<Team>, sqlx::Error> {
     let teams = sqlx::query_as!(
         Team,
         r#"
@@ -132,11 +126,7 @@ pub async fn get_user_teams(
 }
 
 // Vérifie si un user est membre d'une team
-pub async fn is_member(
-    pool: &PgPool,
-    team_id: Uuid,
-    user_id: Uuid,
-) -> Result<bool, sqlx::Error> {
+pub async fn is_member(pool: &PgPool, team_id: Uuid, user_id: Uuid) -> Result<bool, sqlx::Error> {
     let result = sqlx::query!(
         r#"
         SELECT COUNT(*) as count
@@ -297,21 +287,17 @@ pub async fn transfer_manager(
 fn generate_invitation_code() -> String {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
-    
+
     let id = Uuid::new_v4();
     let mut hasher = DefaultHasher::new();
     id.hash(&mut hasher);
     let hash = hasher.finish();
-    
+
     format!("{:08X}", hash & 0xFFFFFFFF)
 }
 
 // Vérifie si un utilisateur est banni d'une team
-pub async fn is_banned(
-    pool: &PgPool,
-    team_id: Uuid,
-    user_id: Uuid,
-) -> Result<bool, sqlx::Error> {
+pub async fn is_banned(pool: &PgPool, team_id: Uuid, user_id: Uuid) -> Result<bool, sqlx::Error> {
     let result = sqlx::query!(
         r#"
         SELECT COUNT(*) as count
@@ -330,11 +316,7 @@ pub async fn is_banned(
 }
 
 // Supprime un membre de la team (kick)
-pub async fn kick_member(
-    pool: &PgPool,
-    team_id: Uuid,
-    user_id: Uuid,
-) -> Result<(), sqlx::Error> {
+pub async fn kick_member(pool: &PgPool, team_id: Uuid, user_id: Uuid) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         DELETE FROM team_members
@@ -378,11 +360,7 @@ pub async fn ban_member(
 }
 
 // Lève un ban
-pub async fn unban_member(
-    pool: &PgPool,
-    team_id: Uuid,
-    user_id: Uuid,
-) -> Result<(), sqlx::Error> {
+pub async fn unban_member(pool: &PgPool, team_id: Uuid, user_id: Uuid) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         DELETE FROM team_bans
@@ -424,16 +402,10 @@ pub async fn update_team(
 }
 
 // Supprime une team
-pub async fn delete_team(
-    pool: &PgPool,
-    team_id: Uuid,
-) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        r#"DELETE FROM teams WHERE id = $1"#,
-        team_id
-    )
-    .execute(pool)
-    .await?;
+pub async fn delete_team(pool: &PgPool, team_id: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query!(r#"DELETE FROM teams WHERE id = $1"#, team_id)
+        .execute(pool)
+        .await?;
     Ok(())
 }
 
@@ -464,14 +436,17 @@ pub async fn get_banned_members(
     .fetch_all(pool)
     .await?;
 
-    Ok(rows.into_iter().map(|r| BannedMember {
-        user_id: r.user_id,
-        username: r.username,
-        email: r.email,
-        banned_by: r.banned_by,
-        banned_by_username: r.banned_by_username,
-        expires_at: r.expires_at,
-        reason: r.reason,
-        created_at: r.created_at,
-    }).collect())
+    Ok(rows
+        .into_iter()
+        .map(|r| BannedMember {
+            user_id: r.user_id,
+            username: r.username,
+            email: r.email,
+            banned_by: r.banned_by,
+            banned_by_username: r.banned_by_username,
+            expires_at: r.expires_at,
+            reason: r.reason,
+            created_at: r.created_at,
+        })
+        .collect())
 }

@@ -38,7 +38,8 @@ async fn register_and_get_token(server: &TestServer, suffix: &str) -> (String, S
 async fn setup_team_with_responder(server: &TestServer) -> (String, String, String, String) {
     let id = uuid::Uuid::new_v4().to_string();
     let (manager_token, _) = register_and_get_token(server, &format!("mgr_{}", id)).await;
-    let (responder_token, responder_id) = register_and_get_token(server, &format!("rsp_{}", id)).await;
+    let (responder_token, responder_id) =
+        register_and_get_token(server, &format!("rsp_{}", id)).await;
 
     let (mn, mv) = auth_header(&manager_token);
     let team_response = server
@@ -171,7 +172,10 @@ async fn test_validate_step_returns_200() {
 
     let (rn, rv) = auth_header(&responder_token);
     let response = server
-        .patch(&format!("/releases/{}/steps/{}/validate", release_id, step_id))
+        .patch(&format!(
+            "/releases/{}/steps/{}/validate",
+            release_id, step_id
+        ))
         .add_header(rn, rv)
         .await;
 
@@ -261,7 +265,10 @@ async fn test_observer_cannot_validate_step() {
         .await;
 
     let response = server
-        .patch(&format!("/releases/{}/steps/{}/validate", release_id, step_id))
+        .patch(&format!(
+            "/releases/{}/steps/{}/validate",
+            release_id, step_id
+        ))
         .add_header(on, ov)
         .await;
 

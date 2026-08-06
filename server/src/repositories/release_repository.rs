@@ -74,10 +74,7 @@ pub async fn get_releases_by_incident(
     Ok(rows.into_iter().map(|r| r.release_id).collect())
 }
 
-pub async fn find_by_id(
-    pool: &PgPool,
-    release_id: Uuid,
-) -> Result<Option<Release>, sqlx::Error> {
+pub async fn find_by_id(pool: &PgPool, release_id: Uuid) -> Result<Option<Release>, sqlx::Error> {
     sqlx::query_as!(
         Release,
         r#"
@@ -94,10 +91,7 @@ pub async fn find_by_id(
     .await
 }
 
-pub async fn find_by_team(
-    pool: &PgPool,
-    team_id: Uuid,
-) -> Result<Vec<Release>, sqlx::Error> {
+pub async fn find_by_team(pool: &PgPool, team_id: Uuid) -> Result<Vec<Release>, sqlx::Error> {
     sqlx::query_as!(
         Release,
         r#"
@@ -115,10 +109,7 @@ pub async fn find_by_team(
     .await
 }
 
-pub async fn get_steps(
-    pool: &PgPool,
-    release_id: Uuid,
-) -> Result<Vec<ReleaseStep>, sqlx::Error> {
+pub async fn get_steps(pool: &PgPool, release_id: Uuid) -> Result<Vec<ReleaseStep>, sqlx::Error> {
     sqlx::query_as!(
         ReleaseStep,
         r#"
@@ -229,10 +220,7 @@ pub async fn link_incident(
     Ok(())
 }
 
-pub async fn has_active_incidents(
-    pool: &PgPool,
-    release_id: Uuid,
-) -> Result<bool, sqlx::Error> {
+pub async fn has_active_incidents(pool: &PgPool, release_id: Uuid) -> Result<bool, sqlx::Error> {
     let result = sqlx::query!(
         r#"
         SELECT COUNT(*) as count
@@ -249,15 +237,9 @@ pub async fn has_active_incidents(
     Ok(result.count.unwrap_or(0) > 0)
 }
 
-pub async fn cancel_release(
-    pool: &PgPool,
-    release_id: Uuid,
-) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        r#"DELETE FROM releases WHERE id = $1"#,
-        release_id
-    )
-    .execute(pool)
-    .await?;
+pub async fn cancel_release(pool: &PgPool, release_id: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query!(r#"DELETE FROM releases WHERE id = $1"#, release_id)
+        .execute(pool)
+        .await?;
     Ok(())
 }

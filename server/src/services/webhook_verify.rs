@@ -21,12 +21,12 @@ pub fn verify_github_signature(
         .strip_prefix("sha256=")
         .ok_or(VerifyError::InvalidSignatureFormat)?;
 
-    let mut mac = HmacSha256::new_from_slice(secret.as_bytes())
-        .map_err(|_| VerifyError::InvalidSecret)?;
+    let mut mac =
+        HmacSha256::new_from_slice(secret.as_bytes()).map_err(|_| VerifyError::InvalidSecret)?;
     mac.update(payload);
 
-    let expected_bytes = hex::decode(expected_hex)
-        .map_err(|_| VerifyError::InvalidSignatureFormat)?;
+    let expected_bytes =
+        hex::decode(expected_hex).map_err(|_| VerifyError::InvalidSignatureFormat)?;
 
     // verify_slice fait une comparaison en temps constant (protection contre les attaques par timing)
     mac.verify_slice(&expected_bytes)

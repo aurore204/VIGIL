@@ -1,6 +1,6 @@
+use aes_gcm::aead::rand_core::RngCore;
 use aes_gcm::aead::{Aead, KeyInit, OsRng};
 use aes_gcm::{Aes256Gcm, Nonce};
-use aes_gcm::aead::rand_core::RngCore;
 use base64::{engine::general_purpose::STANDARD, Engine};
 
 #[derive(Debug)]
@@ -10,7 +10,7 @@ pub enum CryptoError {
     DecryptionFailed,
 }
 
-// Chiffre un texte en clair. Retourne texte_chiffré_base64, nonce_base64 
+// Chiffre un texte en clair. Retourne texte_chiffré_base64, nonce_base64
 pub fn encrypt(plaintext: &str, key: &[u8; 32]) -> Result<(String, String), CryptoError> {
     let cipher = Aes256Gcm::new_from_slice(key).map_err(|_| CryptoError::InvalidKey)?;
 
@@ -26,11 +26,19 @@ pub fn encrypt(plaintext: &str, key: &[u8; 32]) -> Result<(String, String), Cryp
 }
 
 // Déchiffre un token précédemment chiffré avec `encrypt`.
-pub fn decrypt(ciphertext_b64: &str, nonce_b64: &str, key: &[u8; 32]) -> Result<String, CryptoError> {
+pub fn decrypt(
+    ciphertext_b64: &str,
+    nonce_b64: &str,
+    key: &[u8; 32],
+) -> Result<String, CryptoError> {
     let cipher = Aes256Gcm::new_from_slice(key).map_err(|_| CryptoError::InvalidKey)?;
 
-    let ciphertext = STANDARD.decode(ciphertext_b64).map_err(|_| CryptoError::DecryptionFailed)?;
-    let nonce_bytes = STANDARD.decode(nonce_b64).map_err(|_| CryptoError::DecryptionFailed)?;
+    let ciphertext = STANDARD
+        .decode(ciphertext_b64)
+        .map_err(|_| CryptoError::DecryptionFailed)?;
+    let nonce_bytes = STANDARD
+        .decode(nonce_b64)
+        .map_err(|_| CryptoError::DecryptionFailed)?;
     let nonce = Nonce::from_slice(&nonce_bytes);
 
     let plaintext = cipher

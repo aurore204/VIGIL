@@ -35,10 +35,13 @@ async fn register_and_get_token(server: &TestServer, suffix: &str) -> (String, S
     (token, user_id)
 }
 
-async fn setup_team_incident_entry(server: &TestServer) -> (String, String, String, String, String) {
+async fn setup_team_incident_entry(
+    server: &TestServer,
+) -> (String, String, String, String, String) {
     let id = uuid::Uuid::new_v4().to_string();
     let (manager_token, _) = register_and_get_token(server, &format!("mgr_{}", id)).await;
-    let (responder_token, responder_id) = register_and_get_token(server, &format!("rsp_{}", id)).await;
+    let (responder_token, responder_id) =
+        register_and_get_token(server, &format!("rsp_{}", id)).await;
 
     let (mn, mv) = auth_header(&manager_token);
     let team_response = server
@@ -95,7 +98,13 @@ async fn setup_team_incident_entry(server: &TestServer) -> (String, String, Stri
     let body: serde_json::Value = entry.json();
     let entry_id = body["data"]["id"].as_str().unwrap().to_string();
 
-    (manager_token, responder_token, team_id, incident_id, entry_id)
+    (
+        manager_token,
+        responder_token,
+        team_id,
+        incident_id,
+        entry_id,
+    )
 }
 
 #[tokio::test]
@@ -115,7 +124,10 @@ async fn test_add_reaction_returns_201() {
     let (rn, rv) = auth_header(&responder_token);
 
     let response = server
-        .post(&format!("/incidents/{}/timeline/{}/reactions", incident_id, entry_id))
+        .post(&format!(
+            "/incidents/{}/timeline/{}/reactions",
+            incident_id, entry_id
+        ))
         .add_header(rn, rv)
         .json(&json!({"emoji": "+1"}))
         .await;
@@ -132,13 +144,19 @@ async fn test_add_duplicate_reaction_returns_409() {
     let (rn, rv) = auth_header(&responder_token);
 
     server
-        .post(&format!("/incidents/{}/timeline/{}/reactions", incident_id, entry_id))
+        .post(&format!(
+            "/incidents/{}/timeline/{}/reactions",
+            incident_id, entry_id
+        ))
         .add_header(rn.clone(), rv.clone())
         .json(&json!({"emoji": "+1"}))
         .await;
 
     let response = server
-        .post(&format!("/incidents/{}/timeline/{}/reactions", incident_id, entry_id))
+        .post(&format!(
+            "/incidents/{}/timeline/{}/reactions",
+            incident_id, entry_id
+        ))
         .add_header(rn, rv)
         .json(&json!({"emoji": "+1"}))
         .await;
@@ -155,7 +173,10 @@ async fn test_add_invalid_emoji_returns_400() {
     let (rn, rv) = auth_header(&responder_token);
 
     let response = server
-        .post(&format!("/incidents/{}/timeline/{}/reactions", incident_id, entry_id))
+        .post(&format!(
+            "/incidents/{}/timeline/{}/reactions",
+            incident_id, entry_id
+        ))
         .add_header(rn, rv)
         .json(&json!({"emoji": "invalid"}))
         .await;
@@ -172,13 +193,19 @@ async fn test_remove_reaction_returns_200() {
     let (rn, rv) = auth_header(&responder_token);
 
     server
-        .post(&format!("/incidents/{}/timeline/{}/reactions", incident_id, entry_id))
+        .post(&format!(
+            "/incidents/{}/timeline/{}/reactions",
+            incident_id, entry_id
+        ))
         .add_header(rn.clone(), rv.clone())
         .json(&json!({"emoji": "+1"}))
         .await;
 
     let response = server
-        .delete(&format!("/incidents/{}/timeline/{}/reactions/+1", incident_id, entry_id))
+        .delete(&format!(
+            "/incidents/{}/timeline/{}/reactions/+1",
+            incident_id, entry_id
+        ))
         .add_header(rn, rv)
         .await;
 
@@ -192,7 +219,10 @@ async fn test_remove_nonexistent_reaction_returns_404() {
     let (rn, rv) = auth_header(&responder_token);
 
     let response = server
-        .delete(&format!("/incidents/{}/timeline/{}/reactions/+1", incident_id, entry_id))
+        .delete(&format!(
+            "/incidents/{}/timeline/{}/reactions/+1",
+            incident_id, entry_id
+        ))
         .add_header(rn, rv)
         .await;
 

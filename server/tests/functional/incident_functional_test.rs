@@ -39,7 +39,8 @@ async fn register_and_get_token(server: &TestServer, suffix: &str) -> (String, S
 async fn setup_team_and_get_ids(server: &TestServer) -> (String, String, String, String) {
     let id = uuid::Uuid::new_v4().to_string();
     let (manager_token, _) = register_and_get_token(server, &format!("mgr_{}", id)).await;
-    let (responder_token, responder_id) = register_and_get_token(server, &format!("rsp_{}", id)).await;
+    let (responder_token, responder_id) =
+        register_and_get_token(server, &format!("rsp_{}", id)).await;
 
     let (mn, mv) = auth_header(&manager_token);
     let team_response = server
@@ -210,7 +211,14 @@ async fn test_add_timeline_entry_returns_201() {
     response.assert_status(axum::http::StatusCode::CREATED);
     let body: serde_json::Value = response.json();
     assert_eq!(body["data"]["content"], "Investigation en cours");
-    assert_eq!(body["data"]["author_username"], "user_rsp_".to_string() + &body["data"]["author_username"].as_str().unwrap().replace("user_rsp_", ""));
+    assert_eq!(
+        body["data"]["author_username"],
+        "user_rsp_".to_string()
+            + &body["data"]["author_username"]
+                .as_str()
+                .unwrap()
+                .replace("user_rsp_", "")
+    );
 }
 
 #[tokio::test]

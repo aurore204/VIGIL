@@ -93,6 +93,8 @@ pub async fn require_auth(
         }
     }
 
-    request.extensions_mut().insert(AuthenticatedUser { id: user_id });
+    request
+        .extensions_mut()
+        .insert(AuthenticatedUser { id: user_id });
     next.run(request).await
 }

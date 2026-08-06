@@ -32,20 +32,32 @@ pub async fn send_message(
 
             let sender_username = message.sender_username.clone();
 
-           // Remplace le broadcast par send_to_user
-            state.broadcaster.send_to_user(auth_user.id, WsEvent::PrivateMessageReceived {
-                from: sender_username.clone(),
-                to: receiver_username.clone(),
-                content: message.content.clone(),
-                at: message.created_at,
-            }).await;
+            // Remplace le broadcast par send_to_user
+            state
+                .broadcaster
+                .send_to_user(
+                    auth_user.id,
+                    WsEvent::PrivateMessageReceived {
+                        from: sender_username.clone(),
+                        to: receiver_username.clone(),
+                        content: message.content.clone(),
+                        at: message.created_at,
+                    },
+                )
+                .await;
 
-            state.broadcaster.send_to_user(receiver_id, WsEvent::PrivateMessageReceived {
-                from: sender_username,
-                to: receiver_username,
-                content: message.content.clone(),
-                at: message.created_at,
-            }).await;
+            state
+                .broadcaster
+                .send_to_user(
+                    receiver_id,
+                    WsEvent::PrivateMessageReceived {
+                        from: sender_username,
+                        to: receiver_username,
+                        content: message.content.clone(),
+                        at: message.created_at,
+                    },
+                )
+                .await;
 
             (
                 StatusCode::CREATED,

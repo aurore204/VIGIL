@@ -1,6 +1,6 @@
+use uuid::Uuid;
 use vigil_server::websocket::broadcaster::Broadcaster;
 use vigil_server::websocket::events::WsEvent;
-use uuid::Uuid;
 
 #[tokio::test]
 async fn test_broadcaster_sends_event_to_subscriber() {
@@ -40,8 +40,12 @@ async fn test_broadcaster_sends_to_multiple_subscribers() {
 
     match (event1, event2) {
         (
-            WsEvent::IncidentAssigned { assigned_to: a1, .. },
-            WsEvent::IncidentAssigned { assigned_to: a2, .. },
+            WsEvent::IncidentAssigned {
+                assigned_to: a1, ..
+            },
+            WsEvent::IncidentAssigned {
+                assigned_to: a2, ..
+            },
         ) => {
             assert_eq!(a1, "alice");
             assert_eq!(a2, "alice");
@@ -77,7 +81,9 @@ async fn test_presence_remove_watcher() {
 
     broadcaster.add_presence(resource_id, user1, team_id).await;
     broadcaster.add_presence(resource_id, user2, team_id).await;
-    broadcaster.remove_presence(resource_id, user1, team_id).await;
+    broadcaster
+        .remove_presence(resource_id, user1, team_id)
+        .await;
 
     let watchers = broadcaster.get_watchers(resource_id, team_id).await;
     assert_eq!(watchers.len(), 1);
@@ -88,7 +94,9 @@ async fn test_presence_remove_watcher() {
 #[tokio::test]
 async fn test_presence_empty_for_unknown_resource() {
     let broadcaster = Broadcaster::new();
-    let watchers = broadcaster.get_watchers(Uuid::new_v4(), Uuid::new_v4()).await;
+    let watchers = broadcaster
+        .get_watchers(Uuid::new_v4(), Uuid::new_v4())
+        .await;
     assert_eq!(watchers.len(), 0);
 }
 

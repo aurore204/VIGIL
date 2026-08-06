@@ -7,8 +7,10 @@ use crate::handlers::reaction_handler;
 use crate::state::AppState;
 
 pub fn public_reaction_routes() -> Router<AppState> {
-    Router::new()
-        .route("/reactions/available", get(reaction_handler::get_available_reactions))
+    Router::new().route(
+        "/reactions/available",
+        get(reaction_handler::get_available_reactions),
+    )
 }
 
 pub fn protected_reaction_routes() -> Router<AppState> {
