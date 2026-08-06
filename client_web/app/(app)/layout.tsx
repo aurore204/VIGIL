@@ -10,13 +10,14 @@ import { useToast } from '@/components/ui/Toast';
 import type { WsEvent } from '@/lib/types';
 import {
   LayoutGrid, AlertTriangle, Rocket, Users, MessageCircle,
-  ChevronLeft, ChevronRight, LogOut, Radar,
+  ChevronLeft, ChevronRight, LogOut, Radar, Zap,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', Icon: LayoutGrid },
   { href: '/incidents', label: 'Incidents', Icon: AlertTriangle },
   { href: '/releases', label: 'Releases', Icon: Rocket },
+  { href: '/rules', label: 'Rules', Icon: Zap },
   { href: '/teams', label: 'Teams', Icon: Users },
   { href: '/messages', label: 'Messages', Icon: MessageCircle },
 ];
