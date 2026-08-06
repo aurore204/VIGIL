@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "incidents": "Incidents",
+    "releases": "Releases",
+    "rules": "Règles",
+    "teams": "Teams",
+    "messages": "Messages",
+    "logout": "Déconnexion"
+  },
+  "incidentState": {
+    "open": "Ouvert",
+    "acknowledged": "Acquitté",
+    "escalated": "Escaladé",
+    "resolved": "Résolu"
+  },
+  "severity": {
+    "low": "Faible",
+    "medium": "Moyen",
+    "high": "Élevé",
+    "critical": "Critique"
+  },
+  "releaseState": {
+    "created": "Créée",
+    "in_progress": "En cours",
+    "completed": "Terminée",
+    "cancelled": "Annulée",
+    "blocked": "Bloquée"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "create": "Créer",
+    "edit": "Modifier",
+    "search": "Rechercher"
+  }
+}
