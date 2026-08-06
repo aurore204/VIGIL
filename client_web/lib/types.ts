@@ -280,3 +280,23 @@ export interface ApiError {
   error: string;
   code: string;
 }
+
+
+export interface Rule {
+  id: string;
+  team_id: string;
+  created_by: string;
+  name: string;
+  enabled: boolean;
+  trigger: {
+    service: string;
+    event: string;
+    filters: Record<string, string>;
+  };
+  reaction: {
+    type: string;
+    payload: Record<string, unknown>;
+  };
+  created_at: string;
+  updated_at: string;
+}

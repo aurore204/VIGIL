@@ -5,6 +5,7 @@ mod incident_routes;
 mod message_routes;
 mod reaction_routes;
 mod release_routes;
+mod rule_routes;
 mod team_routes;
 mod token_routes;
 mod webhook_routes;
@@ -28,6 +29,7 @@ pub fn create_router(state: AppState) -> Router {
         .merge(message_routes::message_routes())
         .merge(release_routes::release_routes())
         .merge(token_routes::token_routes())
+        .merge(rule_routes::rule_routes())
         .route("/presence/online", get(get_online_users))
         .layer(middleware::from_fn_with_state(
             state.pool.clone(),

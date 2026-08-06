@@ -1,4 +1,4 @@
-import type { AuthResponse, Team, Incident, Release, PrivateMessage,BannedMember } from './types';
+import type { AuthResponse, Team, Incident, Release, Rule,PrivateMessage,BannedMember } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -215,5 +215,24 @@ export const api = {
   markAsRead: (messageId: string) =>
     request<void>(`/messages/${messageId}/read`, { method: 'PATCH' }),
   
-  
+  // Rules (Phase 2)
+  getTeamRules: (teamId: string) =>
+    request<Rule[]>(`/teams/${teamId}/rules`),
+
+  createRule: (teamId: string, data: {
+    name: string;
+    enabled?: boolean;
+    trigger: { service: string; event: string; filters: Record<string, string> };
+    reaction: { type: string; payload: Record<string, unknown> };
+  }) =>
+    request<Rule>(`/teams/${teamId}/rules`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  createWebhookSecret: (teamId: string, serviceName: string, secret: string) =>
+    request<void>(`/teams/${teamId}/webhook-secrets`, {
+      method: 'POST',
+      body: JSON.stringify({ service_name: serviceName, secret }),
+    }),
 };
