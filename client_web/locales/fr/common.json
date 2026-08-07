@@ -77,5 +77,41 @@
         "generic": "Erreur de connexion"
       }
     }
+  },
+  "dashboard": {
+    "greeting": "Bonjour, {name}",
+    "summary": "{incidentCount, plural, =0 {Aucun incident actif} one {# incident actif} other {# incidents actifs}} sur {teamCount, plural, one {# team} other {# teams}}",
+    "stats": {
+      "activeIncidents": "Incidents actifs",
+      "critical": "Critiques",
+      "activeReleases": "Releases en cours"
+    },
+    "incidentsCard": {
+      "title": "Derniers incidents",
+      "viewAll": "Voir tout",
+      "empty": "Aucun incident actif"
+    },
+    "onlineCard": {
+      "title": "En ligne",
+      "activeCount": "{count, plural, one {# actif} other {# actifs}}",
+      "empty": "Aucune donnée de présence disponible pour le moment."
+    },
+    "releasesCard": {
+      "title": "Releases actives",
+      "viewAll": "Voir tout",
+      "empty": "Aucune release en cours",
+      "stepsProgress": "{completed}/{total} étapes"
+    },
+    "activityCard": {
+      "title": "Activité récente",
+      "empty": "Rien à signaler",
+      "incidentDetail": "Incident {state}",
+      "releaseDetail": "Release {state}"
+    },
+    "teamsSection": {
+      "title": "Mes teams ({count})",
+      "manage": "Gérer",
+      "memberCount": "{count, plural, one {# membre} other {# membres}}"
+    }
   }
 }

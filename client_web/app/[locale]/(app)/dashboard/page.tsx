@@ -5,7 +5,8 @@ import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { vigilWs } from '@/lib/websocket';
 import type { Team, Incident, Release, WsEvent } from '@/lib/types';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import {
   AlertTriangle,
   Flame,
@@ -79,18 +80,11 @@ function StatCard({
   );
 }
 
-const stateConfig: Record<string, { label: string; bg: string; text: string; Icon: React.ElementType }> = {
-  open: { label: 'Ouvert', bg: COLORS.grayBg, text: COLORS.grayText, Icon: Circle },
-  acknowledged: { label: 'Acquitté', bg: COLORS.blueBg, text: COLORS.blueText, Icon: CheckCircle2 },
-  escalated: { label: 'Escaladé', bg: COLORS.amberBg, text: COLORS.amberText, Icon: ArrowUpCircle },
-  resolved: { label: 'Résolu', bg: COLORS.greenBg, text: COLORS.greenText, Icon: CheckCircle2 },
-};
-
-const severityColor: Record<string, string> = {
-  low: COLORS.greenText,
-  medium: COLORS.mutedStrong,
-  high: COLORS.amberText,
-  critical: COLORS.emberText,
+const stateIconConfig: Record<string, { bg: string; text: string; Icon: React.ElementType }> = {
+  open: { bg: COLORS.grayBg, text: COLORS.grayText, Icon: Circle },
+  acknowledged: { bg: COLORS.blueBg, text: COLORS.blueText, Icon: CheckCircle2 },
+  escalated: { bg: COLORS.amberBg, text: COLORS.amberText, Icon: ArrowUpCircle },
+  resolved: { bg: COLORS.greenBg, text: COLORS.greenText, Icon: CheckCircle2 },
 };
 
 interface ActivityItem {
@@ -108,6 +102,14 @@ export default function DashboardPage() {
   const [releases, setReleases] = useState<Release[]>([]);
   const [onlineUsernames, setOnlineUsernames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const t = useTranslations('dashboard');
+  const tCommon = useTranslations('common');
+  const tIncidentState = useTranslations('incidentState');
+  const tReleaseState = useTranslations('releaseState');
+  const tSeverity = useTranslations('severity');
+
+  const roleLabel: Record<string, string> = { observer: 'Observer', responder: 'Responder', manager: 'Manager' };
 
   const load = async () => {
     try {
@@ -177,7 +179,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div style={{ padding: '32px', color: COLORS.muted, fontFamily: 'Inter, sans-serif' }}>
-        Chargement...
+        {tCommon('loading')}
       </div>
     );
   }
@@ -186,17 +188,16 @@ export default function DashboardPage() {
   const critical = incidents.filter(i => i.severity === 'critical' && i.state !== 'resolved').length;
   const activeReleases = releases.filter(r => r.state === 'in_progress' || r.state === 'blocked');
   const roleOf = (team: Team) => team.members.find(m => m.user_id === user?.id)?.role ?? 'observer';
-  const roleLabel: Record<string, string> = { observer: 'Observer', responder: 'Responder', manager: 'Manager' };
 
   const activityFeed: ActivityItem[] = [
     ...incidents.slice(0, 5).map((i): ActivityItem => ({
       id: i.id, kind: 'incident', label: i.title,
-      detail: `Incident ${stateConfig[i.state]?.label.toLowerCase() ?? i.state}`,
+      detail: t('activityCard.incidentDetail', { state: tIncidentState(i.state).toLowerCase() }),
       at: i.updated_at,
     })),
     ...releases.slice(0, 5).map((r): ActivityItem => ({
       id: r.id, kind: 'release', label: r.title,
-      detail: `Release ${r.state === 'in_progress' ? 'en cours' : r.state}`,
+      detail: t('activityCard.releaseDetail', { state: tReleaseState(r.state).toLowerCase() }),
       at: r.updated_at,
     })),
   ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 6);
@@ -212,10 +213,10 @@ export default function DashboardPage() {
       }}>
         <div>
           <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '20px', fontWeight: 700, letterSpacing: '-0.01em' }}>
-            Bonjour, {user?.username}
+            {t('greeting', { name: user?.username ?? '' })}
           </div>
           <div style={{ fontSize: '13px', color: COLORS.muted, marginTop: '4px' }}>
-            {activeIncidents.length} incident{activeIncidents.length > 1 ? 's' : ''} actif{activeIncidents.length > 1 ? 's' : ''} sur {teams.length} team{teams.length > 1 ? 's' : ''}
+            {t('summary', { incidentCount: activeIncidents.length, teamCount: teams.length })}
           </div>
         </div>
       </div>
@@ -223,9 +224,9 @@ export default function DashboardPage() {
       <div style={{
         display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '16px',
       }}>
-        <StatCard Icon={AlertTriangle} value={activeIncidents.length} label="Incidents actifs" stripColor={COLORS.blueStrip} iconBg={COLORS.blueBg} iconColor={COLORS.blueText} />
-        <StatCard Icon={Flame} value={critical} label="Critiques" stripColor={COLORS.emberText} iconBg={COLORS.emberBg} iconColor={COLORS.emberText} />
-        <StatCard Icon={Rocket} value={activeReleases.length} label="Releases en cours" stripColor={COLORS.greenStrip} iconBg={COLORS.greenBg} iconColor={COLORS.greenText} />
+        <StatCard Icon={AlertTriangle} value={activeIncidents.length} label={t('stats.activeIncidents')} stripColor={COLORS.blueStrip} iconBg={COLORS.blueBg} iconColor={COLORS.blueText} />
+        <StatCard Icon={Flame} value={critical} label={t('stats.critical')} stripColor={COLORS.emberText} iconBg={COLORS.emberBg} iconColor={COLORS.emberText} />
+        <StatCard Icon={Rocket} value={activeReleases.length} label={t('stats.activeReleases')} stripColor={COLORS.greenStrip} iconBg={COLORS.greenBg} iconColor={COLORS.greenText} />
       </div>
 
       <div style={{
@@ -237,19 +238,19 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600 }}>
                 <AlertTriangle size={15} color={COLORS.blueText} aria-hidden="true" />
-                Derniers incidents
+                {t('incidentsCard.title')}
               </div>
               <Link href="/incidents" style={{ fontSize: '12px', color: COLORS.blueText, textDecoration: 'none' }}>
-                Voir tout
+                {t('incidentsCard.viewAll')}
               </Link>
             </div>
 
             {activeIncidents.length === 0 ? (
-              <div style={{ fontSize: '13px', color: COLORS.muted, padding: '12px 0' }}>Aucun incident actif</div>
+              <div style={{ fontSize: '13px', color: COLORS.muted, padding: '12px 0' }}>{t('incidentsCard.empty')}</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {activeIncidents.slice(0, 5).map((incident, i, arr) => {
-                  const cfg = stateConfig[incident.state] ?? stateConfig.open;
+                  const cfg = stateIconConfig[incident.state] ?? stateIconConfig.open;
                   const StateIcon = cfg.Icon;
                   return (
                     <Link
@@ -267,14 +268,14 @@ export default function DashboardPage() {
                           display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10.5px', fontWeight: 600,
                           padding: '3px 8px', borderRadius: '6px', background: cfg.bg, color: cfg.text, flexShrink: 0,
                         }}>
-                          <StateIcon size={11} aria-hidden="true" />{cfg.label}
+                          <StateIcon size={11} aria-hidden="true" />{tIncidentState(incident.state)}
                         </span>
                         <span style={{ fontSize: '12.5px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {incident.title}
                         </span>
                       </div>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10.5px', color: severityColor[incident.severity], flexShrink: 0 }}>
-                        {incident.severity}
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10.5px', color: cfg.text, flexShrink: 0 }}>
+                        {tSeverity(incident.severity).toLowerCase()}
                       </span>
                     </Link>
                   );
@@ -290,14 +291,14 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600 }}>
                 <Users size={15} color={COLORS.greenText} aria-hidden="true" />
-                En ligne
+                {t('onlineCard.title')}
               </div>
-              <span style={{ fontSize: '11px', color: COLORS.greenText }}>{onlineUsernames.length} actif{onlineUsernames.length > 1 ? 's' : ''}</span>
+              <span style={{ fontSize: '11px', color: COLORS.greenText }}>{t('onlineCard.activeCount', { count: onlineUsernames.length })}</span>
             </div>
 
             {onlineUsernames.length === 0 ? (
               <div style={{ fontSize: '12px', color: COLORS.muted, padding: '8px 0' }}>
-                Aucune donnée de présence disponible pour le moment.
+                {t('onlineCard.empty')}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -334,15 +335,15 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600 }}>
                 <Rocket size={15} color={COLORS.greenText} aria-hidden="true" />
-                Releases actives
+                {t('releasesCard.title')}
               </div>
               <Link href="/releases" style={{ fontSize: '12px', color: COLORS.blueText, textDecoration: 'none' }}>
-                Voir tout
+                {t('releasesCard.viewAll')}
               </Link>
             </div>
 
             {activeReleases.length === 0 ? (
-              <div style={{ fontSize: '13px', color: COLORS.muted, padding: '12px 0' }}>Aucune release en cours</div>
+              <div style={{ fontSize: '13px', color: COLORS.muted, padding: '12px 0' }}>{t('releasesCard.empty')}</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {activeReleases.slice(0, 3).map(release => {
@@ -361,7 +362,7 @@ export default function DashboardPage() {
                           color: blocked ? COLORS.emberText : COLORS.blueText,
                         }}>
                           {blocked ? <Lock size={10} aria-hidden="true" /> : <PlayCircle size={10} aria-hidden="true" />}
-                          {blocked ? 'Bloquée' : 'En cours'}
+                          {blocked ? tReleaseState('blocked') : tReleaseState('in_progress')}
                         </span>
                       </div>
                       <div style={{ height: '5px', borderRadius: '3px', background: COLORS.row, overflow: 'hidden' }}>
@@ -371,7 +372,7 @@ export default function DashboardPage() {
                         }} />
                       </div>
                       <div style={{ fontSize: '10.5px', color: COLORS.muted, marginTop: '5px' }}>
-                        {completed}/{release.steps.length} étapes
+                        {t('releasesCard.stepsProgress', { completed, total: release.steps.length })}
                       </div>
                     </Link>
                   );
@@ -386,11 +387,11 @@ export default function DashboardPage() {
           <div style={{ padding: '17px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>
               <Activity size={15} color={COLORS.blueText} aria-hidden="true" />
-              Activité récente
+              {t('activityCard.title')}
             </div>
 
             {activityFeed.length === 0 ? (
-              <div style={{ fontSize: '13px', color: COLORS.muted, padding: '12px 0' }}>Rien à signaler</div>
+              <div style={{ fontSize: '13px', color: COLORS.muted, padding: '12px 0' }}>{t('activityCard.empty')}</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {activityFeed.map(item => (
@@ -420,9 +421,9 @@ export default function DashboardPage() {
 
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 600 }}>Mes teams ({teams.length})</div>
+          <div style={{ fontSize: '14px', fontWeight: 600 }}>{t('teamsSection.title', { count: teams.length })}</div>
           <Link href="/teams" style={{ fontSize: '12px', color: COLORS.blueText, textDecoration: 'none' }}>
-            Gérer
+            {t('teamsSection.manage')}
           </Link>
         </div>
 
@@ -479,7 +480,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <span style={{ fontSize: '12.5px', color: COLORS.muted, fontWeight: 500 }}>
-                {team.members.length} membre{team.members.length > 1 ? 's' : ''}
+                {t('teamsSection.memberCount', { count: team.members.length })}
               </span>
             </div>
           </div>
