@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
+import { Link, useRouter, usePathname } from '@/i18n/navigation';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { vigilWs } from '@/lib/websocket';
 import { useToast } from '@/components/ui/Toast';
 import type { WsEvent } from '@/lib/types';
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import {
   LayoutGrid, AlertTriangle, Rocket, Users, MessageCircle,
   ChevronLeft, ChevronRight, LogOut, Radar, Zap,
@@ -223,6 +223,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
             )}
           </div>
+
+          <div style={{ borderTop: '1px solid #202A3C', paddingTop: '9px' }}>
+            <LanguageSwitcher collapsed={collapsed} />
+          </div>
+
           <button
             onClick={handleLogout}
             title={collapsed ? 'Déconnexion' : undefined}

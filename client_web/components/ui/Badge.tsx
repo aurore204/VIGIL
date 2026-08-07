@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import type { IncidentState, IncidentSeverity, ReleaseState, TeamRole } from '@/lib/types';
 import {
   Circle, CheckCircle2, ArrowUpCircle, Info, AlertTriangle, Flame,
@@ -25,46 +28,57 @@ export function Badge({ color, bg, Icon, label }: BadgeProps) {
   );
 }
 
-const incidentStateConfig: Record<IncidentState, BadgeProps> = {
-  open: { color: 'oklch(0.78 0.14 25)', bg: 'oklch(0.25 0.05 25)', Icon: Circle, label: 'Ouvert' },
-  acknowledged: { color: 'oklch(0.75 0.14 255)', bg: 'oklch(0.22 0.04 255)', Icon: CheckCircle2, label: 'Acquitté' },
-  escalated: { color: 'oklch(0.78 0.14 60)', bg: 'oklch(0.24 0.05 60)', Icon: ArrowUpCircle, label: 'Escaladé' },
-  resolved: { color: 'oklch(0.72 0.14 150)', bg: 'oklch(0.22 0.04 150)', Icon: CheckCircle2, label: 'Résolu' },
+type BadgeStyle = Omit<BadgeProps, 'label'>;
+
+const incidentStateConfig: Record<IncidentState, BadgeStyle> = {
+  open: { color: 'oklch(0.78 0.14 25)', bg: 'oklch(0.25 0.05 25)', Icon: Circle },
+  acknowledged: { color: 'oklch(0.75 0.14 255)', bg: 'oklch(0.22 0.04 255)', Icon: CheckCircle2 },
+  escalated: { color: 'oklch(0.78 0.14 60)', bg: 'oklch(0.24 0.05 60)', Icon: ArrowUpCircle },
+  resolved: { color: 'oklch(0.72 0.14 150)', bg: 'oklch(0.22 0.04 150)', Icon: CheckCircle2 },
 };
 
-const severityConfig: Record<IncidentSeverity, BadgeProps> = {
-  low: { color: 'oklch(0.72 0.14 150)', bg: 'oklch(0.22 0.04 150)', Icon: Info, label: 'Faible' },
-  medium: { color: 'oklch(0.82 0.14 85)', bg: 'oklch(0.24 0.05 85)', Icon: AlertTriangle, label: 'Moyen' },
-  high: { color: 'oklch(0.78 0.14 60)', bg: 'oklch(0.24 0.05 60)', Icon: AlertTriangle, label: 'Élevé' },
-  critical: { color: 'oklch(0.78 0.14 25)', bg: 'oklch(0.25 0.05 25)', Icon: Flame, label: 'Critique' },
+const severityConfig: Record<IncidentSeverity, BadgeStyle> = {
+  low: { color: 'oklch(0.72 0.14 150)', bg: 'oklch(0.22 0.04 150)', Icon: Info },
+  medium: { color: 'oklch(0.82 0.14 85)', bg: 'oklch(0.24 0.05 85)', Icon: AlertTriangle },
+  high: { color: 'oklch(0.78 0.14 60)', bg: 'oklch(0.24 0.05 60)', Icon: AlertTriangle },
+  critical: { color: 'oklch(0.78 0.14 25)', bg: 'oklch(0.25 0.05 25)', Icon: Flame },
 };
 
-const releaseStateConfig: Record<ReleaseState, BadgeProps> = {
-  created: { color: 'oklch(0.65 0.01 260)', bg: 'oklch(0.25 0.01 260)', Icon: Square, label: 'Créée' },
-  in_progress: { color: 'oklch(0.75 0.14 255)', bg: 'oklch(0.22 0.04 255)', Icon: RefreshCw, label: 'En cours' },
-  completed: { color: 'oklch(0.72 0.14 150)', bg: 'oklch(0.22 0.04 150)', Icon: CheckCircle2, label: 'Terminée' },
-  cancelled: { color: 'oklch(0.65 0.01 260)', bg: 'oklch(0.25 0.01 260)', Icon: XCircle, label: 'Annulée' },
-  blocked: { color: 'oklch(0.78 0.14 25)', bg: 'oklch(0.25 0.05 25)', Icon: Lock, label: 'Bloquée' },
+const releaseStateConfig: Record<ReleaseState, BadgeStyle> = {
+  created: { color: 'oklch(0.65 0.01 260)', bg: 'oklch(0.25 0.01 260)', Icon: Square },
+  in_progress: { color: 'oklch(0.75 0.14 255)', bg: 'oklch(0.22 0.04 255)', Icon: RefreshCw },
+  completed: { color: 'oklch(0.72 0.14 150)', bg: 'oklch(0.22 0.04 150)', Icon: CheckCircle2 },
+  cancelled: { color: 'oklch(0.65 0.01 260)', bg: 'oklch(0.25 0.01 260)', Icon: XCircle },
+  blocked: { color: 'oklch(0.78 0.14 25)', bg: 'oklch(0.25 0.05 25)', Icon: Lock },
 };
 
-const roleConfig: Record<TeamRole, BadgeProps> = {
-  manager: { color: 'oklch(0.82 0.14 85)', bg: 'oklch(0.24 0.05 85 / 0.3)', label: 'Manager' },
-  responder: { color: 'oklch(0.75 0.14 255)', bg: 'oklch(0.22 0.04 255 / 0.3)', label: 'Responder' },
-  observer: { color: 'oklch(0.65 0.01 260)', bg: 'oklch(0.25 0.01 260 / 0.3)', label: 'Observer' },
+const roleConfig: Record<TeamRole, BadgeStyle> = {
+  manager: { color: 'oklch(0.82 0.14 85)', bg: 'oklch(0.24 0.05 85 / 0.3)' },
+  responder: { color: 'oklch(0.75 0.14 255)', bg: 'oklch(0.22 0.04 255 / 0.3)' },
+  observer: { color: 'oklch(0.65 0.01 260)', bg: 'oklch(0.25 0.01 260 / 0.3)' },
 };
 
 export function IncidentStateBadge({ state }: { state: IncidentState }) {
-  return <Badge {...incidentStateConfig[state]} />;
+  const t = useTranslations('incidentState');
+  const config = incidentStateConfig[state];
+  return <Badge color={config.color} bg={config.bg} Icon={config.Icon} label={t(state)} />;
 }
 
 export function SeverityBadge({ severity }: { severity: IncidentSeverity }) {
-  return <Badge {...severityConfig[severity]} />;
+  const t = useTranslations('severity');
+  const config = severityConfig[severity];
+  return <Badge color={config.color} bg={config.bg} Icon={config.Icon} label={t(severity)} />;
 }
 
 export function ReleaseStateBadge({ state }: { state: ReleaseState }) {
-  return <Badge {...releaseStateConfig[state]} />;
+  const t = useTranslations('releaseState');
+  const config = releaseStateConfig[state];
+  return <Badge color={config.color} bg={config.bg} Icon={config.Icon} label={t(state)} />;
 }
 
 export function RoleBadge({ role }: { role: TeamRole }) {
-  return <Badge {...roleConfig[role]} />;
+  // Les noms de rôle (Manager, Responder, Observer) sont volontairement identiques en FR/EN,
+  // donc pas besoin de traduction ici — on les garde tels quels.
+  const config = roleConfig[role];
+  return <Badge color={config.color} bg={config.bg} label={role.charAt(0).toUpperCase() + role.slice(1)} />;
 }
