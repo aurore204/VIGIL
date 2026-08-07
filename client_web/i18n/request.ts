@@ -6,12 +6,13 @@ export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale;
   const locale = hasLocale(routing.locales, requested) ? requested : routing.defaultLocale;
 
-  const [nav, auth, dashboard, incidents, releases] = await Promise.all([
+  const [nav, auth, dashboard, incidents, releases, rules] = await Promise.all([
     import(`../locales/${locale}/nav.json`),
     import(`../locales/${locale}/auth.json`),
     import(`../locales/${locale}/dashboard.json`),
     import(`../locales/${locale}/incidents.json`),
     import(`../locales/${locale}/releases.json`),
+    import(`../locales/${locale}/rules.json`),
   ]);
 
   return {
@@ -22,6 +23,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
       dashboard: dashboard.default,
       incidents: incidents.default,
       releases: releases.default,
+      rules: rules.default,
     },
   };
 });

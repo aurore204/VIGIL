@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import type { Team, Rule } from '@/lib/types';
@@ -10,29 +11,30 @@ import { Zap, CheckCircle2, XCircle, KeyRound } from 'lucide-react';
 import { CreateRuleModal } from '@/components/rules/CreateRuleModal';
 import { WebhookSecretModal } from '@/components/rules/WebhookSecretModal';
 
-function describeTrigger(trigger: Rule['trigger']): string {
+function describeTrigger(trigger: Rule['trigger'], t: ReturnType<typeof useTranslations>): string {
   if (trigger.service === 'github' && trigger.event === 'workflow_run') {
     return trigger.filters.conclusion === 'success'
-      ? 'Quand le build réussit sur GitHub'
-      : 'Quand le build échoue sur GitHub';
+      ? t('triggerWhenSuccess')
+      : t('triggerWhenFailure');
   }
-  return `Quand un événement survient sur ${trigger.service}`;
+  return t('triggerGeneric', { service: trigger.service });
 }
 
-function describeReaction(reaction: Rule['reaction']): string {
+function describeReaction(reaction: Rule['reaction'], t: ReturnType<typeof useTranslations>): string {
   switch (reaction.type) {
     case 'vigil_create_incident':
-      return 'un incident est créé automatiquement';
+      return t('reactionCreateIncident');
     case 'http_post':
-      return 'une alerte est envoyée vers un service externe';
+      return t('reactionHttpPost');
     default:
-      return 'une action est déclenchée';
+      return t('reactionGeneric');
   }
 }
 
 export default function RulesPage() {
   const { user } = useAuthStore();
   const { showToast } = useToast();
+  const t = useTranslations('rules.listPage');
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const [rules, setRules] = useState<Rule[]>([]);
@@ -65,7 +67,7 @@ export default function RulesPage() {
       const rulesData = await api.getTeamRules(teamId);
       setRules(rulesData);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Erreur', 'error');
+      showToast(err instanceof Error ? err.message : t('toastError'), 'error');
     }
   };
 
@@ -85,13 +87,13 @@ export default function RulesPage() {
   };
 
   if (loading) return (
-    <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>Chargement...</div>
+    <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>{t('loading')}</div>
   );
 
   if (managerTeams.length === 0) {
     return (
       <div style={{ padding: '28px 32px', color: 'oklch(0.60 0.01 260)', fontSize: '13px' }}>
-        Vous devez être Manager d&apos;au moins une team pour configurer des règles d&apos;automatisation.
+        {t('noManagerTeam')}
       </div>
     );
   }
@@ -100,26 +102,26 @@ export default function RulesPage() {
     <div style={{ padding: '28px clamp(16px, 4vw, 32px)', maxWidth: '900px', fontFamily: 'Inter, system-ui, sans-serif' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)' }}>Règles d&apos;automatisation</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)' }}>{t('title')}</div>
           <div style={{ fontSize: '13px', color: 'oklch(0.60 0.01 260)', marginTop: '4px' }}>
-            {rules.length} règle{rules.length > 1 ? 's' : ''} configurée{rules.length > 1 ? 's' : ''}
+            {t('summary', { count: rules.length })}
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <Button variant="secondary" onClick={() => setShowWebhookSecret(true)}>
             <KeyRound size={14} aria-hidden="true" style={{ marginRight: '6px' }} />
-            Configurer le webhook
+            {t('configureWebhook')}
           </Button>
           <Button onClick={() => setShowCreateRule(true)}>
             <Zap size={14} aria-hidden="true" style={{ marginRight: '6px' }} />
-            Créer une règle
+            {t('createRule')}
           </Button>
         </div>
       </div>
 
       <div style={{ marginBottom: '20px', maxWidth: '300px' }}>
         <label htmlFor="team-select" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'oklch(0.72 0.01 260)', marginBottom: '6px' }}>
-          Team
+          {t('team')}
         </label>
         <select id="team-select" value={selectedTeamId} onChange={e => handleTeamChange(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
           {managerTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -135,11 +137,11 @@ export default function RulesPage() {
           fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em',
           color: 'oklch(0.55 0.01 260)',
         }}>
-          Règles actives
+          {t('activeRules')}
         </div>
         {rules.length === 0 ? (
           <div style={{ padding: '48px', textAlign: 'center', color: 'oklch(0.52 0.012 260)', fontSize: '13px' }}>
-            Aucune règle configurée
+            {t('empty')}
           </div>
         ) : (
           rules.map((rule, i) => (
@@ -159,7 +161,7 @@ export default function RulesPage() {
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'oklch(0.90 0.005 260)' }}>{rule.name}</div>
                 <div style={{ fontSize: '11px', color: 'oklch(0.52 0.012 260)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <Zap size={11} aria-hidden="true" />
-                  {describeTrigger(rule.trigger)}, {describeReaction(rule.reaction)}
+                  {describeTrigger(rule.trigger, t)}, {describeReaction(rule.reaction, t)}
                 </div>
               </div>
             </div>
