@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { vigilWs } from '@/lib/websocket';
@@ -22,6 +23,9 @@ export default function IncidentsPage() {
   const [filterSeverity, setFilterSeverity] = useState<IncidentSeverity | 'all'>('all');
   const [filterState, setFilterState] = useState<IncidentState | 'all'>('all');
   const [showCreate, setShowCreate] = useState(false);
+  const t = useTranslations('incidents.listPage');
+  const tSeverity = useTranslations('severity');
+  const tIncidentState = useTranslations('incidentState');
 
   const load = async () => {
     try {
@@ -97,16 +101,14 @@ export default function IncidentsPage() {
     return matchSearch && matchSev && matchState;
   });
 
-  const activeCount = incidents.filter(i => i.state !== 'resolved').length;
-
   const handleCreate = async (teamId: string, title: string, severity: IncidentSeverity, description?: string) => {
     try {
       await api.createIncident(teamId, { title, severity, description });
-      showToast('Incident créé avec succès', 'success');
+      showToast(t('toastCreated'), 'success');
       setShowCreate(false);
       load();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Erreur', 'error');
+      showToast(err instanceof Error ? err.message : t('toastError'), 'error');
     }
   };
 
@@ -125,15 +127,14 @@ export default function IncidentsPage() {
   };
 
   if (loading) return (
-    <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>Chargement...</div>
+    <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>{t('loading')}</div>
   );
 
   return (
     <div style={{ padding: '28px 32px', fontFamily: 'Inter, system-ui, sans-serif' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)' }}>Incidents</div>
-          
+          <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)' }}>{t('title')}</div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -141,10 +142,10 @@ export default function IncidentsPage() {
             <span aria-hidden="true" style={{
               width: '6px', height: '6px', borderRadius: '50%', background: 'oklch(0.72 0.14 150)',
             }} />
-            {onlineUsernames.length} en ligne
+            {onlineUsernames.length} {t('online')}
           </div>
           {managerTeams.length > 0 && (
-            <Button onClick={() => setShowCreate(true)}>+ Créer un incident</Button>
+            <Button onClick={() => setShowCreate(true)}>{t('create')}</Button>
           )}
         </div>
       </div>
@@ -152,30 +153,30 @@ export default function IncidentsPage() {
       <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '220px' }}>
           <Input
-            label="Rechercher"
+            label={t('search')}
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Titre de l'incident..."
+            placeholder={t('searchPlaceholder')}
           />
         </div>
         <div>
-          <label htmlFor="filter-severity" style={labelStyle}>Sévérité</label>
+          <label htmlFor="filter-severity" style={labelStyle}>{t('severityLabel')}</label>
           <select id="filter-severity" value={filterSeverity} onChange={e => setFilterSeverity(e.target.value as IncidentSeverity | 'all')} style={selectStyle}>
-            <option value="all">Toutes</option>
-            <option value="low">Faible</option>
-            <option value="medium">Moyen</option>
-            <option value="high">Élevé</option>
-            <option value="critical">Critique</option>
+            <option value="all">{t('severityAll')}</option>
+            <option value="low">{tSeverity('low')}</option>
+            <option value="medium">{tSeverity('medium')}</option>
+            <option value="high">{tSeverity('high')}</option>
+            <option value="critical">{tSeverity('critical')}</option>
           </select>
         </div>
         <div>
-          <label htmlFor="filter-state" style={labelStyle}>État</label>
+          <label htmlFor="filter-state" style={labelStyle}>{t('stateLabel')}</label>
           <select id="filter-state" value={filterState} onChange={e => setFilterState(e.target.value as IncidentState | 'all')} style={selectStyle}>
-            <option value="all">Tous</option>
-            <option value="open">Ouvert</option>
-            <option value="acknowledged">Acquitté</option>
-            <option value="escalated">Escaladé</option>
-            <option value="resolved">Résolu</option>
+            <option value="all">{t('stateAll')}</option>
+            <option value="open">{tIncidentState('open')}</option>
+            <option value="acknowledged">{tIncidentState('acknowledged')}</option>
+            <option value="escalated">{tIncidentState('escalated')}</option>
+            <option value="resolved">{tIncidentState('resolved')}</option>
           </select>
         </div>
       </div>
@@ -195,12 +196,12 @@ export default function IncidentsPage() {
           borderBottom: '1px solid oklch(0.30 0.02 260)',
           whiteSpace: 'nowrap', minWidth: '920px',
         }}>
-          <div>Incident</div>
-          <div>Sévérité</div>
-          <div>État</div>
-          <div>Team</div>
-          <div>Assigné</div>
-          <div>Date</div>
+          <div>{t('columns.incident')}</div>
+          <div>{t('columns.severity')}</div>
+          <div>{t('columns.state')}</div>
+          <div>{t('columns.team')}</div>
+          <div>{t('columns.assignee')}</div>
+          <div>{t('columns.date')}</div>
         </div>
         <IncidentTable incidents={filtered} teams={teams} />
       </div>

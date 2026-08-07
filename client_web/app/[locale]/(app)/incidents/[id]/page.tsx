@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
-import { useParams} from 'next/navigation';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { vigilWs } from '@/lib/websocket';
@@ -21,6 +22,9 @@ export default function IncidentDetailPage() {
   const { user } = useAuthStore();
   const { showToast } = useToast();
   const router = useRouter();
+  const t = useTranslations('incidents.detailPage');
+  const locale = useLocale();
+  const dateLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
 
   const [incident, setIncident] = useState<Incident | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
@@ -95,7 +99,7 @@ export default function IncidentDetailPage() {
   }, [id, incident?.team_id]);
 
   if (loading || !incident) return (
-    <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>Chargement...</div>
+    <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>{t('loading')}</div>
   );
 
   const myRole = team?.members.find(m => m.user_id === user?.id)?.role ?? 'observer';
@@ -104,38 +108,38 @@ export default function IncidentDetailPage() {
   const responders = team?.members.filter(m => m.role === 'responder') ?? [];
 
   const handleAcknowledge = async () => {
-    try { await api.acknowledgeIncident(id); showToast('Incident acquitté', 'success'); load(); }
-    catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
+    try { await api.acknowledgeIncident(id); showToast(t('toastAcknowledged'), 'success'); load(); }
+    catch (err) { showToast(err instanceof Error ? err.message : t('toastError'), 'error'); }
   };
   const handleEscalate = async () => {
-    try { await api.escalateIncident(id, incident.severity === 'high' ? 'critical' : 'high'); showToast('Incident escaladé', 'warning'); load(); }
-    catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
+    try { await api.escalateIncident(id, incident.severity === 'high' ? 'critical' : 'high'); showToast(t('toastEscalated'), 'warning'); load(); }
+    catch (err) { showToast(err instanceof Error ? err.message : t('toastError'), 'error'); }
   };
   const handleResolve = async () => {
-    try { await api.resolveIncident(id); showToast('Incident résolu', 'success'); load(); }
-    catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
+    try { await api.resolveIncident(id); showToast(t('toastResolved'), 'success'); load(); }
+    catch (err) { showToast(err instanceof Error ? err.message : t('toastError'), 'error'); }
   };
   const handleDelete = async () => {
-    try { await api.deleteIncident(id); showToast('Incident supprimé', 'success'); router.push('/incidents'); }
-    catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
+    try { await api.deleteIncident(id); showToast(t('toastDeleted'), 'success'); router.push('/incidents'); }
+    catch (err) { showToast(err instanceof Error ? err.message : t('toastError'), 'error'); }
   };
   const handleAssign = async (userId: string) => {
-    try { await api.assignResponder(id, userId); showToast('Responder assigné', 'success'); setShowAssign(false); load(); }
-    catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
+    try { await api.assignResponder(id, userId); showToast(t('toastAssigned'), 'success'); setShowAssign(false); load(); }
+    catch (err) { showToast(err instanceof Error ? err.message : t('toastError'), 'error'); }
   };
 
   const handleEditIncident = async (data: { title?: string; description?: string; severity?: import('@/lib/types').IncidentSeverity }) => {
-  try {
-    await api.updateIncident(id, data);
-    showToast('Incident modifié', 'success');
-    setShowEdit(false);
-    load();
-  } catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
-};
+    try {
+      await api.updateIncident(id, data);
+      showToast(t('toastEdited'), 'success');
+      setShowEdit(false);
+      load();
+    } catch (err) { showToast(err instanceof Error ? err.message : t('toastError'), 'error'); }
+  };
   const handleAddEntry = async (content: string) => { await api.addTimelineEntry(id, content); load(); };
   const handleEditEntry = async (entryId: string, content: string) => {
     await api.editTimelineEntry(id, entryId, content);
-    showToast('Entrée modifiée', 'success');
+    showToast(t('toastEntryEdited'), 'success');
     load();
   };
   const handleReaction = async (entryId: string, emoji: string, hasReacted: boolean) => {
@@ -143,7 +147,7 @@ export default function IncidentDetailPage() {
       if (hasReacted) await api.removeReaction(id, entryId, emoji);
       else await api.addReaction(id, entryId, emoji);
       load();
-    } catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
+    } catch (err) { showToast(err instanceof Error ? err.message : t('toastError'), 'error'); }
   };
 
   return (
@@ -156,7 +160,7 @@ export default function IncidentDetailPage() {
           cursor: 'pointer', fontSize: '12px', fontWeight: 600, marginBottom: '18px', padding: 0,
         }}
       >
-        Retour
+        {t('back')}
       </button>
 
       <div style={{ marginBottom: '20px' }}>
@@ -168,7 +172,7 @@ export default function IncidentDetailPage() {
           {incident.title}
         </div>
         <div style={{ fontSize: '12.5px', color: 'oklch(0.55 0.01 260)' }}>
-          {team?.name} · Créé le {new Date(incident.created_at).toLocaleString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+          {team?.name} · {t('createdOn')} {new Date(incident.created_at).toLocaleString(dateLocale, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
 
@@ -186,7 +190,7 @@ export default function IncidentDetailPage() {
                 fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
                 letterSpacing: '0.03em', color: 'oklch(0.55 0.01 260)', marginBottom: '10px',
               }}>
-                Description
+                {t('description')}
               </div>
               <div style={{ fontSize: '13.5px', color: 'oklch(0.80 0.005 260)', lineHeight: 1.6 }}>
                 {incident.description}
