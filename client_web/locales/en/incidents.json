@@ -1,0 +1,12 @@
+{
+  "assignModal": {
+    "title": "Assign a Responder",
+    "empty": "No Responder in this team",
+    "cancel": "Cancel",
+    "submit": "Assign"
+  },
+  "presence": {
+    "title": "Currently viewing",
+    "empty": "No one else is watching this incident"
+  }
+}

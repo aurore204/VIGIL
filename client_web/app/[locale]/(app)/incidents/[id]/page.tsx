@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
+import { useParams} from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { vigilWs } from '@/lib/websocket';

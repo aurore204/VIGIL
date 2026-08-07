@@ -1,0 +1,12 @@
+{
+  "assignModal": {
+    "title": "Assigner un Responder",
+    "empty": "Aucun Responder dans cette team",
+    "cancel": "Annuler",
+    "submit": "Assigner"
+  },
+  "presence": {
+    "title": "Présents actuellement",
+    "empty": "Personne d'autre ne regarde cet incident"
+  }
+}
