@@ -1,0 +1,18 @@
+{
+  "sidebar": {
+    "title": "Messages",
+    "contactCount": "{count, plural, =0 {No contacts} one {# contact} other {# contacts}}",
+    "empty": "No contacts"
+  },
+  "online": "Online",
+  "conversation": {
+    "empty": "Start the conversation",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "placeholder": "Write a message...",
+    "send": "Send",
+    "selectContact": "Select a contact to start"
+  },
+  "loading": "Loading...",
+  "toastError": "Error"
+}

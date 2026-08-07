@@ -60,6 +60,7 @@
       "leaveDescription": "Quitter la team \"{target}\" ?",
       "deleteDescription": "Supprimer définitivement la team \"{target}\" ?",
       "confirmLabel": "Confirmer",
+      "cancelLabel": "Annuler",
       "banPermanent": "Bannissement permanent",
       "banTemporary": "Bannissement temporaire jusqu'au :"
     }

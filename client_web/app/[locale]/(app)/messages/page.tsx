@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { vigilWs } from '@/lib/websocket';
@@ -11,6 +12,9 @@ import { useToast } from '@/components/ui/Toast';
 export default function MessagesPage() {
   const { user } = useAuthStore();
   const { showToast } = useToast();
+  const t = useTranslations('messages');
+  const locale = useLocale();
+  const dateLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
   const [teams, setTeams] = useState<Team[]>([]);
   const [contacts, setContacts] = useState<TeamMember[]>([]);
   const [selectedContact, setSelectedContact] = useState<TeamMember | null>(null);
@@ -43,7 +47,7 @@ export default function MessagesPage() {
       setMessages(msgs);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Erreur', 'error');
+      showToast(err instanceof Error ? err.message : t('toastError'), 'error');
     }
   };
 
@@ -53,24 +57,24 @@ export default function MessagesPage() {
   }, []);
 
   // Abonnement WS 
- useEffect(() => {
-  const handleMessage = (e: WsEvent) => {
-    if (e.type !== 'private_message_received') return;
-    if (selectedContact && (e.from === selectedContact.username || e.to === selectedContact.username)) {
-      loadConversation(selectedContact);
-    }
-  };
-  const handlePresence = (e: WsEvent) => {
-    if (e.type !== 'presence_online') return;
-    setOnlineUsernames(e.usernames);
-  };
-  vigilWs.on('private_message_received', handleMessage);
-  vigilWs.on('presence_online', handlePresence);
-  return () => {
-    vigilWs.off('private_message_received', handleMessage);
-    vigilWs.off('presence_online', handlePresence);
-  };
-}, [selectedContact]);
+  useEffect(() => {
+    const handleMessage = (e: WsEvent) => {
+      if (e.type !== 'private_message_received') return;
+      if (selectedContact && (e.from === selectedContact.username || e.to === selectedContact.username)) {
+        loadConversation(selectedContact);
+      }
+    };
+    const handlePresence = (e: WsEvent) => {
+      if (e.type !== 'presence_online') return;
+      setOnlineUsernames(e.usernames);
+    };
+    vigilWs.on('private_message_received', handleMessage);
+    vigilWs.on('presence_online', handlePresence);
+    return () => {
+      vigilWs.off('private_message_received', handleMessage);
+      vigilWs.off('presence_online', handlePresence);
+    };
+  }, [selectedContact]);
 
   // Chargement de la conversation à chaque changement de contact sélectionné
   useEffect(() => {
@@ -86,14 +90,14 @@ export default function MessagesPage() {
       setNewMessage('');
       loadConversation(selectedContact);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Erreur', 'error');
+      showToast(err instanceof Error ? err.message : t('toastError'), 'error');
     } finally {
       setSending(false);
     }
   };
 
   if (loading) return (
-    <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>Chargement...</div>
+    <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>{t('loading')}</div>
   );
 
   return (
@@ -105,15 +109,15 @@ export default function MessagesPage() {
         display: 'flex', flexDirection: 'column',
       }}>
         <div style={{ padding: '20px 16px', borderBottom: '1px solid oklch(0.30 0.02 260)' }}>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: 'oklch(0.95 0.005 260)' }}>Messages</div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'oklch(0.95 0.005 260)' }}>{t('sidebar.title')}</div>
           <div style={{ fontSize: '12px', color: 'oklch(0.52 0.012 260)', marginTop: '2px' }}>
-            {contacts.length} contact{contacts.length > 1 ? 's' : ''}
+            {t('sidebar.contactCount', { count: contacts.length })}
           </div>
         </div>
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {contacts.length === 0 ? (
             <div style={{ padding: '20px 16px', fontSize: '13px', color: 'oklch(0.52 0.012 260)' }}>
-              Aucun contact
+              {t('sidebar.empty')}
             </div>
           ) : (
             contacts.map(contact => (
@@ -139,8 +143,8 @@ export default function MessagesPage() {
                 </div>
                 {onlineUsernames.includes(contact.username) && (
                   <span
-                    aria-label="En ligne"
-                    title="En ligne"
+                    aria-label={t('online')}
+                    title={t('online')}
                     style={{
                       position: 'absolute', bottom: '-1px', right: '-1px',
                       width: '10px', height: '10px', borderRadius: '50%',
@@ -184,8 +188,8 @@ export default function MessagesPage() {
             </div>
             {onlineUsernames.includes(selectedContact.username) && (
               <span
-                aria-label="En ligne"
-                title="En ligne"
+                aria-label={t('online')}
+                title={t('online')}
                 style={{
                   position: 'absolute', bottom: '-1px', right: '-1px',
                   width: '10px', height: '10px', borderRadius: '50%',
@@ -209,7 +213,7 @@ export default function MessagesPage() {
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {messages.length === 0 ? (
               <div style={{ textAlign: 'center', color: 'oklch(0.52 0.012 260)', fontSize: '13px', marginTop: '40px' }}>
-                Commencez la conversation
+                {t('conversation.empty')}
               </div>
             ) : (
               messages.map((msg, i) => {
@@ -222,9 +226,9 @@ export default function MessagesPage() {
                   const today = new Date();
                   const yesterday = new Date(today);
                   yesterday.setDate(today.getDate() - 1);
-                  if (d.toDateString() === today.toDateString()) return "Aujourd'hui";
-                  if (d.toDateString() === yesterday.toDateString()) return 'Hier';
-                  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                  if (d.toDateString() === today.toDateString()) return t('conversation.today');
+                  if (d.toDateString() === yesterday.toDateString()) return t('conversation.yesterday');
+                  return d.toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' });
                 };
 
                 return (
@@ -249,7 +253,7 @@ export default function MessagesPage() {
                         {msg.content}
                       </div>
                       <div style={{ fontSize: '11px', color: 'oklch(0.45 0.01 260)', marginTop: '4px' }}>
-                        {msgDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        {msgDate.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
                         {msg.read_at && isMe && <span style={{ marginLeft: '6px' }}>✓✓</span>}
                       </div>
                     </div>
@@ -272,7 +276,7 @@ export default function MessagesPage() {
             <input
               value={newMessage}
               onChange={e => setNewMessage(e.target.value)}
-              placeholder="Écrire un message..."
+              placeholder={t('conversation.placeholder')}
               maxLength={2000}
               style={{
                 flex: 1, padding: '10px 14px', borderRadius: '8px',
@@ -282,7 +286,7 @@ export default function MessagesPage() {
               }}
             />
             <Button type="submit" loading={sending} disabled={!newMessage.trim()}>
-              Envoyer
+              {t('conversation.send')}
             </Button>
           </form>
         </div>
@@ -291,7 +295,7 @@ export default function MessagesPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: 'oklch(0.52 0.012 260)', fontSize: '13px',
         }}>
-          Sélectionnez un contact pour commencer
+          {t('conversation.selectContact')}
         </div>
       )}
     </div>
