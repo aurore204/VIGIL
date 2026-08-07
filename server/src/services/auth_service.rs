@@ -14,9 +14,9 @@ use crate::repositories::user_repository;
 // Structure des claims du token JWT
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String, // id de l'utilisateur
+    pub sub: String, 
     pub iat: i64,    // date d'émission du token
-    pub exp: usize,  // date d'expiration
+    pub exp: usize,  
 }
 
 // Erreurs possibles du service auth
