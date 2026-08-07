@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
-
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -17,31 +16,30 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const router = useRouter();
   const { showToast } = useToast();
-
-
+  const t = useTranslations('auth');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || !email || !password || !confirm) {
-      setError('Tous les champs sont requis');
+      setError(t('register.errors.allFieldsRequired'));
       return;
     }
     if (password !== confirm) {
-      setError('Les mots de passe ne correspondent pas');
+      setError(t('register.errors.passwordMismatch'));
       return;
     }
     if (password.length < 8) {
-      setError('Le mot de passe doit contenir au moins 8 caractères');
+      setError(t('register.errors.passwordTooShort'));
       return;
     }
     setLoading(true);
     setError('');
     try {
       await api.register(email, password, username);
-      showToast('Compte créé avec succès !', 'success');
+      showToast(t('register.successToast'), 'success');
       router.push('/auth/login');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erreur de l\'inscription';
+      const message = err instanceof Error ? err.message : t('register.errors.generic');
       setError(message);
       showToast(message, 'error');
     } finally {
@@ -76,7 +74,7 @@ export default function RegisterPage() {
           background: 'transparent', color: 'oklch(0.72 0.01 260)',
           textDecoration: 'none', display: 'block'
         }}>
-          Connexion
+          {t('tabs.login')}
         </Link>
         <div style={{
           flex: 1, padding: '9px', borderRadius: '7px',
@@ -84,50 +82,50 @@ export default function RegisterPage() {
           background: 'oklch(0.66 0.16 255)',
           color: 'oklch(0.16 0.015 260)'
         }}>
-          Inscription
+          {t('tabs.register')}
         </div>
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
-        <label style={labelStyle}>Nom d&apos;utilisateur</label>
+        <label style={labelStyle}>{t('register.usernameLabel')}</label>
         <input
           type="text"
           value={username}
           onChange={e => setUsername(e.target.value)}
-          placeholder="nina_martin"
+          placeholder={t('register.usernamePlaceholder')}
           required
           autoComplete="username"
           style={inputStyle}
         />
 
-        <label style={labelStyle}>Email</label>
+        <label style={labelStyle}>{t('register.emailLabel')}</label>
         <input
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
-          placeholder="vous@entreprise.com"
+          placeholder={t('register.emailPlaceholder')}
           required
           autoComplete="email"
           style={inputStyle}
         />
 
-        <label style={labelStyle}>Mot de passe</label>
+        <label style={labelStyle}>{t('register.passwordLabel')}</label>
         <input
           type="password"
           value={password}
           onChange={e => setPassword(e.target.value)}
-          placeholder="••••••••"
+          placeholder={t('register.passwordPlaceholder')}
           required
           autoComplete="new-password"
           style={inputStyle}
         />
 
-        <label style={labelStyle}>Confirmer le mot de passe</label>
+        <label style={labelStyle}>{t('register.confirmPasswordLabel')}</label>
         <input
           type="password"
           value={confirm}
           onChange={e => setConfirm(e.target.value)}
-          placeholder="••••••••"
+          placeholder={t('register.passwordPlaceholder')}
           required
           autoComplete="new-password"
           style={{ ...inputStyle, marginBottom: '8px' }}
@@ -154,7 +152,7 @@ export default function RegisterPage() {
             color: 'oklch(0.16 0.015 260)'
           }}
         >
-          {loading ? 'Inscription...' : 'Créer mon compte'}
+          {loading ? t('register.submitButtonLoading') : t('register.submitButton')}
         </button>
       </form>
     </div>

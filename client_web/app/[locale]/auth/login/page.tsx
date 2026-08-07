@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -15,11 +15,12 @@ export default function LoginPage() {
   const { setAuth } = useAuthStore();
   const router = useRouter();
   const { showToast } = useToast();
+  const t = useTranslations('auth');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setError('Tous les champs sont requis');
+      setError(t('login.errors.allFieldsRequired'));
       return;
     }
     setLoading(true);
@@ -28,10 +29,10 @@ export default function LoginPage() {
     try {
       const data = await api.login(email, password);
       setAuth(data.user, data.token);
-      showToast('Connexion réussie !', 'success');
+      showToast(t('login.successToast'), 'success');
       router.push('/dashboard');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erreur de connexion';
+      const message = err instanceof Error ? err.message : t('login.errors.generic');
       setError(message);
       showToast(message, 'error');
     } finally {
@@ -54,7 +55,7 @@ export default function LoginPage() {
           background: 'oklch(0.66 0.16 255)',
           color: 'oklch(0.16 0.015 260)'
         }}>
-          Connexion
+          {t('tabs.login')}
         </div>
         <Link href="/auth/register" style={{
           flex: 1, padding: '9px', borderRadius: '7px',
@@ -62,7 +63,7 @@ export default function LoginPage() {
           background: 'transparent', color: 'oklch(0.72 0.01 260)',
           textDecoration: 'none', display: 'block'
         }}>
-          Inscription
+          {t('tabs.register')}
         </Link>
       </div>
 
@@ -72,13 +73,13 @@ export default function LoginPage() {
           display: 'block', fontSize: '12px', fontWeight: 600,
           color: 'oklch(0.72 0.01 260)', marginBottom: '6px'
         }}>
-          Email
+          {t('login.emailLabel')}
         </label>
         <input
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
-          placeholder="vous@entreprise.com"
+          placeholder={t('login.emailPlaceholder')}
           required
           autoComplete="email"
           style={{
@@ -94,13 +95,13 @@ export default function LoginPage() {
           display: 'block', fontSize: '12px', fontWeight: 600,
           color: 'oklch(0.72 0.01 260)', marginBottom: '6px'
         }}>
-          Mot de passe
+          {t('login.passwordLabel')}
         </label>
         <input
           type="password"
           value={password}
           onChange={e => setPassword(e.target.value)}
-          placeholder="••••••••"
+          placeholder={t('login.passwordPlaceholder')}
           required
           autoComplete="current-password"
           style={{
@@ -134,7 +135,7 @@ export default function LoginPage() {
             color: 'oklch(0.16 0.015 260)'
           }}
         >
-          {loading ? 'Connexion...' : 'Se connecter'}
+          {loading ? t('login.submitButtonLoading') : t('login.submitButton')}
         </button>
       </form>
     </div>
