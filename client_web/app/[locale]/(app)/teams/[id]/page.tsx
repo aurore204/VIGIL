@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { vigilWs } from '@/lib/websocket';
@@ -20,6 +22,7 @@ export default function TeamDetailPage() {
   const { user } = useAuthStore();
   const { showToast } = useToast();
   const router = useRouter();
+  const t = useTranslations('teams.detailPage');
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -30,56 +33,56 @@ export default function TeamDetailPage() {
   const [bannedMembers, setBannedMembers] = useState<BannedMember[]>([]);
 
   const load = async () => {
-  try {
-    const data = await api.getTeam(id);
-    setTeam(data);
-    if (data.manager_id === user?.id) {
-      try {
-        const banned = await api.getBannedMembers(id);
-        setBannedMembers(banned);
-      } catch { }
+    try {
+      const data = await api.getTeam(id);
+      setTeam(data);
+      if (data.manager_id === user?.id) {
+        try {
+          const banned = await api.getBannedMembers(id);
+          setBannedMembers(banned);
+        } catch { }
+      }
+    } catch {
+      showToast(t('toastAccessLost'), 'warning');
+      router.push('/teams');
+    } finally {
+      setLoading(false);
     }
-  } catch {
-    showToast('Vous n\'avez plus accès à cette team', 'warning');
-    router.push('/teams');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
- useEffect(() => {
-  load();
-  api.getOnlineUsers().then(setOnlineUsernames).catch(() => {});
-
-  const onMemberKicked = (e: WsEvent) => {
-    if (e.type !== 'member_kicked' || e.team_id !== id) return;
+  useEffect(() => {
     load();
-  };
-  const onMemberBanned = (e: WsEvent) => {
-    if (e.type !== 'member_banned' || e.team_id !== id) return;
-    load();
-  };
-  const onMemberUnbanned = (e: WsEvent) => {
-  if (e.type !== 'member_unbanned' || e.team_id !== id) return;
-  load();
-  };
-  const onPresenceOnline = (e: WsEvent) => {
-    if (e.type !== 'presence_online') return;
-    setOnlineUsernames(e.usernames);
-  };
+    api.getOnlineUsers().then(setOnlineUsernames).catch(() => {});
 
-  vigilWs.on('member_kicked', onMemberKicked);
-  vigilWs.on('member_banned', onMemberBanned);
-  vigilWs.on('member_unbanned', onMemberUnbanned);
-  vigilWs.on('presence_online', onPresenceOnline);
+    const onMemberKicked = (e: WsEvent) => {
+      if (e.type !== 'member_kicked' || e.team_id !== id) return;
+      load();
+    };
+    const onMemberBanned = (e: WsEvent) => {
+      if (e.type !== 'member_banned' || e.team_id !== id) return;
+      load();
+    };
+    const onMemberUnbanned = (e: WsEvent) => {
+      if (e.type !== 'member_unbanned' || e.team_id !== id) return;
+      load();
+    };
+    const onPresenceOnline = (e: WsEvent) => {
+      if (e.type !== 'presence_online') return;
+      setOnlineUsernames(e.usernames);
+    };
 
-  return () => {
-    vigilWs.off('member_kicked', onMemberKicked);
-    vigilWs.off('member_banned', onMemberBanned);
-    vigilWs.off('member_unbanned', onMemberUnbanned);
-    vigilWs.off('presence_online', onPresenceOnline);
-  };
-}, [id]); 
+    vigilWs.on('member_kicked', onMemberKicked);
+    vigilWs.on('member_banned', onMemberBanned);
+    vigilWs.on('member_unbanned', onMemberUnbanned);
+    vigilWs.on('presence_online', onPresenceOnline);
+
+    return () => {
+      vigilWs.off('member_kicked', onMemberKicked);
+      vigilWs.off('member_banned', onMemberBanned);
+      vigilWs.off('member_unbanned', onMemberUnbanned);
+      vigilWs.off('presence_online', onPresenceOnline);
+    };
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isManager = team?.manager_id === user?.id;
 
@@ -88,7 +91,7 @@ export default function TeamDetailPage() {
       const res = await api.generateInvitation(id);
       setInviteCode(res.code);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Erreur', 'error');
+      showToast(err instanceof Error ? err.message : t('toastError'), 'error');
     }
   };
 
@@ -96,56 +99,61 @@ export default function TeamDetailPage() {
     const newRole = currentRole === 'observer' ? 'responder' : 'observer';
     try {
       await api.updateMemberRole(id, userId, newRole);
-      showToast('Rôle mis à jour', 'success');
+      showToast(t('toastRoleUpdated'), 'success');
       load();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Erreur', 'error');
+      showToast(err instanceof Error ? err.message : t('toastError'), 'error');
     }
   };
 
   const confirmAction = async () => {
-  if (!confirm) return;
-  try {
-    if (confirm.action === 'kick') {
-      await api.kickMember(id, confirm.userId);
-      showToast(`${confirm.target} retiré`, 'success');
-    } else if (confirm.action === 'ban') {
-      const expiresAt = banType === 'temporary' && banDate ? new Date(banDate).toISOString() : undefined;
-      await api.banMember(id, confirm.userId, expiresAt);
-      showToast(`${confirm.target} banni ${banType === 'temporary' ? 'temporairement' : 'définitivement'}`, 'success');
-    } else if (confirm.action === 'leave') {
-      await api.leaveTeam(id);
-      showToast('Vous avez quitté la team', 'success');
-      router.push('/teams');
-      return;
-    } else if (confirm.action === 'delete') {
-      await api.deleteTeam(id);
-      showToast('Team supprimée', 'success');
-      router.push('/teams');
-      return;
+    if (!confirm) return;
+    try {
+      if (confirm.action === 'kick') {
+        await api.kickMember(id, confirm.userId);
+        showToast(t('toastKicked', { username: confirm.target }), 'success');
+      } else if (confirm.action === 'ban') {
+        const expiresAt = banType === 'temporary' && banDate ? new Date(banDate).toISOString() : undefined;
+        await api.banMember(id, confirm.userId, expiresAt);
+        showToast(
+          banType === 'temporary'
+            ? t('toastBannedTemporary', { username: confirm.target })
+            : t('toastBannedPermanent', { username: confirm.target }),
+          'success'
+        );
+      } else if (confirm.action === 'leave') {
+        await api.leaveTeam(id);
+        showToast(t('toastLeft'), 'success');
+        router.push('/teams');
+        return;
+      } else if (confirm.action === 'delete') {
+        await api.deleteTeam(id);
+        showToast(t('toastDeleted'), 'success');
+        router.push('/teams');
+        return;
+      }
+      setConfirm(null);
+      setBanType('permanent');
+      setBanDate('');
+      load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t('toastError'), 'error');
+      setConfirm(null);
     }
-    setConfirm(null);
-    setBanType('permanent');
-    setBanDate('');
-    load();
-  } catch (err) {
-    showToast(err instanceof Error ? err.message : 'Erreur', 'error');
-    setConfirm(null);
-  }
   };
-  
+
   const handleUnban = async (userId: string, username: string) => {
-  try {
-    await api.unbanMember(id, userId);
-    showToast(`${username} débanni`, 'success');
-    load();
-  } catch (err) {
-    showToast(err instanceof Error ? err.message : 'Erreur', 'error');
-  }
-};
+    try {
+      await api.unbanMember(id, userId);
+      showToast(t('toastUnbanned', { username }), 'success');
+      load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t('toastError'), 'error');
+    }
+  };
 
   if (loading || !team) return (
-    <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>Chargement...</div>
+    <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>{t('loading')}</div>
   );
 
   return (
@@ -159,7 +167,7 @@ export default function TeamDetailPage() {
         }}
       >
         <ArrowLeft size={14} aria-hidden="true" />
-        Retour
+        {t('back')}
       </button>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
@@ -169,14 +177,14 @@ export default function TeamDetailPage() {
             <div style={{ fontSize: '13px', color: 'oklch(0.60 0.01 260)', marginTop: '4px' }}>{team.description}</div>
           )}
           <div style={{ fontSize: '12px', color: 'oklch(0.52 0.012 260)', marginTop: '4px' }}>
-            {team.members.length} membre{team.members.length > 1 ? 's' : ''}
+            {t('memberCount', { count: team.members.length })}
           </div>
         </div>
         {isManager && (
           <div style={{ display: 'flex', gap: '8px' }}>
-            <Button variant="secondary" onClick={handleGenerateCode}>Générer un code</Button>
+            <Button variant="secondary" onClick={handleGenerateCode}>{t('generateCode')}</Button>
             <Button variant="danger" onClick={() => setConfirm({ action: 'delete', target: team.name, userId: '' })}>
-              Supprimer
+              {t('delete')}
             </Button>
           </div>
         )}
@@ -186,7 +194,7 @@ export default function TeamDetailPage() {
         <div style={{ marginBottom: '20px' }}>
           <InviteCodeBanner
             code={inviteCode}
-            onCopy={() => { navigator.clipboard.writeText(inviteCode); showToast('Code copié !', 'success'); }}
+            onCopy={() => { navigator.clipboard.writeText(inviteCode); showToast(t('toastCodeCopied'), 'success'); }}
           />
         </div>
       )}
@@ -201,14 +209,14 @@ export default function TeamDetailPage() {
           borderBottom: '1px solid oklch(0.30 0.02 260)',
           fontSize: '13px', fontWeight: 700, color: 'oklch(0.90 0.005 260)',
         }}>
-          Membres
+          {t('membersHeading')}
         </div>
         {team.members.map((member, i) => (
           <div
             key={member.user_id}
             style={{ borderBottom: i < team.members.length - 1 ? '1px solid oklch(0.27 0.015 260)' : 'none' }}
           >
-               <MemberRow
+            <MemberRow
               member={member}
               isMe={member.user_id === user?.id}
               isManager={isManager}
@@ -222,66 +230,69 @@ export default function TeamDetailPage() {
           </div>
         ))}
       </div>
+
       {isManager && bannedMembers.length > 0 && (
-  <div style={{
-    marginTop: '20px',
-    background: 'oklch(0.195 0.015 260)',
-    border: '1px solid oklch(0.30 0.02 260)',
-    borderRadius: '10px', overflow: 'hidden',
-  }}>
-    <div style={{
-      padding: '12px 16px',
-      borderBottom: '1px solid oklch(0.30 0.02 260)',
-      fontSize: '13px', fontWeight: 700, color: 'oklch(0.90 0.005 260)',
-    }}>
-      Membres bannis ({bannedMembers.length})
-    </div>
-    {bannedMembers.map((banned, i) => (
-      <div
-        key={banned.user_id}
-        style={{ borderBottom: i < bannedMembers.length - 1 ? '1px solid oklch(0.27 0.015 260)' : 'none' }}
-      >
-        <BannedMemberRow banned={banned} canUnban={isManager} onUnban={handleUnban} />
-      </div>
-    ))}
-  </div>
-)}
+        <div style={{
+          marginTop: '20px',
+          background: 'oklch(0.195 0.015 260)',
+          border: '1px solid oklch(0.30 0.02 260)',
+          borderRadius: '10px', overflow: 'hidden',
+        }}>
+          <div style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid oklch(0.30 0.02 260)',
+            fontSize: '13px', fontWeight: 700, color: 'oklch(0.90 0.005 260)',
+          }}>
+            {t('bannedHeading', { count: bannedMembers.length })}
+          </div>
+          {bannedMembers.map((banned, i) => (
+            <div
+              key={banned.user_id}
+              style={{ borderBottom: i < bannedMembers.length - 1 ? '1px solid oklch(0.27 0.015 260)' : 'none' }}
+            >
+              <BannedMemberRow banned={banned} canUnban={isManager} onUnban={handleUnban} />
+            </div>
+          ))}
+        </div>
+      )}
+
       <ConfirmDialog
-  isOpen={!!confirm}
-  title="Confirmer l'action"
-  description={
-    confirm?.action === 'kick' ? `Retirer ${confirm.target} de la team ?` :
-    confirm?.action === 'ban' ? `Bannir ${confirm.target} de la team ?` :
-    confirm?.action === 'leave' ? `Quitter la team "${confirm?.target}" ?` :
-    `Supprimer définitivement la team "${confirm?.target}" ?`
-  }
-  confirmLabel="Confirmer"
-  onConfirm={confirmAction}
-  onCancel={() => { setConfirm(null); setBanType('permanent'); setBanDate(''); }}
->
-  {confirm?.action === 'ban' && (
+        isOpen={!!confirm}
+        title={t('confirmDialog.title')}
+        description={
+          confirm?.action === 'kick' ? t('confirmDialog.kickDescription', { target: confirm.target }) :
+          confirm?.action === 'ban' ? t('confirmDialog.banDescription', { target: confirm.target }) :
+          confirm?.action === 'leave' ? t('confirmDialog.leaveDescription', { target: confirm?.target ?? '' }) :
+          t('confirmDialog.deleteDescription', { target: confirm?.target ?? '' })
+        }
+        confirmLabel={t('confirmDialog.confirmLabel')}
+        cancelLabel={t('confirmDialog.cancelLabel')}
+        onConfirm={confirmAction}
+        onCancel={() => { setConfirm(null); setBanType('permanent'); setBanDate(''); }}
+      >
+        {confirm?.action === 'ban' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px', marginBottom: '8px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'oklch(0.85 0.005 260)', cursor: 'pointer' }}>
               <input type="radio" checked={banType === 'permanent'} onChange={() => setBanType('permanent')} />
-              Bannissement permanent
+              {t('confirmDialog.banPermanent')}
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'oklch(0.85 0.005 260)', cursor: 'pointer' }}>
               <input type="radio" checked={banType === 'temporary'} onChange={() => setBanType('temporary')} />
-              Bannissement temporaire jusqu&apos;au :
+              {t('confirmDialog.banTemporary')}
             </label>
             {banType === 'temporary' && (
-            <input
-              type="datetime-local"
-              value={banDate}
-              onChange={e => setBanDate(e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
-              style={{
-                padding: '8px 10px', borderRadius: '6px',
-                border: '1px solid oklch(0.34 0.02 260)', background: 'oklch(0.16 0.015 260)',
-                color: 'oklch(0.95 0.005 260)', fontSize: '13px', outline: 'none',
-              }}
-            />
-          )}
+              <input
+                type="datetime-local"
+                value={banDate}
+                onChange={e => setBanDate(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
+                style={{
+                  padding: '8px 10px', borderRadius: '6px',
+                  border: '1px solid oklch(0.34 0.02 260)', background: 'oklch(0.16 0.015 260)',
+                  color: 'oklch(0.95 0.005 260)', fontSize: '13px', outline: 'none',
+                }}
+              />
+            )}
           </div>
         )}
       </ConfirmDialog>

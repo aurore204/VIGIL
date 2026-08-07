@@ -1,9 +1,13 @@
+import { useTranslations } from 'next-intl';
+
 interface InviteCodeBannerProps {
   code: string;
   onCopy: () => void;
 }
 
 export function InviteCodeBanner({ code, onCopy }: InviteCodeBannerProps) {
+  const t = useTranslations('teams.detailPage');
+
   return (
     <div style={{
       background: 'oklch(0.20 0.04 150 / 0.3)',
@@ -13,7 +17,7 @@ export function InviteCodeBanner({ code, onCopy }: InviteCodeBannerProps) {
     }}>
       <div>
         <div style={{ fontSize: '12px', fontWeight: 600, color: 'oklch(0.72 0.14 150)', marginBottom: '4px' }}>
-          Code d&apos;invitation généré
+          {t('codeGenerated')}
         </div>
         <div style={{
           fontSize: '18px', fontWeight: 800,
@@ -32,7 +36,7 @@ export function InviteCodeBanner({ code, onCopy }: InviteCodeBannerProps) {
           fontSize: '12px', fontWeight: 600, cursor: 'pointer',
         }}
       >
-        Copier
+        {t('copy')}
       </button>
     </div>
   );

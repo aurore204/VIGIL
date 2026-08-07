@@ -1,4 +1,5 @@
 import type { BannedMember } from '@/lib/types';
+import { useTranslations, useLocale } from 'next-intl';
 import { ShieldOff } from 'lucide-react';
 
 interface BannedMemberRowProps {
@@ -9,6 +10,9 @@ interface BannedMemberRowProps {
 
 export function BannedMemberRow({ banned, canUnban, onUnban }: BannedMemberRowProps) {
   const isPermanent = !banned.expires_at;
+  const t = useTranslations('teams.bannedRow');
+  const locale = useLocale();
+  const dateLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
 
   return (
     <div style={{
@@ -30,13 +34,13 @@ export function BannedMemberRow({ banned, canUnban, onUnban }: BannedMemberRowPr
           {banned.username}
         </div>
         <div style={{ fontSize: '11px', color: 'oklch(0.52 0.012 260)' }}>
-          Banni par <strong style={{ color: 'oklch(0.65 0.01 260)' }}>{banned.banned_by_username}</strong>
+          {t('bannedBy')} <strong style={{ color: 'oklch(0.65 0.01 260)' }}>{banned.banned_by_username}</strong>
           {isPermanent ? (
-            <span style={{ color: 'oklch(0.75 0.15 25)', fontWeight: 600 }}> · Définitivement</span>
+            <span style={{ color: 'oklch(0.75 0.15 25)', fontWeight: 600 }}> · {t('permanently')}</span>
           ) : (
-            <span> · Jusqu&apos;au{' '}
+            <span> · {t('until')}{' '}
               <strong style={{ color: 'oklch(0.82 0.14 85)' }}>
-                {new Date(banned.expires_at!).toLocaleString('fr-FR', {
+                {new Date(banned.expires_at!).toLocaleString(dateLocale, {
                   day: '2-digit', month: '2-digit', year: 'numeric',
                   hour: '2-digit', minute: '2-digit',
                 })}
@@ -46,7 +50,7 @@ export function BannedMemberRow({ banned, canUnban, onUnban }: BannedMemberRowPr
         </div>
         {banned.reason && (
           <div style={{ fontSize: '11px', color: 'oklch(0.52 0.012 260)', fontStyle: 'italic', marginTop: '2px' }}>
-            Raison : {banned.reason}
+            {t('reason')} : {banned.reason}
           </div>
         )}
       </div>
@@ -63,7 +67,7 @@ export function BannedMemberRow({ banned, canUnban, onUnban }: BannedMemberRowPr
           }}
         >
           <ShieldOff size={12} aria-hidden="true" />
-          Débannir
+          {t('unban')}
         </button>
       )}
     </div>

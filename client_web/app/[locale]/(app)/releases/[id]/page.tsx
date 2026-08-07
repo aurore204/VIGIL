@@ -65,8 +65,8 @@ export default function ReleaseDetailPage() {
       vigilWs.off('release_step_validated', handleStep);
       vigilWs.off('presence_update', handlePresence);
     };
-  }, [id]); 
-
+  }, [id]);
+  
   useEffect(() => {
     if (!release?.team_id) return;
     vigilWs.watch(id, 'release', release.team_id);
@@ -269,6 +269,7 @@ export default function ReleaseDetailPage() {
         title={t('cancelConfirmTitle')}
         description={t('cancelConfirmDescription', { title: release.title })}
         confirmLabel={t('cancelConfirmLabel')}
+        cancelLabel={t('cancel')}
         onConfirm={handleCancel}
         onCancel={() => setConfirmAction(null)}
       />

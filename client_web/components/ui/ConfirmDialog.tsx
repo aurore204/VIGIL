@@ -5,8 +5,8 @@ interface ConfirmDialogProps {
   isOpen: boolean;
   title: string;
   description: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
+  confirmLabel: string;
+  cancelLabel: string;
   onConfirm: () => void;
   onCancel: () => void;
   loading?: boolean;
@@ -17,8 +17,8 @@ export function ConfirmDialog({
   isOpen,
   title,
   description,
-  confirmLabel = 'Confirmer',
-  cancelLabel = 'Annuler',
+  confirmLabel,
+  cancelLabel,
   onConfirm,
   onCancel,
   loading = false,

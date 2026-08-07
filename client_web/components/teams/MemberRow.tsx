@@ -1,4 +1,5 @@
 import type { TeamMember } from '@/lib/types';
+import { useTranslations } from 'next-intl';
 import { RoleBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ArrowUpCircle, ArrowDownCircle, UserX, Ban } from 'lucide-react';
@@ -19,6 +20,8 @@ export function MemberRow({
   member, isMe, isManager, isTargetManager, isOnline,
   onRoleChange, onKick, onBan, onLeave,
 }: MemberRowProps) {
+  const t = useTranslations('teams.memberRow');
+
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: '12px',
@@ -35,8 +38,8 @@ export function MemberRow({
         </div>
         {isOnline && (
           <span
-            aria-label="En ligne"
-            title="En ligne"
+            aria-label={t('online')}
+            title={t('online')}
             style={{
               position: 'absolute', bottom: '-1px', right: '-1px',
               width: '10px', height: '10px', borderRadius: '50%',
@@ -50,9 +53,9 @@ export function MemberRow({
       <div style={{ flex: 1, minWidth: '120px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: 'oklch(0.90 0.005 260)' }}>
           {member.username}
-          {isMe && <span style={{ fontSize: '11px', color: 'oklch(0.52 0.012 260)' }}>(vous)</span>}
+          {isMe && <span style={{ fontSize: '11px', color: 'oklch(0.52 0.012 260)' }}>{t('you')}</span>}
           <span style={{ fontSize: '10.5px', color: isOnline ? 'oklch(0.72 0.14 150)' : 'oklch(0.45 0.01 260)' }}>
-            {isOnline ? 'En ligne' : 'Hors ligne'}
+            {isOnline ? t('online') : t('offline')}
           </span>
         </div>
         <div style={{ fontSize: '11px', color: 'oklch(0.52 0.012 260)' }}>{member.email}</div>
@@ -73,7 +76,7 @@ export function MemberRow({
             }}
           >
             {member.role === 'observer' ? <ArrowUpCircle size={12} aria-hidden="true" /> : <ArrowDownCircle size={12} aria-hidden="true" />}
-            {member.role === 'observer' ? 'Responder' : 'Observer'}
+            {member.role === 'observer' ? t('makeResponder') : t('makeObserver')}
           </button>
           <button
             onClick={() => onKick(member.user_id, member.username)}
@@ -86,7 +89,7 @@ export function MemberRow({
             }}
           >
             <UserX size={12} aria-hidden="true" />
-            Kick
+            {t('kick')}
           </button>
           <button
             onClick={() => onBan(member.user_id, member.username)}
@@ -99,14 +102,14 @@ export function MemberRow({
             }}
           >
             <Ban size={12} aria-hidden="true" />
-            Ban
+            {t('ban')}
           </button>
         </div>
       )}
 
       {!isManager && isMe && (
         <Button variant="ghost" onClick={onLeave} style={{ fontSize: '11px', color: 'oklch(0.75 0.15 25)' }}>
-          Quitter
+          {t('leave')}
         </Button>
       )}
     </div>

@@ -69,6 +69,7 @@ export function IncidentActions({
   const [confirmAction, setConfirmAction] = useState<'resolve' | 'delete' | null>(null);
   const noActions = !canAcknowledge && !canEscalate && !canResolve && !canAssign;
   const t = useTranslations('incidents.actions');
+  const tCommon = useTranslations('common');
 
   return (
     <div style={{
@@ -113,6 +114,7 @@ export function IncidentActions({
         title={t('confirmResolveTitle')}
         description={t('confirmResolveDescription', { title: incident.title })}
         confirmLabel={t('confirmResolveLabel')}
+        cancelLabel={tCommon('cancel')}
         onConfirm={() => { setConfirmAction(null); onResolve(); }}
         onCancel={() => setConfirmAction(null)}
       />
@@ -121,6 +123,7 @@ export function IncidentActions({
         title={t('confirmDeleteTitle')}
         description={t('confirmDeleteDescription', { title: incident.title })}
         confirmLabel={t('confirmDeleteLabel')}
+        cancelLabel={tCommon('cancel')}
         onConfirm={() => { setConfirmAction(null); onDelete(); }}
         onCancel={() => setConfirmAction(null)}
       />
