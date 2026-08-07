@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { vigilWs } from '@/lib/websocket';
@@ -8,6 +9,7 @@ import type { Release, Team, WsEvent } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { ReleaseCard } from '@/components/releases/ReleaseCard';
+import { CreateReleaseModal } from '@/components/releases/CreateReleaseModal';
 
 export default function ReleasesPage() {
   const { user } = useAuthStore();
@@ -16,7 +18,9 @@ export default function ReleasesPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [onlineUsernames, setOnlineUsernames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [showCreate, setShowCreate] = useState(false);
+  const t = useTranslations('releases.listPage');
+
   const load = async () => {
     try {
       const teamsData = await api.getTeams();
@@ -80,27 +84,42 @@ export default function ReleasesPage() {
   const teamName = (teamId: string) => teams.find(t => t.id === teamId)?.name ?? '—';
   const activeCount = releases.filter(r => r.state === 'in_progress').length;
 
+  const handleCreate = async (teamId: string, title: string, steps: string[], description?: string) => {
+    try {
+      await api.createRelease(teamId, {
+        title,
+        description,
+        steps: steps.map(name => ({ name })),
+      });
+      showToast(t('toastCreated'), 'success');
+      setShowCreate(false);
+      load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t('toastError'), 'error');
+    }
+  };
+
   if (loading) {
-    return <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>Chargement...</div>;
+    return <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>{t('loading')}</div>;
   }
 
   return (
     <div style={{ padding: '28px clamp(16px, 4vw, 32px)', fontFamily: 'Inter, system-ui, sans-serif', maxWidth: '1400px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)' }}>Releases</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)' }}>{t('title')}</div>
           <div style={{ fontSize: '13px', color: 'oklch(0.60 0.01 260)', marginTop: '4px' }}>
-            {releases.length} release{releases.length > 1 ? 's' : ''} · {activeCount} en cours
+            {t('summary', { total: releases.length, active: activeCount })}
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'oklch(0.72 0.14 150)' }}>
             <span aria-hidden="true" style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'oklch(0.72 0.14 150)' }} />
-            {onlineUsernames.length} en ligne
+            {onlineUsernames.length} {t('online')}
           </div>
           {managerTeams.length > 0 && (
-            <Button onClick={() => showToast('Modal de création à brancher', 'info')}>+ Créer une release</Button>
+            <Button onClick={() => setShowCreate(true)}>{t('create')}</Button>
           )}
         </div>
       </div>
@@ -110,7 +129,7 @@ export default function ReleasesPage() {
           background: 'oklch(0.195 0.015 260)', border: '1px solid oklch(0.30 0.02 260)',
           borderRadius: '12px', padding: '48px', textAlign: 'center', color: 'oklch(0.52 0.012 260)', fontSize: '13px',
         }}>
-          Aucune release
+          {t('empty')}
         </div>
       ) : (
         <div style={{
@@ -122,6 +141,14 @@ export default function ReleasesPage() {
             <ReleaseCard key={release.id} release={release} teamName={teamName(release.team_id)} />
           ))}
         </div>
+      )}
+
+      {showCreate && managerTeams.length > 0 && (
+        <CreateReleaseModal
+          teams={managerTeams}
+          onClose={() => setShowCreate(false)}
+          onSubmit={handleCreate}
+        />
       )}
     </div>
   );

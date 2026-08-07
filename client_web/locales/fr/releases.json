@@ -1,0 +1,58 @@
+{
+  "listPage": {
+    "title": "Releases",
+    "summary": "{total, plural, =0 {Aucune release} one {# release} other {# releases}} · {active} en cours",
+    "online": "en ligne",
+    "create": "+ Créer une release",
+    "createPlaceholder": "Modal de création à brancher",
+    "loading": "Chargement...",
+    "empty": "Aucune release",
+    "toastCreated": "Release créée avec succès",
+    "toastError": "Erreur"
+  },
+  "card": {
+    "steps": "étapes",
+    "view": "Voir la release"
+  },
+  "detailPage": {
+    "back": "Retour",
+    "loading": "Chargement...",
+    "createdBy": "Créée par",
+    "on": "le",
+    "unknownCreator": "inconnu",
+    "steps": "étapes",
+    "start": "Démarrer",
+    "cancel": "Annuler",
+    "stepsHeading": "Étapes",
+    "validatedOn": "Validé le",
+    "validatedBy": "par",
+    "unknownValidator": "utilisateur inconnu",
+    "validate": "Valider",
+    "completed": "Complété",
+    "locked": "Verrouillé",
+    "blockedWarning": "Release bloquée par un incident actif. La release reprendra automatiquement à la résolution de l'incident.",
+    "cancelConfirmTitle": "Annuler la release",
+    "cancelConfirmDescription": "Annuler définitivement \"{title}\" ?",
+    "cancelConfirmLabel": "Annuler la release",
+    "toastStarted": "Release démarrée",
+    "toastCancelled": "Release annulée",
+    "toastStepValidated": "Étape validée",
+    "toastError": "Erreur"
+  },
+  "createModal": {
+    "title": "Créer une release",
+    "team": "Team",
+    "teamPlaceholder": "Sélectionner une team",
+    "titleLabel": "Titre",
+    "titlePlaceholder": "Ex: Déploiement v2.4.0",
+    "description": "Description (optionnelle)",
+    "descriptionPlaceholder": "Décrivez cette release...",
+    "steps": "Étapes",
+    "stepPlaceholder": "Nom de l'étape",
+    "addStep": "Ajouter une étape",
+    "removeStep": "Retirer",
+    "stepsEmpty": "Ajoutez au moins une étape",
+    "cancel": "Annuler",
+    "submit": "Créer la release"
+  }
+}

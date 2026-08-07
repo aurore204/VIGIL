@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { vigilWs } from '@/lib/websocket';
@@ -20,6 +22,9 @@ export default function ReleaseDetailPage() {
   const { user } = useAuthStore();
   const { showToast } = useToast();
   const router = useRouter();
+  const t = useTranslations('releases.detailPage');
+  const locale = useLocale();
+  const dateLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
 
   const [release, setRelease] = useState<Release | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
@@ -39,37 +44,37 @@ export default function ReleaseDetailPage() {
   };
 
   useEffect(() => {
-  load();
-  const handleState = (e: WsEvent) => {
-    if (e.type !== 'release_state_changed' || e.release_id !== id) return;
     load();
-  };
-  const handleStep = (e: WsEvent) => {
-    if (e.type !== 'release_step_validated' || e.release_id !== id) return;
-    load();
-  };
-  const handlePresence = (e: WsEvent) => {
-    if (e.type !== 'presence_update' || e.resource_id !== id) return;
-    setWatchers(e.watchers);
-  };
-  vigilWs.on('release_state_changed', handleState);
-  vigilWs.on('release_step_validated', handleStep);
-  vigilWs.on('presence_update', handlePresence);
-  return () => {
-    vigilWs.off('release_state_changed', handleState);
-    vigilWs.off('release_step_validated', handleStep);
-    vigilWs.off('presence_update', handlePresence);
-  };
-}, [id]); 
+    const handleState = (e: WsEvent) => {
+      if (e.type !== 'release_state_changed' || e.release_id !== id) return;
+      load();
+    };
+    const handleStep = (e: WsEvent) => {
+      if (e.type !== 'release_step_validated' || e.release_id !== id) return;
+      load();
+    };
+    const handlePresence = (e: WsEvent) => {
+      if (e.type !== 'presence_update' || e.resource_id !== id) return;
+      setWatchers(e.watchers);
+    };
+    vigilWs.on('release_state_changed', handleState);
+    vigilWs.on('release_step_validated', handleStep);
+    vigilWs.on('presence_update', handlePresence);
+    return () => {
+      vigilWs.off('release_state_changed', handleState);
+      vigilWs.off('release_step_validated', handleStep);
+      vigilWs.off('presence_update', handlePresence);
+    };
+  }, [id]); 
 
-useEffect(() => {
-  if (!release?.team_id) return;
-  vigilWs.watch(id, 'release', release.team_id);
-  return () => { vigilWs.unwatch(id, 'release', release.team_id); };
-}, [id, release?.team_id]);
+  useEffect(() => {
+    if (!release?.team_id) return;
+    vigilWs.watch(id, 'release', release.team_id);
+    return () => { vigilWs.unwatch(id, 'release', release.team_id); };
+  }, [id, release?.team_id]);
 
   if (loading || !release) return (
-    <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>Chargement...</div>
+    <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>{t('loading')}</div>
   );
 
   const myRole = team?.members.find(m => m.user_id === user?.id)?.role ?? 'observer';
@@ -78,18 +83,18 @@ useEffect(() => {
   const completedSteps = release.steps.filter(s => s.state === 'completed').length;
 
   const handleStart = async () => {
-    try { await api.startRelease(id); showToast('Release démarrée', 'success'); load(); }
-    catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
+    try { await api.startRelease(id); showToast(t('toastStarted'), 'success'); load(); }
+    catch (err) { showToast(err instanceof Error ? err.message : t('toastError'), 'error'); }
   };
 
   const handleCancel = async () => {
-    try { await api.cancelRelease(id); showToast('Release annulée', 'success'); setConfirmAction(null); load(); }
-    catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
+    try { await api.cancelRelease(id); showToast(t('toastCancelled'), 'success'); setConfirmAction(null); load(); }
+    catch (err) { showToast(err instanceof Error ? err.message : t('toastError'), 'error'); }
   };
 
   const handleValidateStep = async (stepId: string) => {
-    try { await api.validateStep(id, stepId); showToast('Étape validée', 'success'); load(); }
-    catch (err) { showToast(err instanceof Error ? err.message : 'Erreur', 'error'); }
+    try { await api.validateStep(id, stepId); showToast(t('toastStepValidated'), 'success'); load(); }
+    catch (err) { showToast(err instanceof Error ? err.message : t('toastError'), 'error'); }
   };
 
   const currentStepIndex = release.steps.findIndex(s => s.state === 'pending');
@@ -105,7 +110,7 @@ useEffect(() => {
         }}
       >
         <ArrowLeft size={19} aria-hidden="true" />
-        Retour
+        {t('back')}
       </button>
 
       {/* Header */}
@@ -120,11 +125,11 @@ useEffect(() => {
             {release.title}
           </div>
           <div style={{ fontSize: '12px', color: 'oklch(0.55 0.01 260)' }}>
-            {team?.name} · {completedSteps}/{release.steps.length} étapes · Créée par{' '}
+            {team?.name} · {completedSteps}/{release.steps.length} {t('steps')} · {t('createdBy')}{' '}
             <strong style={{ color: 'oklch(0.75 0.01 260)' }}>
-              {team?.members.find(m => m.user_id === release.created_by)?.username ?? 'inconnu'}
+              {team?.members.find(m => m.user_id === release.created_by)?.username ?? t('unknownCreator')}
             </strong>
-            {' '}le {new Date(release.created_at).toLocaleDateString('fr-FR')}
+            {' '}{t('on')} {new Date(release.created_at).toLocaleDateString(dateLocale)}
           </div>
         </div>
 
@@ -133,11 +138,11 @@ useEffect(() => {
             {release.state === 'created' && (
               <Button onClick={handleStart}>
                 <Play size={14} aria-hidden="true" style={{ marginRight: '6px' }} />
-                Démarrer
+                {t('start')}
               </Button>
             )}
             {(release.state === 'created' || release.state === 'in_progress') && (
-              <Button variant="danger" onClick={() => setConfirmAction('cancel')}>Annuler</Button>
+              <Button variant="danger" onClick={() => setConfirmAction('cancel')}>{t('cancel')}</Button>
             )}
           </div>
         )}
@@ -167,7 +172,7 @@ useEffect(() => {
           fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em',
           color: 'oklch(0.55 0.01 260)',
         }}>
-          Étapes
+          {t('stepsHeading')}
         </div>
 
         <div style={{ padding: '16px' }}>
@@ -209,13 +214,13 @@ useEffect(() => {
                   }}>
                     {step.name}
                   </div>
-                  
+
                  {step.validated_at && (
                     <div style={{ fontSize: '11px', color: 'oklch(0.52 0.012 260)', marginTop: '2px' }}>
-                      Validé le {new Date(step.validated_at).toLocaleString('fr-FR')}
+                      {t('validatedOn')} {new Date(step.validated_at).toLocaleString(dateLocale)}
                       {step.validated_by && (
-                        <> par <span style={{ color: 'oklch(0.72 0.14 150)', fontWeight: 600 }}>
-                          {team?.members.find(m => m.user_id === step.validated_by)?.username ?? 'utilisateur inconnu'}
+                        <> {t('validatedBy')} <span style={{ color: 'oklch(0.72 0.14 150)', fontWeight: 600 }}>
+                          {team?.members.find(m => m.user_id === step.validated_by)?.username ?? t('unknownValidator')}
                         </span></>
                       )}
                     </div>
@@ -226,19 +231,19 @@ useEffect(() => {
                 {isCurrentStep && isResponder && release.state === 'in_progress' && (
                   <Button onClick={() => handleValidateStep(step.id)}>
                     <CheckCircle2 size={14} aria-hidden="true" style={{ marginRight: '6px' }} />
-                    Valider
+                    {t('validate')}
                   </Button>
                 )}
                 {isCompleted && (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'oklch(0.72 0.14 150)', fontWeight: 600 }}>
                     <CheckCircle2 size={13} aria-hidden="true" />
-                    Complété
+                    {t('completed')}
                   </span>
                 )}
                 {isLocked && (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'oklch(0.45 0.01 260)' }}>
                     <Lock size={13} aria-hidden="true" />
-                    Verrouillé
+                    {t('locked')}
                   </span>
                 )}
               </div>
@@ -255,15 +260,15 @@ useEffect(() => {
           display: 'flex', alignItems: 'center', gap: '8px',
         }}>
           <ShieldAlert size={16} aria-hidden="true" style={{ flexShrink: 0 }} />
-          Release bloquée par un incident actif. La release reprendra automatiquement à la résolution de l&apos;incident.
+          {t('blockedWarning')}
         </div>
       )}
 
       <ConfirmDialog
         isOpen={confirmAction === 'cancel'}
-        title="Annuler la release"
-        description={`Annuler définitivement "${release.title}" ?`}
-        confirmLabel="Annuler la release"
+        title={t('cancelConfirmTitle')}
+        description={t('cancelConfirmDescription', { title: release.title })}
+        confirmLabel={t('cancelConfirmLabel')}
         onConfirm={handleCancel}
         onCancel={() => setConfirmAction(null)}
       />

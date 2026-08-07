@@ -1,4 +1,5 @@
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { ReleaseStateBadge } from '@/components/ui/Badge';
 import { shadow } from '@/lib/tokens';
 import type { Release } from '@/lib/types';
@@ -9,6 +10,7 @@ interface ReleaseCardProps {
 }
 
 export function ReleaseCard({ release, teamName }: ReleaseCardProps) {
+  const t = useTranslations('releases.card');
   const validatedCount = release.steps.filter(s => s.state === 'completed').length;
   const totalSteps = release.steps.length;
 
@@ -30,7 +32,7 @@ export function ReleaseCard({ release, teamName }: ReleaseCardProps) {
             {release.title}
           </div>
           <div style={{ fontSize: '11.5px', color: 'oklch(0.52 0.012 260)', fontFamily: 'ui-monospace, monospace', marginTop: '3px' }}>
-             {teamName}  {validatedCount}/{totalSteps} étapes
+            {teamName} · {validatedCount}/{totalSteps} {t('steps')}
           </div>
         </div>
         <ReleaseStateBadge state={release.state} />
@@ -66,7 +68,7 @@ export function ReleaseCard({ release, teamName }: ReleaseCardProps) {
           border: '1px solid oklch(0.34 0.02 260)', fontSize: '13px', fontWeight: 600,
           color: 'oklch(0.90 0.005 260)',
         }}>
-          Voir la release
+          {t('view')}
         </div>
       </Link>
     </div>
