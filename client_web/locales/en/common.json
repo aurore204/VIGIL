@@ -38,40 +38,44 @@
     "search": "Search"
   },
   "auth": {
-  "tabs": {
-    "login": "Log in",
-    "register": "Sign up"
-  },
-  "register": {
-    "usernameLabel": "Username",
-    "usernamePlaceholder": "nina_martin",
-    "emailLabel": "Email",
-    "emailPlaceholder": "you@company.com",
-    "passwordLabel": "Password",
-    "passwordPlaceholder": "••••••••",
-    "confirmPasswordLabel": "Confirm password",
-    "submitButton": "Create my account",
-    "submitButtonLoading": "Signing up...",
-    "successToast": "Account created successfully!",
-    "errors": {
-      "allFieldsRequired": "All fields are required",
-      "passwordMismatch": "Passwords do not match",
-      "passwordTooShort": "Password must be at least 8 characters",
-      "generic": "Registration error"
-    }
-  },
-  "login": {
-    "emailLabel": "Email",
-    "emailPlaceholder": "you@company.com",
-    "passwordLabel": "Password",
-    "passwordPlaceholder": "••••••••",
-    "submitButton": "Log in",
-    "submitButtonLoading": "Logging in...",
-    "successToast": "Logged in successfully!",
-    "errors": {
-      "allFieldsRequired": "All fields are required",
-      "generic": "Login error"
+    "tabs": {
+      "login": "Log in",
+      "register": "Sign up"
+    },
+    "tagline": {
+      "title": "Real-time operational control",
+      "subtitle": "Manage your incidents and deployments with your team, in real time."
+    },
+    "register": {
+      "usernameLabel": "Username",
+      "usernamePlaceholder": "nina_martin",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@company.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "••••••••",
+      "confirmPasswordLabel": "Confirm password",
+      "submitButton": "Create my account",
+      "submitButtonLoading": "Signing up...",
+      "successToast": "Account created successfully!",
+      "errors": {
+        "allFieldsRequired": "All fields are required",
+        "passwordMismatch": "Passwords do not match",
+        "passwordTooShort": "Password must be at least 8 characters",
+        "generic": "Registration error"
+      }
+    },
+    "login": {
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@company.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "••••••••",
+      "submitButton": "Log in",
+      "submitButtonLoading": "Logging in...",
+      "successToast": "Logged in successfully!",
+      "errors": {
+        "allFieldsRequired": "All fields are required",
+        "generic": "Login error"
+      }
     }
   }
-}
 }

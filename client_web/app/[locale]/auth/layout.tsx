@@ -1,7 +1,12 @@
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  return (
+'use client';
 
-    
+import { useTranslations } from 'next-intl';
+import AuthLanguageSwitcher from '@/components/ui/AuthLanguageSwitcher';
+
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations('auth');
+
+  return (
     <div style={{
       minHeight: '100vh',
       width: '100%',
@@ -39,10 +44,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Tagline */}
         <div>
           <div style={{ fontSize: '34px', fontWeight: 800, lineHeight: 1.15, maxWidth: '420px' }}>
-            Contrôle opérationnel en temps réel
+            {t('tagline.title')}
           </div>
           <div style={{ marginTop: '14px', fontSize: '15px', color: 'oklch(0.72 0.01 260)', maxWidth: '400px' }}>
-            Gérez vos incidents et déploiements avec votre équipe, en temps réel.
+            {t('tagline.subtitle')}
           </div>
         </div>
 
@@ -52,7 +57,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           fontSize: '12px', fontFamily: 'ui-monospace, monospace',
           color: 'oklch(0.52 0.012 260)'
         }}>
-    
+
         </div>
       </div>
 
@@ -62,6 +67,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         alignItems: 'center', justifyContent: 'center',
         padding: '40px', position: 'relative'
       }}>
+        <div style={{ position: 'absolute', top: '24px', right: '24px' }}>
+          <AuthLanguageSwitcher />
+        </div>
         {children}
       </div>
     </div>
