@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useRouter, usePathname } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { vigilWs } from '@/lib/websocket';
@@ -14,13 +15,13 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', Icon: LayoutGrid },
-  { href: '/incidents', label: 'Incidents', Icon: AlertTriangle },
-  { href: '/releases', label: 'Releases', Icon: Rocket },
-  { href: '/rules', label: 'Rules', Icon: Zap },
-  { href: '/teams', label: 'Teams', Icon: Users },
-  { href: '/messages', label: 'Messages', Icon: MessageCircle },
-];
+  { href: '/dashboard', labelKey: 'dashboard', Icon: LayoutGrid },
+  { href: '/incidents', labelKey: 'incidents', Icon: AlertTriangle },
+  { href: '/releases', labelKey: 'releases', Icon: Rocket },
+  { href: '/rules', labelKey: 'rules', Icon: Zap },
+  { href: '/teams', labelKey: 'teams', Icon: Users },
+  { href: '/messages', labelKey: 'messages', Icon: MessageCircle },
+] as const;
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, token, isAuthenticated, clearAuth, setUser } = useAuthStore();
@@ -28,6 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { showToast } = useToast();
   const [collapsed, setCollapsed] = useState(false);
+  const t = useTranslations('nav');
 
   useEffect(() => {
     const stored = localStorage.getItem('vigil_sidebar_collapsed');
@@ -42,7 +44,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    console.log(' EFFECT MONTÉ à', new Date().toISOString());
     const storedToken = localStorage.getItem('vigil_token');
     const activeToken = token || storedToken;
 
@@ -115,7 +116,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     vigilWs.on('reaction_added', onReactionAdded);
 
     return () => {
-      console.log(' EFFECT CLEANUP (démontage) à', new Date().toISOString());
       vigilWs.off('incident_state_changed', onIncidentStateChanged);
       vigilWs.off('incident_escalated', onIncidentEscalated);
       vigilWs.off('incident_assigned', onIncidentAssigned);
@@ -165,7 +165,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
           <button
             onClick={toggleCollapsed}
-            aria-label={collapsed ? 'Agrandir la barre de navigation' : 'Réduire la barre de navigation'}
+            aria-label={collapsed ? t('expand') : t('collapse')}
             style={{
               width: '26px', height: '26px', borderRadius: '7px', border: '1px solid #232C3E',
               background: '#131A28', color: '#6B7889', display: 'flex', alignItems: 'center',
@@ -179,11 +179,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1 }}>
           {navItems.map(item => {
             const isActive = pathname.startsWith(item.href);
+            const label = t(item.labelKey);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                title={collapsed ? item.label : undefined}
+                title={collapsed ? label : undefined}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '11px',
                   padding: collapsed ? '9px' : '9px 10px', borderRadius: '8px',
@@ -195,7 +196,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 }}
               >
                 <item.Icon size={17} style={{ flexShrink: 0 }} aria-hidden="true" />
-                {!collapsed && item.label}
+                {!collapsed && label}
               </Link>
             );
           })}
@@ -205,7 +206,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           background: '#131A28', border: '1px solid #202A3C', borderRadius: '11px',
           padding: '11px', display: 'flex', flexDirection: 'column', gap: '9px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '9px', justifyContent: collapsed ? 'center' : 'flex-start' }}>
+          <Link
+            href="/profile"
+            title={collapsed ? t('profile') : undefined}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '9px',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              textDecoration: 'none', borderRadius: '8px',
+              padding: '4px', margin: '-4px',
+              background: pathname.startsWith('/profile') ? '#182238' : 'transparent',
+            }}
+          >
             <div style={{
               width: '29px', height: '29px', borderRadius: '50%', background: '#1E3A63',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -215,16 +226,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             {!collapsed && (
               <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                <div style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#EAEEF5' }}>
                   {user?.username}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10px', color: '#5FAE84' }}>
                   <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#42B085', flexShrink: 0 }} />
-                  Connecté
+                  {t('connected')}
                 </div>
               </div>
             )}
-          </div>
+          </Link>
 
           <div style={{ borderTop: '1px solid #202A3C', paddingTop: '9px' }}>
             <LanguageSwitcher collapsed={collapsed} />
@@ -232,7 +243,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           <button
             onClick={handleLogout}
-            title={collapsed ? 'Déconnexion' : undefined}
+            title={collapsed ? t('logout') : undefined}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
               padding: '6px', borderRadius: '7px', border: '1px solid #262F41', background: 'transparent',
@@ -240,7 +251,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             }}
           >
             <LogOut size={13} aria-hidden="true" />
-            {!collapsed && 'Déconnexion'}
+            {!collapsed && t('logout')}
           </button>
         </div>
       </div>

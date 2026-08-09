@@ -6,8 +6,13 @@
     "rules": "Règles",
     "teams": "Teams",
     "messages": "Messages",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "connected": "Connecté",
+    "expand": "Agrandir la barre de navigation",
+    "collapse": "Réduire la barre de navigation",
+    "profile": "Profil"
   },
+  
   "incidentState": {
     "open": "Ouvert",
     "acknowledged": "Acquitté",
