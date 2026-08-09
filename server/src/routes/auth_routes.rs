@@ -14,6 +14,9 @@ pub fn public_routes() -> Router<AppState> {
 
 pub fn protected_routes() -> Router<AppState> {
     Router::new()
-        .route("/me", get(auth_handler::me))
+        .route(
+            "/me",
+            get(auth_handler::me).patch(auth_handler::update_profile),
+        )
         .route("/auth/logout", post(auth_handler::logout))
 }
