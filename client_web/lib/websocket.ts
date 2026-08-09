@@ -10,12 +10,52 @@ class VIGILWebSocket {
   private maxReconnectDelay = 30000;
   private token: string | null = null;
   private shouldReconnect = true;
-  private heartbeatInterval: ReturnType<typeof setInterval> | null = null; 
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+  private visibilityHandlerAttached = false;
 
   connect(token: string) {
+    if (
+      this.token === token &&
+      this.ws &&
+      (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
     this.token = token;
     this.shouldReconnect = true;
+    this.attachVisibilityHandler();
     this.createConnection();
+  }
+
+  private attachVisibilityHandler() {
+    if (this.visibilityHandlerAttached || typeof document === 'undefined') return;
+    this.visibilityHandlerAttached = true;
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        // si le socket n'est plus ouvert, on relance une connexion propre.
+        if (this.token && (!this.ws || this.ws.readyState === WebSocket.CLOSED)) {
+          if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
+          }
+          this.reconnectDelay = 1000;
+          this.createConnection();
+        }
+      }
+    });
+
+    // Le navigateur va parfois couper le WS juste avant de mettre la page en bfcache.
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) {
+        console.log('Page restaurée depuis le bfcache — reconnexion WS si nécessaire');
+        if (this.token && (!this.ws || this.ws.readyState === WebSocket.CLOSED)) {
+          this.reconnectDelay = 1000;
+          this.createConnection();
+        }
+      }
+    });
   }
 
   private createConnection() {
@@ -45,8 +85,14 @@ class VIGILWebSocket {
     this.ws.onclose = (event) => {
       console.log('WebSocket fermé — code:', event.code, 'reason:', event.reason, 'clean:', event.wasClean);
       this.stopHeartbeat();
+
+
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        return;
+      }
+
       if (this.shouldReconnect) {
-        setTimeout(() => {
+        this.reconnectTimeout = setTimeout(() => {
           this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay);
           this.createConnection();
         }, this.reconnectDelay);
@@ -58,13 +104,13 @@ class VIGILWebSocket {
     };
   }
 
-    private startHeartbeat() {
-    this.stopHeartbeat(); // évite les doublons si appelé plusieurs fois
+  private startHeartbeat() {
+    this.stopHeartbeat();
     this.heartbeatInterval = setInterval(() => {
       if (this.ws?.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify({ type: 'ping' }));
       }
-    }, 25000); // toutes les 25s
+    }, 25000);
   }
 
   private stopHeartbeat() {
@@ -73,6 +119,7 @@ class VIGILWebSocket {
       this.heartbeatInterval = null;
     }
   }
+
   on(eventType: string, handler: WsEventHandler) {
     if (!this.handlers.has(eventType)) {
       this.handlers.set(eventType, []);
@@ -101,11 +148,13 @@ class VIGILWebSocket {
 
   disconnect() {
     this.shouldReconnect = false;
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
     this.ws?.close();
     this.ws = null;
   }
 }
-
-
 
 export const vigilWs = new VIGILWebSocket();
