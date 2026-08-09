@@ -6,7 +6,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale;
   const locale = hasLocale(routing.locales, requested) ? requested : routing.defaultLocale;
 
-  const [nav, auth, dashboard, incidents, releases, rules, teams ,messages ,profile] = await Promise.all([
+  const [nav, auth, dashboard, incidents, releases, rules, teams ,messages,profile] = await Promise.all([
     import(`../locales/${locale}/nav.json`),
     import(`../locales/${locale}/auth.json`),
     import(`../locales/${locale}/dashboard.json`),

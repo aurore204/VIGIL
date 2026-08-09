@@ -208,7 +208,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }}>
           <Link
             href="/profile"
-            title={collapsed ? 'Profil' : undefined}
+            title={collapsed ? t('profile') : undefined}
             style={{
               display: 'flex', alignItems: 'center', gap: '9px',
               justifyContent: collapsed ? 'center' : 'flex-start',
