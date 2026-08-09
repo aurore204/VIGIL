@@ -42,6 +42,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    console.log(' EFFECT MONTÉ à', new Date().toISOString());
     const storedToken = localStorage.getItem('vigil_token');
     const activeToken = token || storedToken;
 
@@ -114,6 +115,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     vigilWs.on('reaction_added', onReactionAdded);
 
     return () => {
+      console.log(' EFFECT CLEANUP (démontage) à', new Date().toISOString());
       vigilWs.off('incident_state_changed', onIncidentStateChanged);
       vigilWs.off('incident_escalated', onIncidentEscalated);
       vigilWs.off('incident_assigned', onIncidentAssigned);
