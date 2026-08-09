@@ -2,7 +2,7 @@ use axum::{extract::State, http::StatusCode, response::IntoResponse, Extension, 
 
 use crate::middleware::auth_middleware::AuthenticatedUser;
 use crate::models::response::{ApiError, ApiResponse};
-use crate::models::user::{LoginRequest, RegisterRequest};
+use crate::models::user::{LoginRequest, RegisterRequest, UpdateProfileRequest};
 use crate::repositories::user_repository;
 use crate::services::auth_service::{self, AuthError};
 use crate::state::AppState;
@@ -110,6 +110,50 @@ pub async fn logout(
             Json(serde_json::json!(ApiError::new(
                 "Erreur lors de la déconnexion",
                 "LOGOUT_ERROR"
+            ))),
+        ),
+    }
+}
+
+pub async fn update_profile(
+    State(state): State<AppState>,
+    Extension(auth_user): Extension<AuthenticatedUser>,
+    Json(req): Json<UpdateProfileRequest>,
+) -> impl IntoResponse {
+    match auth_service::update_profile(&state.pool, auth_user.id, req).await {
+        Ok(user) => (
+            StatusCode::OK,
+            Json(serde_json::json!(ApiResponse::success(
+                "Profil mis à jour avec succès",
+                user
+            ))),
+        ),
+        Err(AuthError::EmailAlreadyExists) => (
+            StatusCode::CONFLICT,
+            Json(serde_json::json!(ApiError::new(
+                "Un compte avec cet email existe déjà",
+                "EMAIL_ALREADY_EXISTS"
+            ))),
+        ),
+        Err(AuthError::CurrentPasswordRequired) => (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!(ApiError::new(
+                "Le mot de passe actuel est requis pour changer de mot de passe",
+                "CURRENT_PASSWORD_REQUIRED"
+            ))),
+        ),
+        Err(AuthError::InvalidCredentials) => (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!(ApiError::new(
+                "Mot de passe actuel incorrect",
+                "INVALID_CURRENT_PASSWORD"
+            ))),
+        ),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!(ApiError::new(
+                "Erreur interne du serveur",
+                "INTERNAL_ERROR"
             ))),
         ),
     }

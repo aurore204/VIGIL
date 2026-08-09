@@ -3,17 +3,32 @@
 import { usePathname, Link } from '@/i18n/navigation';
 import { useLocale } from 'next-intl';
 import { Globe } from 'lucide-react';
+import { api } from '@/lib/api';
+import { useAuthStore } from '@/lib/store';
 
 export default function LanguageSwitcher({ collapsed }: { collapsed: boolean }) {
   const pathname = usePathname();
   const locale = useLocale();
+  const { token, setUser } = useAuthStore();
   const otherLocale = locale === 'fr' ? 'en' : 'fr';
+
+  const persistLanguage = (newLocale: string) => {
+    
+    if (!token) return;
+    api
+      .updateProfile({ language: newLocale })
+      .then(updatedUser => setUser(updatedUser))
+      .catch(() => {
+        
+      });
+  };
 
   if (collapsed) {
     return (
       <Link
         href={pathname}
         locale={otherLocale}
+        onClick={() => persistLanguage(otherLocale)}
         title={otherLocale === 'en' ? 'Switch to English' : 'Passer en français'}
         style={{
           display: 'flex',
@@ -44,6 +59,7 @@ export default function LanguageSwitcher({ collapsed }: { collapsed: boolean }) 
         <Link
           href={pathname}
           locale="fr"
+          onClick={() => persistLanguage('fr')}
           style={{
             color: locale === 'fr' ? '#9DC0F0' : '#5A6577',
             textDecoration: 'none',
@@ -57,6 +73,7 @@ export default function LanguageSwitcher({ collapsed }: { collapsed: boolean }) 
         <Link
           href={pathname}
           locale="en"
+          onClick={() => persistLanguage('en')}
           style={{
             color: locale === 'en' ? '#9DC0F0' : '#5A6577',
             textDecoration: 'none',

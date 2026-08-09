@@ -47,7 +47,20 @@ export const api = {
   me: () => request<AuthResponse['user']>('/me'),
 
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
+  
 
+  updateProfile: (data: {
+    username?: string;
+    email?: string;
+    current_password?: string;
+    new_password?: string;
+    language?: string;
+  }) =>
+    request<AuthResponse['user']>('/me', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  
   // Teams
   getTeams: () => request<Team[]>('/teams'),
 

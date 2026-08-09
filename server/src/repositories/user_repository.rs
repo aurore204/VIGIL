@@ -46,12 +46,29 @@ pub async fn find_by_email(pool: &PgPool, email: &str) -> Result<Option<User>, s
     Ok(user)
 }
 
-// Trouve un utilisateur par son id
+// Trouve un utilisateur par son id (version publique, sans password_hash)
 pub async fn find_by_id(pool: &PgPool, id: Uuid) -> Result<Option<UserPublic>, sqlx::Error> {
     let user = sqlx::query_as!(
         UserPublic,
         r#"
         SELECT id, email, username, language, created_at
+        FROM users
+        WHERE id = $1
+        "#,
+        id
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(user)
+}
+
+pub async fn find_full_by_id(pool: &PgPool, id: Uuid) -> Result<Option<User>, sqlx::Error> {
+    let user = sqlx::query_as!(
+        User,
+        r#"
+        SELECT id, email, password_hash, username, language,
+               token_invalidated_at, created_at, updated_at
         FROM users
         WHERE id = $1
         "#,
@@ -100,10 +117,41 @@ pub async fn is_token_valid(
     match user {
         None => Ok(false),
         Some(row) => match row.token_invalidated_at {
-            // Pas d'invalidation → token valide
             None => Ok(true),
-            // Token émis avant l'invalidation → invalide
             Some(invalidated_at) => Ok(token_issued_at > invalidated_at.timestamp()),
         },
     }
+}
+
+pub async fn update_user(
+    pool: &PgPool,
+    user_id: Uuid,
+    username: Option<&str>,
+    email: Option<&str>,
+    password_hash: Option<&str>,
+    language: Option<&str>,
+) -> Result<UserPublic, sqlx::Error> {
+    let user = sqlx::query_as!(
+        UserPublic,
+        r#"
+        UPDATE users
+        SET
+          username = COALESCE($1, username),
+          email = COALESCE($2, email),
+          password_hash = COALESCE($3, password_hash),
+          language = COALESCE($4, language),
+          updated_at = now()
+        WHERE id = $5
+        RETURNING id, email, username, language, created_at
+        "#,
+        username,
+        email,
+        password_hash,
+        language,
+        user_id
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(user)
 }
