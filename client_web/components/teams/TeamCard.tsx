@@ -1,5 +1,6 @@
 import type { Team } from '@/lib/types';
-import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 
 interface TeamCardProps {
   team: Team;
@@ -8,6 +9,8 @@ interface TeamCardProps {
 }
 
 export function TeamCard({ team, activeIncidents, currentUserId }: TeamCardProps) {
+  const t = useTranslations('teams.card');
+
   return (
     <div style={{
       background: 'oklch(0.195 0.015 260)',
@@ -25,7 +28,7 @@ export function TeamCard({ team, activeIncidents, currentUserId }: TeamCardProps
             background: 'oklch(0.45 0.18 25)', color: 'oklch(0.95 0.005 260)',
             flexShrink: 0,
           }}>
-            {activeIncidents} Incident{activeIncidents > 1 ? 's' : ''} actif{activeIncidents > 1 ? 's' : ''}
+            {t('activeIncident', { count: activeIncidents })}
           </span>
         )}
       </div>
@@ -51,7 +54,7 @@ export function TeamCard({ team, activeIncidents, currentUserId }: TeamCardProps
           ))}
         </div>
         <span style={{ fontSize: '12px', color: 'oklch(0.60 0.01 260)' }}>
-          {team.members.length} membre{team.members.length > 1 ? 's' : ''}
+          {t('memberCount', { count: team.members.length })}
         </span>
       </div>
 
@@ -62,7 +65,7 @@ export function TeamCard({ team, activeIncidents, currentUserId }: TeamCardProps
           background: 'transparent', color: 'oklch(0.90 0.005 260)',
           fontSize: '13px', fontWeight: 600, cursor: 'pointer', textAlign: 'center',
         }}>
-          Voir la team
+          {t('view')}
         </div>
       </Link>
     </div>

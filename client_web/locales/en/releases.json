@@ -1,0 +1,58 @@
+{
+  "listPage": {
+    "title": "Releases",
+    "summary": "{total, plural, =0 {No releases} one {# release} other {# releases}} · {active} in progress",
+    "online": "online",
+    "create": "+ Create a release",
+    "createPlaceholder": "Create modal to be wired up",
+    "loading": "Loading...",
+    "empty": "No releases",
+    "toastCreated": "Release created successfully",
+    "toastError": "Error"
+  },
+  "card": {
+    "steps": "steps",
+    "view": "View release"
+  },
+  "detailPage": {
+    "back": "Back",
+    "loading": "Loading...",
+    "createdBy": "Created by",
+    "on": "on",
+    "unknownCreator": "unknown",
+    "steps": "steps",
+    "start": "Start",
+    "cancel": "Cancel",
+    "stepsHeading": "Steps",
+    "validatedOn": "Validated on",
+    "validatedBy": "by",
+    "unknownValidator": "unknown user",
+    "validate": "Validate",
+    "completed": "Completed",
+    "locked": "Locked",
+    "blockedWarning": "Release blocked by an active incident. It will resume automatically once the incident is resolved.",
+    "cancelConfirmTitle": "Cancel release",
+    "cancelConfirmDescription": "Permanently cancel \"{title}\"?",
+    "cancelConfirmLabel": "Cancel release",
+    "toastStarted": "Release started",
+    "toastCancelled": "Release cancelled",
+    "toastStepValidated": "Step validated",
+    "toastError": "Error"
+  },
+  "createModal": {
+    "title": "Create a release",
+    "team": "Team",
+    "teamPlaceholder": "Select a team",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Ex: v2.4.0 deployment",
+    "description": "Description (optional)",
+    "descriptionPlaceholder": "Describe this release...",
+    "steps": "Steps",
+    "stepPlaceholder": "Step name",
+    "addStep": "Add step",
+    "removeStep": "Remove",
+    "stepsEmpty": "Add at least one step",
+    "cancel": "Cancel",
+    "submit": "Create release"
+  }
+}

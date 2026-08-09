@@ -1,0 +1,85 @@
+{
+  "listPage": {
+    "title": "Teams",
+    "subtitle": "Your teams and their activity",
+    "join": "Join",
+    "create": "Create a team",
+    "loading": "Loading...",
+    "emptyTitle": "You don't have any team yet",
+    "joinWithCode": "Join with a code",
+    "toastCreated": "Team created successfully",
+    "toastJoined": "Team joined successfully",
+    "toastInvalidCode": "Invalid code",
+    "toastError": "Error",
+    "createModal": {
+      "title": "Create a team",
+      "nameLabel": "Team name",
+      "namePlaceholder": "Ex: Backend Team",
+      "descriptionLabel": "Description (optional)",
+      "descriptionPlaceholder": "Ex: API incident management",
+      "cancel": "Cancel",
+      "submit": "Create"
+    },
+    "joinModal": {
+      "title": "Join a team",
+      "codeLabel": "Invitation code",
+      "codePlaceholder": "Ex: A1B2C3D4",
+      "cancel": "Cancel",
+      "submit": "Join"
+    }
+  },
+  "card": {
+    "activeIncident": "{count, plural, one {# active incident} other {# active incidents}}",
+    "memberCount": "{count, plural, one {# member} other {# members}}",
+    "view": "View team"
+  },
+  "detailPage": {
+    "back": "Back",
+    "loading": "Loading...",
+    "memberCount": "{count, plural, one {# member} other {# members}}",
+    "generateCode": "Generate a code",
+    "delete": "Delete",
+    "codeGenerated": "Invitation code generated",
+    "copy": "Copy",
+    "toastCodeCopied": "Code copied!",
+    "membersHeading": "Members",
+    "bannedHeading": "Banned members ({count})",
+    "toastAccessLost": "You no longer have access to this team",
+    "toastRoleUpdated": "Role updated",
+    "toastKicked": "{username} removed",
+    "toastBannedTemporary": "{username} banned temporarily",
+    "toastBannedPermanent": "{username} banned permanently",
+    "toastLeft": "You left the team",
+    "toastDeleted": "Team deleted",
+    "toastUnbanned": "{username} unbanned",
+    "toastError": "Error",
+    "confirmDialog": {
+      "title": "Confirm action",
+      "kickDescription": "Remove {target} from the team?",
+      "banDescription": "Ban {target} from the team?",
+      "leaveDescription": "Leave team \"{target}\"?",
+      "deleteDescription": "Permanently delete team \"{target}\"?",
+      "confirmLabel": "Confirm",
+      "cancelLabel": "Cancel",
+      "banPermanent": "Permanent ban",
+      "banTemporary": "Temporary ban until:"
+    }
+  },
+  "memberRow": {
+    "you": "(you)",
+    "online": "Online",
+    "offline": "Offline",
+    "makeResponder": "Responder",
+    "makeObserver": "Observer",
+    "kick": "Kick",
+    "ban": "Ban",
+    "leave": "Leave"
+  },
+  "bannedRow": {
+    "bannedBy": "Banned by",
+    "permanently": "Permanently",
+    "until": "Until",
+    "reason": "Reason",
+    "unban": "Unban"
+  }
+}

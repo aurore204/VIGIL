@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { TeamMember } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/shared/Modal';
@@ -12,6 +13,7 @@ interface AssignModalProps {
 export function AssignModal({ responders, onClose, onAssign }: AssignModalProps) {
   const [selectedId, setSelectedId] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const t = useTranslations('incidents.assignModal');
 
   const handleAssign = async () => {
     if (!selectedId) return;
@@ -24,11 +26,11 @@ export function AssignModal({ responders, onClose, onAssign }: AssignModalProps)
   };
 
   return (
-    <Modal title="Assigner un Responder" onClose={onClose}>
+    <Modal title={t('title')} onClose={onClose}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
         {responders.length === 0 ? (
           <div style={{ fontSize: '13px', color: 'oklch(0.52 0.012 260)' }}>
-            Aucun Responder dans cette team
+            {t('empty')}
           </div>
         ) : (
           responders.map(m => (
@@ -60,9 +62,9 @@ export function AssignModal({ responders, onClose, onAssign }: AssignModalProps)
         )}
       </div>
       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-        <Button variant="secondary" onClick={onClose}>Annuler</Button>
+        <Button variant="secondary" onClick={onClose}>{t('cancel')}</Button>
         <Button onClick={handleAssign} loading={submitting} disabled={!selectedId}>
-          Assigner
+          {t('submit')}
         </Button>
       </div>
     </Modal>

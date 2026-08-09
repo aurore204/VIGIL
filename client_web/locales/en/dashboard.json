@@ -1,0 +1,36 @@
+{
+  "greeting": "Hello, {name}",
+  "summary": "{incidentCount, plural, =0 {No active incidents} one {# active incident} other {# active incidents}} across {teamCount, plural, one {# team} other {# teams}}",
+  "stats": {
+    "activeIncidents": "Active incidents",
+    "critical": "Critical",
+    "activeReleases": "Releases in progress"
+  },
+  "incidentsCard": {
+    "title": "Latest incidents",
+    "viewAll": "View all",
+    "empty": "No active incidents"
+  },
+  "onlineCard": {
+    "title": "Online",
+    "activeCount": "{count, plural, one {# active} other {# active}}",
+    "empty": "No presence data available right now."
+  },
+  "releasesCard": {
+    "title": "Active releases",
+    "viewAll": "View all",
+    "empty": "No releases in progress",
+    "stepsProgress": "{completed}/{total} steps"
+  },
+  "activityCard": {
+    "title": "Recent activity",
+    "empty": "Nothing to report",
+    "incidentDetail": "Incident {state}",
+    "releaseDetail": "Release {state}"
+  },
+  "teamsSection": {
+    "title": "My teams ({count})",
+    "manage": "Manage",
+    "memberCount": "{count, plural, one {# member} other {# members}}"
+  }
+}

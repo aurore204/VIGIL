@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -15,10 +16,12 @@ interface CreateRuleModalProps {
 
 export function CreateRuleModal({ teamId, onClose, onCreated }: CreateRuleModalProps) {
   const { showToast } = useToast();
+  const t = useTranslations('rules.createModal');
+  const tSeverity = useTranslations('severity');
   const [ruleName, setRuleName] = useState('');
   const [ciOutcome, setCiOutcome] = useState<'failure' | 'success'>('failure');
   const [reactionType, setReactionType] = useState<'vigil_create_incident' | 'http_post'>('vigil_create_incident');
-  const [incidentTitleBase, setIncidentTitleBase] = useState('Build cassé');
+  const [incidentTitleBase, setIncidentTitleBase] = useState(t('defaultIncidentTitle'));
   const [includeRepoName, setIncludeRepoName] = useState(true);
   const [incidentSeverity, setIncidentSeverity] = useState('critical');
   const [httpUrl, setHttpUrl] = useState('');
@@ -48,13 +51,13 @@ export function CreateRuleModal({ teamId, onClose, onCreated }: CreateRuleModalP
     setCreating(true);
     try {
       const finalTitle = includeRepoName
-        ? `${incidentTitleBase} sur {{repository.name}}`
+        ? `${incidentTitleBase} ${t('incidentTitleSuffix')}`
         : incidentTitleBase;
 
       const reaction = reactionType === 'vigil_create_incident'
         ? {
             type: 'vigil_create_incident',
-            payload: { title: finalTitle, severity: incidentSeverity, body: 'Le build "{{workflow.name}}" a échoué' },
+            payload: { title: finalTitle, severity: incidentSeverity, body: t('incidentBody') },
           }
         : {
             type: 'http_post',
@@ -68,27 +71,27 @@ export function CreateRuleModal({ teamId, onClose, onCreated }: CreateRuleModalP
         reaction,
       });
 
-      showToast('Règle créée avec succès', 'success');
+      showToast(t('toastCreated'), 'success');
       onCreated();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Erreur', 'error');
+      showToast(err instanceof Error ? err.message : t('toastError'), 'error');
     } finally {
       setCreating(false);
     }
   };
 
   return (
-    <Modal title="Créer une règle automatique" onClose={onClose} maxWidth="480px">
+    <Modal title={t('title')} onClose={onClose} maxWidth="480px">
       <p style={{ fontSize: '13px', color: 'oklch(0.65 0.01 260)', margin: '0 0 18px', lineHeight: 1.5 }}>
-        Définissez une action automatique déclenchée par un événement sur GitHub.
+        {t('intro')}
       </p>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <Input
-          label="Nom de la règle"
+          label={t('nameLabel')}
           value={ruleName}
           onChange={e => setRuleName(e.target.value)}
-          hint="Un nom court pour vous rappeler ce que fait cette règle"
+          hint={t('nameHint')}
           required
           autoFocus
         />
@@ -98,12 +101,12 @@ export function CreateRuleModal({ teamId, onClose, onCreated }: CreateRuleModalP
           background: 'oklch(0.22 0.02 260)', border: '1px solid oklch(0.30 0.02 260)',
         }}>
           <div style={{ fontSize: '12px', fontWeight: 700, color: 'oklch(0.85 0.005 260)', marginBottom: '10px' }}>
-            Quand
+            {t('whenHeading')}
           </div>
-          <label htmlFor="ci-outcome" style={labelStyle}>Le build sur GitHub...</label>
+          <label htmlFor="ci-outcome" style={labelStyle}>{t('ciOutcomeLabel')}</label>
           <select id="ci-outcome" value={ciOutcome} onChange={e => setCiOutcome(e.target.value as 'failure' | 'success')} style={selectStyle}>
-            <option value="failure">...échoue</option>
-            <option value="success">...réussit</option>
+            <option value="failure">{t('ciOutcomeFailure')}</option>
+            <option value="success">{t('ciOutcomeSuccess')}</option>
           </select>
         </div>
 
@@ -112,22 +115,22 @@ export function CreateRuleModal({ teamId, onClose, onCreated }: CreateRuleModalP
           background: 'oklch(0.22 0.02 260)', border: '1px solid oklch(0.30 0.02 260)',
         }}>
           <div style={{ fontSize: '12px', fontWeight: 700, color: 'oklch(0.85 0.005 260)', marginBottom: '10px' }}>
-            Alors
+            {t('thenHeading')}
           </div>
-          <label htmlFor="reaction-select" style={labelStyle}>Faire ceci automatiquement</label>
+          <label htmlFor="reaction-select" style={labelStyle}>{t('reactionLabel')}</label>
           <select id="reaction-select" value={reactionType} onChange={e => setReactionType(e.target.value as typeof reactionType)} style={{ ...selectStyle, marginBottom: reactionType === 'vigil_create_incident' ? '14px' : 0 }}>
-            <option value="vigil_create_incident">Créer un incident dans VIGIL</option>
-            <option value="http_post">Envoyer une alerte vers un service externe</option>
+            <option value="vigil_create_incident">{t('reactionCreateIncident')}</option>
+            <option value="http_post">{t('reactionHttpPost')}</option>
           </select>
 
           {reactionType === 'vigil_create_incident' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <Input
-                  label="Titre de l'incident créé"
+                  label={t('incidentTitleLabel')}
                   value={incidentTitleBase}
                   onChange={e => setIncidentTitleBase(e.target.value)}
-                  placeholder="Ex: Build cassé"
+                  placeholder={t('incidentTitlePlaceholder')}
                 />
                 <label style={{ ...checkboxLabelStyle, marginTop: '8px', marginBottom: 0 }}>
                   <input
@@ -135,34 +138,34 @@ export function CreateRuleModal({ teamId, onClose, onCreated }: CreateRuleModalP
                     checked={includeRepoName}
                     onChange={e => setIncludeRepoName(e.target.checked)}
                   />
-                  Ajouter automatiquement le nom du dépôt concerné
+                  {t('includeRepoName')}
                 </label>
               </div>
               <div>
-                <label htmlFor="severity-select" style={labelStyle}>Niveau de gravité</label>
+                <label htmlFor="severity-select" style={labelStyle}>{t('severityLabel')}</label>
                 <select id="severity-select" value={incidentSeverity} onChange={e => setIncidentSeverity(e.target.value)} style={selectStyle}>
-                  <option value="low">Faible</option>
-                  <option value="medium">Moyen</option>
-                  <option value="high">Élevé</option>
-                  <option value="critical">Critique</option>
+                  <option value="low">{tSeverity('low')}</option>
+                  <option value="medium">{tSeverity('medium')}</option>
+                  <option value="high">{tSeverity('high')}</option>
+                  <option value="critical">{tSeverity('critical')}</option>
                 </select>
               </div>
             </div>
           ) : (
             <Input
-              label="Adresse où envoyer l'alerte"
+              label={t('httpUrlLabel')}
               value={httpUrl}
               onChange={e => setHttpUrl(e.target.value)}
-              placeholder="https://..."
-              hint="L'adresse d'un service capable de recevoir cette notification"
+              placeholder={t('httpUrlPlaceholder')}
+              hint={t('httpUrlHint')}
               required
             />
           )}
         </div>
 
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
-          <Button variant="secondary" type="button" onClick={onClose}>Annuler</Button>
-          <Button type="submit" loading={creating}>Créer la règle</Button>
+          <Button variant="secondary" type="button" onClick={onClose}>{t('cancel')}</Button>
+          <Button type="submit" loading={creating}>{t('submit')}</Button>
         </div>
       </form>
     </Modal>

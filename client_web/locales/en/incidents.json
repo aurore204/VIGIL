@@ -1,0 +1,106 @@
+{
+  "assignModal": {
+    "title": "Assign a Responder",
+    "empty": "No Responder in this team",
+    "cancel": "Cancel",
+    "submit": "Assign"
+  },
+  "presence": {
+    "title": "Currently viewing",
+    "empty": "No one else is watching this incident"
+  },
+  "table": {
+    "empty": "No incidents found",
+    "unassigned": "Unassigned"
+  },
+  "actions": {
+    "availableActions": "Available actions",
+    "acknowledge": "Acknowledge",
+    "escalate": "Escalate",
+    "assign": "Assign a responder",
+    "edit": "Edit incident",
+    "noActions": "No actions available",
+    "resolve": "Resolve",
+    "delete": "Delete incident",
+    "confirmResolveTitle": "Resolve incident",
+    "confirmResolveDescription": "Confirm resolving \"{title}\"?",
+    "confirmResolveLabel": "Resolve",
+    "confirmDeleteTitle": "Delete incident",
+    "confirmDeleteDescription": "Permanently delete \"{title}\"? This action cannot be undone.",
+    "confirmDeleteLabel": "Delete"
+  },
+  "timeline": {
+    "title": "Timeline",
+    "empty": "No entries in the timeline",
+    "edited": "(edited)",
+    "editButton": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "placeholder": "Add an entry to the timeline...",
+    "send": "Send"
+  },
+  "createModal": {
+    "title": "Create an incident",
+    "team": "Team",
+    "teamPlaceholder": "Select a team",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Ex: Payment API unreachable",
+    "severity": "Severity",
+    "description": "Description (optional)",
+    "descriptionPlaceholder": "Describe the problem...",
+    "cancel": "Cancel",
+    "submit": "Create incident"
+  },
+  "editModal": {
+    "title": "Edit incident",
+    "titleLabel": "Title",
+    "severity": "Severity",
+    "description": "Description",
+    "cancel": "Cancel",
+    "submit": "Save"
+  },
+  "info": {
+    "title": "Information",
+    "assignedTo": "Assigned to",
+    "unassigned": "Unassigned",
+    "team": "Team",
+    "createdAt": "Created on",
+    "resolvedAt": "Resolved on"
+  },
+  "listPage": {
+    "title": "Incidents",
+    "online": "online",
+    "create": "+ Create incident",
+    "search": "Search",
+    "searchPlaceholder": "Incident title...",
+    "severityLabel": "Severity",
+    "stateLabel": "State",
+    "severityAll": "All",
+    "stateAll": "All",
+    "loading": "Loading...",
+    "columns": {
+      "incident": "Incident",
+      "severity": "Severity",
+      "state": "State",
+      "team": "Team",
+      "assignee": "Assignee",
+      "date": "Date"
+    },
+    "toastCreated": "Incident created successfully",
+    "toastError": "Error"
+  },
+  "detailPage": {
+    "back": "Back",
+    "createdOn": "Created on",
+    "description": "Description",
+    "loading": "Loading...",
+    "toastAcknowledged": "Incident acknowledged",
+    "toastEscalated": "Incident escalated",
+    "toastResolved": "Incident resolved",
+    "toastDeleted": "Incident deleted",
+    "toastAssigned": "Responder assigned",
+    "toastEdited": "Incident updated",
+    "toastEntryEdited": "Entry updated",
+    "toastError": "Error"
+  }
+}

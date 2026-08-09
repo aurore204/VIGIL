@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { Incident, IncidentSeverity } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/shared/Modal';
@@ -16,6 +17,8 @@ export function EditIncidentModal({ incident, onClose, onSubmit }: EditIncidentM
   const [severity, setSeverity] = useState<IncidentSeverity>(incident.severity);
   const [description, setDescription] = useState(incident.description ?? '');
   const [submitting, setSubmitting] = useState(false);
+  const t = useTranslations('incidents.editModal');
+  const tSeverity = useTranslations('severity');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,28 +56,28 @@ export function EditIncidentModal({ incident, onClose, onSubmit }: EditIncidentM
   };
 
   return (
-    <Modal title="Modifier l'incident" onClose={onClose} maxWidth="460px">
+    <Modal title={t('title')} onClose={onClose} maxWidth="460px">
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <div>
-          <label style={labelStyle}>Titre <span style={{ color: 'oklch(0.78 0.14 25)' }}>*</span></label>
+          <label style={labelStyle}>{t('titleLabel')} <span style={{ color: 'oklch(0.78 0.14 25)' }}>*</span></label>
           <input value={title} onChange={e => setTitle(e.target.value)} required style={inputStyle} />
         </div>
         <div>
-          <label style={labelStyle}>Sévérité</label>
+          <label style={labelStyle}>{t('severity')}</label>
           <select value={severity} onChange={e => setSeverity(e.target.value as IncidentSeverity)} style={selectStyle}>
-            <option value="low">Faible</option>
-            <option value="medium">Moyen</option>
-            <option value="high">Élevé</option>
-            <option value="critical">Critique</option>
+            <option value="low">{tSeverity('low')}</option>
+            <option value="medium">{tSeverity('medium')}</option>
+            <option value="high">{tSeverity('high')}</option>
+            <option value="critical">{tSeverity('critical')}</option>
           </select>
         </div>
         <div>
-          <label style={labelStyle}>Description</label>
+          <label style={labelStyle}>{t('description')}</label>
           <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
         </div>
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
-          <Button variant="secondary" type="button" onClick={onClose}>Annuler</Button>
-          <Button type="submit" loading={submitting}>Enregistrer</Button>
+          <Button variant="secondary" type="button" onClick={onClose}>{t('cancel')}</Button>
+          <Button type="submit" loading={submitting}>{t('submit')}</Button>
         </div>
       </form>
     </Modal>

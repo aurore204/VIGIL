@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import type { TimelineEntry } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
 
@@ -43,6 +44,9 @@ export function IncidentTimeline({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [hoveredEntryId, setHoveredEntryId] = useState<string | null>(null);
+  const t = useTranslations('incidents.timeline');
+  const locale = useLocale();
+  const dateLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +81,7 @@ export function IncidentTimeline({
       overflow: 'hidden',
     }}>
       <div style={{ fontSize: '13px', fontWeight: 700, color: 'oklch(0.90 0.005 260)', marginBottom: '16px' }}>
-        Timeline
+        {t('title')}
       </div>
 
       {description && (
@@ -94,7 +98,7 @@ export function IncidentTimeline({
 
       {timeline.length === 0 ? (
         <div style={{ fontSize: '13px', color: 'oklch(0.52 0.012 260)', fontStyle: 'italic', textAlign: 'center', padding: '20px 0' }}>
-          Aucune entrée dans la timeline
+          {t('empty')}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
@@ -138,17 +142,17 @@ export function IncidentTimeline({
                       {entry.author_username}
                     </span>
                     <span style={{ fontSize: '11px', fontFamily: 'ui-monospace, monospace', color: 'oklch(0.52 0.012 260)' }}>
-                      {new Date(entry.created_at).toLocaleString('fr-FR')}
+                      {new Date(entry.created_at).toLocaleString(dateLocale)}
                     </span>
                     {entry.edited_at && (
-                      <span style={{ fontSize: '11px', color: 'oklch(0.52 0.012 260)', fontStyle: 'italic' }}>(modifié)</span>
+                      <span style={{ fontSize: '11px', color: 'oklch(0.52 0.012 260)', fontStyle: 'italic' }}>{t('edited')}</span>
                     )}
                     {isAuthor && !isEditing && (
                       <button
                         onClick={() => { setEditingId(entry.id); setEditContent(entry.content); }}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: 'oklch(0.52 0.012 260)', padding: '0 4px' }}
                       >
-                        Modifier
+                        {t('editButton')}
                       </button>
                     )}
                   </div>
@@ -161,8 +165,8 @@ export function IncidentTimeline({
                         style={{ ...inputStyle }}
                         autoFocus
                       />
-                      <Button onClick={() => handleEdit(entry.id)}>Sauvegarder</Button>
-                      <Button variant="secondary" onClick={() => setEditingId(null)}>Annuler</Button>
+                      <Button onClick={() => handleEdit(entry.id)}>{t('save')}</Button>
+                      <Button variant="secondary" onClick={() => setEditingId(null)}>{t('cancel')}</Button>
                     </div>
                   ) : (
                     <div style={{ position: 'relative', maxWidth: '100%' }}>
@@ -268,10 +272,10 @@ export function IncidentTimeline({
           <input
             value={newEntry}
             onChange={e => setNewEntry(e.target.value)}
-            placeholder="Ajouter une entrée à la timeline..."
+            placeholder={t('placeholder')}
             style={inputStyle}
           />
-          <Button type="submit" loading={submitting}>Envoyer</Button>
+          <Button type="submit" loading={submitting}>{t('send')}</Button>
         </form>
       )}
     </div>

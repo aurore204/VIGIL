@@ -1,6 +1,7 @@
 import type { Incident } from '@/lib/types';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { shadow } from '@/lib/tokens';
 import { CheckCircle2, ArrowUpCircle, UserPlus, Trash2, Pencil } from 'lucide-react';
 
@@ -67,6 +68,8 @@ export function IncidentActions({
 }: IncidentActionsProps) {
   const [confirmAction, setConfirmAction] = useState<'resolve' | 'delete' | null>(null);
   const noActions = !canAcknowledge && !canEscalate && !canResolve && !canAssign;
+  const t = useTranslations('incidents.actions');
+  const tCommon = useTranslations('common');
 
   return (
     <div style={{
@@ -79,46 +82,48 @@ export function IncidentActions({
         fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
         letterSpacing: '0.03em', color: 'oklch(0.55 0.01 260)', marginBottom: '14px',
       }}>
-        Actions disponibles
+        {t('availableActions')}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {canAcknowledge && <ActionButton Icon={CheckCircle2} label="Acquitter" onClick={onAcknowledge} />}
-        {canEscalate && <ActionButton Icon={ArrowUpCircle} label="Escalader" onClick={onEscalate} />}
-        {canAssign && <ActionButton Icon={UserPlus} label="Assigner un intervenant" onClick={onAssign} />}
-        {canEdit && <ActionButton Icon={Pencil} label="Modifier l'incident" onClick={onEdit} />}
+        {canAcknowledge && <ActionButton Icon={CheckCircle2} label={t('acknowledge')} onClick={onAcknowledge} />}
+        {canEscalate && <ActionButton Icon={ArrowUpCircle} label={t('escalate')} onClick={onEscalate} />}
+        {canAssign && <ActionButton Icon={UserPlus} label={t('assign')} onClick={onAssign} />}
+        {canEdit && <ActionButton Icon={Pencil} label={t('edit')} onClick={onEdit} />}
         {noActions && (
           <div style={{ fontSize: '12px', color: 'oklch(0.52 0.012 260)', fontStyle: 'italic', padding: '4px 0' }}>
-            Aucune action disponible
+            {t('noActions')}
           </div>
         )}
 
         {canResolve && (
           <div style={{ marginTop: noActions ? 0 : '6px' }}>
-            <ActionButton Icon={CheckCircle2} label="Résoudre" tone="success" onClick={() => setConfirmAction('resolve')} />
+            <ActionButton Icon={CheckCircle2} label={t('resolve')} tone="success" onClick={() => setConfirmAction('resolve')} />
           </div>
         )}
 
         {canDelete && (
           <div style={{ marginTop: '2px' }}>
-            <ActionButton Icon={Trash2} label="Supprimer l'incident" tone="danger" onClick={() => setConfirmAction('delete')} />
+            <ActionButton Icon={Trash2} label={t('delete')} tone="danger" onClick={() => setConfirmAction('delete')} />
           </div>
         )}
       </div>
 
       <ConfirmDialog
         isOpen={confirmAction === 'resolve'}
-        title="Résoudre l'incident"
-        description={`Confirmer la résolution de "${incident.title}" ?`}
-        confirmLabel="Résoudre"
+        title={t('confirmResolveTitle')}
+        description={t('confirmResolveDescription', { title: incident.title })}
+        confirmLabel={t('confirmResolveLabel')}
+        cancelLabel={tCommon('cancel')}
         onConfirm={() => { setConfirmAction(null); onResolve(); }}
         onCancel={() => setConfirmAction(null)}
       />
       <ConfirmDialog
         isOpen={confirmAction === 'delete'}
-        title="Supprimer l'incident"
-        description={`Supprimer définitivement "${incident.title}" ? Cette action est irréversible.`}
-        confirmLabel="Supprimer"
+        title={t('confirmDeleteTitle')}
+        description={t('confirmDeleteDescription', { title: incident.title })}
+        confirmLabel={t('confirmDeleteLabel')}
+        cancelLabel={tCommon('cancel')}
         onConfirm={() => { setConfirmAction(null); onDelete(); }}
         onCancel={() => setConfirmAction(null)}
       />

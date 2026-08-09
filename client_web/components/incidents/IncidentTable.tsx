@@ -1,6 +1,7 @@
 import type { Incident, Team } from '@/lib/types';
 import { IncidentStateBadge, SeverityBadge } from '@/components/ui/Badge';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
+import { useTranslations, useLocale } from 'next-intl';
 
 const severityDotColor: Record<string, string> = {
   low: 'oklch(0.72 0.14 150)',
@@ -15,9 +16,13 @@ interface IncidentTableProps {
 }
 
 export function IncidentTable({ incidents, teams }: IncidentTableProps) {
+  const t = useTranslations('incidents.table');
+  const locale = useLocale();
+  const dateLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
+
   if (incidents.length === 0) return (
     <div style={{ padding: '48px', textAlign: 'center', color: 'oklch(0.52 0.012 260)', fontSize: '13px' }}>
-      Aucun incident trouvé
+      {t('empty')}
     </div>
   );
 
@@ -92,12 +97,12 @@ export function IncidentTable({ incidents, teams }: IncidentTableProps) {
                   </span>
                 </>
               ) : (
-                <span style={{ color: 'oklch(0.42 0.01 260)', fontStyle: 'italic' }}>Non assigné</span>
+                <span style={{ color: 'oklch(0.42 0.01 260)', fontStyle: 'italic' }}>{t('unassigned')}</span>
               )}
             </div>
 
             <div style={{ fontSize: '11px', fontFamily: 'ui-monospace, monospace', color: 'oklch(0.50 0.012 260)' }}>
-              {new Date(incident.created_at).toLocaleDateString('fr-FR')}
+              {new Date(incident.created_at).toLocaleDateString(dateLocale)}
             </div>
           </Link>
         );

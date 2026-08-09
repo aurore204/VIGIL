@@ -1,0 +1,85 @@
+{
+  "listPage": {
+    "title": "Teams",
+    "subtitle": "Vos équipes et leur activité",
+    "join": "Rejoindre",
+    "create": "Créer une team",
+    "loading": "Chargement...",
+    "emptyTitle": "Vous n'avez pas encore de team",
+    "joinWithCode": "Rejoindre avec un code",
+    "toastCreated": "Team créée avec succès",
+    "toastJoined": "Team rejointe avec succès",
+    "toastInvalidCode": "Code invalide",
+    "toastError": "Erreur",
+    "createModal": {
+      "title": "Créer une team",
+      "nameLabel": "Nom de la team",
+      "namePlaceholder": "Ex: Équipe Backend",
+      "descriptionLabel": "Description (optionnelle)",
+      "descriptionPlaceholder": "Ex: Gestion des incidents API",
+      "cancel": "Annuler",
+      "submit": "Créer"
+    },
+    "joinModal": {
+      "title": "Rejoindre une team",
+      "codeLabel": "Code d'invitation",
+      "codePlaceholder": "Ex: A1B2C3D4",
+      "cancel": "Annuler",
+      "submit": "Rejoindre"
+    }
+  },
+  "card": {
+    "activeIncident": "{count, plural, one {# Incident actif} other {# Incidents actifs}}",
+    "memberCount": "{count, plural, one {# membre} other {# membres}}",
+    "view": "Voir la team"
+  },
+  "detailPage": {
+    "back": "Retour",
+    "loading": "Chargement...",
+    "memberCount": "{count, plural, one {# membre} other {# membres}}",
+    "generateCode": "Générer un code",
+    "delete": "Supprimer",
+    "codeGenerated": "Code d'invitation généré",
+    "copy": "Copier",
+    "toastCodeCopied": "Code copié !",
+    "membersHeading": "Membres",
+    "bannedHeading": "Membres bannis ({count})",
+    "toastAccessLost": "Vous n'avez plus accès à cette team",
+    "toastRoleUpdated": "Rôle mis à jour",
+    "toastKicked": "{username} retiré",
+    "toastBannedTemporary": "{username} banni temporairement",
+    "toastBannedPermanent": "{username} banni définitivement",
+    "toastLeft": "Vous avez quitté la team",
+    "toastDeleted": "Team supprimée",
+    "toastUnbanned": "{username} débanni",
+    "toastError": "Erreur",
+    "confirmDialog": {
+      "title": "Confirmer l'action",
+      "kickDescription": "Retirer {target} de la team ?",
+      "banDescription": "Bannir {target} de la team ?",
+      "leaveDescription": "Quitter la team \"{target}\" ?",
+      "deleteDescription": "Supprimer définitivement la team \"{target}\" ?",
+      "confirmLabel": "Confirmer",
+      "cancelLabel": "Annuler",
+      "banPermanent": "Bannissement permanent",
+      "banTemporary": "Bannissement temporaire jusqu'au :"
+    }
+  },
+  "memberRow": {
+    "you": "(vous)",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "makeResponder": "Responder",
+    "makeObserver": "Observer",
+    "kick": "Kick",
+    "ban": "Ban",
+    "leave": "Quitter"
+  },
+  "bannedRow": {
+    "bannedBy": "Banni par",
+    "permanently": "Définitivement",
+    "until": "Jusqu'au",
+    "reason": "Raison",
+    "unban": "Débannir"
+  }
+}

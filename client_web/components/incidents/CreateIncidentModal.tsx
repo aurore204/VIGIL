@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { Team, IncidentSeverity } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/shared/Modal';
@@ -17,6 +18,8 @@ export function CreateIncidentModal({ teams, onClose, onSubmit }: CreateIncident
   const [severity, setSeverity] = useState<IncidentSeverity>('medium');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const t = useTranslations('incidents.createModal');
+  const tSeverity = useTranslations('severity');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,35 +53,35 @@ export function CreateIncidentModal({ teams, onClose, onSubmit }: CreateIncident
   };
 
   return (
-    <Modal title="Créer un incident" onClose={onClose} maxWidth="460px">
+    <Modal title={t('title')} onClose={onClose} maxWidth="460px">
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <div>
-          <label style={labelStyle}>Team <span style={{ color: 'oklch(0.78 0.14 25)' }}>*</span></label>
+          <label style={labelStyle}>{t('team')} <span style={{ color: 'oklch(0.78 0.14 25)' }}>*</span></label>
           <select value={teamId} onChange={e => setTeamId(e.target.value)} required style={selectStyle}>
-            <option value="">Sélectionner une team</option>
+            <option value="">{t('teamPlaceholder')}</option>
             {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </div>
         <div>
-          <label style={labelStyle}>Titre <span style={{ color: 'oklch(0.78 0.14 25)' }}>*</span></label>
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: API de paiement inaccessible" required style={inputStyle} />
+          <label style={labelStyle}>{t('titleLabel')} <span style={{ color: 'oklch(0.78 0.14 25)' }}>*</span></label>
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder={t('titlePlaceholder')} required style={inputStyle} />
         </div>
         <div>
-          <label style={labelStyle}>Sévérité</label>
+          <label style={labelStyle}>{t('severity')}</label>
           <select value={severity} onChange={e => setSeverity(e.target.value as IncidentSeverity)} style={selectStyle}>
-            <option value="low">Faible</option>
-            <option value="medium">Moyen</option>
-            <option value="high">Élevé</option>
-            <option value="critical">Critique</option>
+            <option value="low">{tSeverity('low')}</option>
+            <option value="medium">{tSeverity('medium')}</option>
+            <option value="high">{tSeverity('high')}</option>
+            <option value="critical">{tSeverity('critical')}</option>
           </select>
         </div>
         <div>
-          <label style={labelStyle}>Description (optionnelle)</label>
-          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Décrivez le problème..." rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+          <label style={labelStyle}>{t('description')}</label>
+          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t('descriptionPlaceholder')} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
         </div>
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
-          <Button variant="secondary" type="button" onClick={onClose}>Annuler</Button>
-          <Button type="submit" loading={submitting}>Créer l&apos;incident</Button>
+          <Button variant="secondary" type="button" onClick={onClose}>{t('cancel')}</Button>
+          <Button type="submit" loading={submitting}>{t('submit')}</Button>
         </div>
       </form>
     </Modal>
