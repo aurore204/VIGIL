@@ -6,8 +6,13 @@
     "rules": "Rules",
     "teams": "Teams",
     "messages": "Messages",
-    "logout": "Log out"
+    "logout": "Log out",
+    "connected": "Connected",
+    "expand": "Expand navigation bar",
+    "collapse": "Collapse navigation bar",
+    "profile": "Profile"
   },
+  
   "incidentState": {
     "open": "Open",
     "acknowledged": "Acknowledged",
