@@ -19,7 +19,11 @@
   "memberSince": "Member since",
   "languageSectionTitle": "Language",
   "languageSectionHint": "This preference is saved on your account",
+<<<<<<< HEAD
   "languageFr": "Français",
+=======
+  "languageFr": "French",
+>>>>>>> 0bb8fb4 (feat(profile): add de la gestion du profil utilisateur)
   "languageEn": "English",
   "toastLanguageUpdated": "Language updated"
 }

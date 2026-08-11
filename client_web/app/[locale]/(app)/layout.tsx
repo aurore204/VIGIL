@@ -208,7 +208,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }}>
           <Link
             href="/profile"
+<<<<<<< HEAD
             title={collapsed ? t('profile') : undefined}
+=======
+            title={collapsed ? 'Profil' : undefined}
+>>>>>>> 0bb8fb4 (feat(profile): add de la gestion du profil utilisateur)
             style={{
               display: 'flex', alignItems: 'center', gap: '9px',
               justifyContent: collapsed ? 'center' : 'flex-start',
