@@ -103,6 +103,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       if (e.type !== 'reaction_added') return;
       showToast(`${e.by} a réagi avec ${e.emoji}`, 'info');
     };
+    const onRuleTriggered = (e: WsEvent) => {
+      if (e.type !== 'rule_triggered') return;
+      showToast(`Règle "${e.rule_name}" déclenchée`, 'success');
+    };
+    const onRuleFailed = (e: WsEvent) => {
+      if (e.type !== 'rule_failed') return;
+      showToast(`Règle "${e.rule_name}" échouée : ${e.error}`, 'error');
+    };
 
     vigilWs.on('incident_state_changed', onIncidentStateChanged);
     vigilWs.on('incident_escalated', onIncidentEscalated);
@@ -114,6 +122,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     vigilWs.on('member_banned', onMemberBanned);
     vigilWs.on('private_message_received', onPrivateMessageReceived);
     vigilWs.on('reaction_added', onReactionAdded);
+    vigilWs.on('rule_triggered', onRuleTriggered);
+    vigilWs.on('rule_failed', onRuleFailed);
 
     return () => {
       vigilWs.off('incident_state_changed', onIncidentStateChanged);
@@ -126,6 +136,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       vigilWs.off('member_banned', onMemberBanned);
       vigilWs.off('private_message_received', onPrivateMessageReceived);
       vigilWs.off('reaction_added', onReactionAdded);
+      vigilWs.off('rule_triggered', onRuleTriggered);
+      vigilWs.off('rule_failed', onRuleFailed);
       vigilWs.disconnect();
     };
   }, [token]);
