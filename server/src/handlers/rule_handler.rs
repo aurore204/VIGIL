@@ -152,6 +152,34 @@ let (ciphertext_b64, nonce_b64) = match crate::services::crypto_service::encrypt
 
 let encrypted_secret = format!("{}:{}", nonce_b64, ciphertext_b64);
 
+let key = match crate::services::crypto_service::load_encryption_key() {
+    Ok(k) => k,
+    Err(_) => {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!(ApiError::new(
+                "Erreur de configuration du chiffrement",
+                "ENCRYPTION_CONFIG_ERROR"
+            ))),
+        );
+    }
+};
+
+let (ciphertext_b64, nonce_b64) = match crate::services::crypto_service::encrypt(&req.secret, &key) {
+    Ok(pair) => pair,
+    Err(_) => {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!(ApiError::new(
+                "Erreur lors du chiffrement du secret",
+                "ENCRYPTION_ERROR"
+            ))),
+        );
+    }
+};
+
+let encrypted_secret = format!("{}:{}", nonce_b64, ciphertext_b64);
+
 match crate::repositories::webhook_repository::upsert_secret(
     &state.pool,
     team_id,
