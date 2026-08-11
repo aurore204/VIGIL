@@ -23,7 +23,7 @@ pub async fn create_rule(
         Ok(rule) => (
             StatusCode::CREATED,
             Json(serde_json::json!(ApiResponse::success(
-                "Règle créée avec succès",
+                "Règle crée avec succès",
                 rule
             ))),
         ),
