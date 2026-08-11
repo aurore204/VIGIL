@@ -54,6 +54,9 @@
     "toastDeleted": "Team supprimée",
     "toastUnbanned": "{username} débanni",
     "toastError": "Erreur",
+    "membersLabel": "Membres",
+    "managerLabel": "Manager",
+    "createdOnLabel": "Créée le",
     "confirmDialog": {
       "title": "Confirmer l'action",
       "kickDescription": "Retirer {target} de la team ?",

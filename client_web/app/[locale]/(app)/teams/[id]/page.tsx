@@ -219,52 +219,15 @@ export default function TeamDetailPage() {
       </div>
 
       {/* Détails */}
-      <div style={{
-        background: 'oklch(0.195 0.015 260)', border: '1px solid oklch(0.30 0.02 260)',
-        borderRadius: '12px', padding: '20px',
-        marginBottom: '20px', boxShadow: shadow.card,
-      }}>
+      {team.created_at && (
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '18px',
+          display: 'inline-flex', alignItems: 'center', gap: '6px',
+          fontSize: '12px', color: 'oklch(0.55 0.01 260)', marginBottom: '20px',
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'oklch(0.55 0.01 260)' }}>
-              <Users size={12} aria-hidden="true" />
-              {t('membersLabel')}
-            </span>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: 'oklch(0.92 0.005 260)' }}>
-              {t('memberCount', { count: team.members.length })}
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <span style={{ fontSize: '11px', color: 'oklch(0.55 0.01 260)' }}>
-              {t('managerLabel')}
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 600, color: 'oklch(0.92 0.005 260)' }}>
-              <span style={{
-                width: '20px', height: '20px', borderRadius: '50%',
-                background: 'oklch(0.30 0.03 255)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '9px', fontWeight: 700, color: 'oklch(0.85 0.05 255)', flexShrink: 0,
-              }}>
-                {managerMember?.username.slice(0, 2).toUpperCase() ?? '?'}
-              </span>
-              {managerMember?.username ?? '—'}
-            </span>
-          </div>
-          {team.created_at && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'oklch(0.55 0.01 260)' }}>
-                <Calendar size={12} aria-hidden="true" />
-                {t('createdOnLabel')}
-              </span>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: 'oklch(0.92 0.005 260)' }}>
-                {new Date(team.created_at).toLocaleDateString(dateLocale)}
-              </span>
-            </div>
-          )}
+          <Calendar size={12} aria-hidden="true" />
+          {t('createdOnLabel')} {new Date(team.created_at).toLocaleDateString(dateLocale)}
         </div>
-      </div>
+      )}
 
       {inviteCode && (
         <div style={{ marginBottom: '20px' }}>

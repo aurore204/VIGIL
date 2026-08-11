@@ -54,6 +54,9 @@
     "toastUnbanned": "{username} unbanned",
     "toastError": "Error",
     "toastTransferred": "Manager role transferred to {username}",
+    "membersLabel": "Members",
+    "managerLabel": "Manager",
+    "createdOnLabel": "Created on",
     "confirmDialog": {
       "title": "Confirm action",
       "kickDescription": "Remove {target} from the team?",
