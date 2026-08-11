@@ -47,6 +47,22 @@ pub enum WsEvent {
         member: String,
         by: String,
     },
+    MemberJoined {
+        team_id: Uuid,
+        member: String,
+        role: String,
+    },
+    MemberRoleChanged {
+        team_id: Uuid,
+        member: String,
+        new_role: String,
+        by: String,
+    },
+    ManagerTransferred {
+        team_id: Uuid,
+        new_manager: String,
+        previous_manager: String,
+    },
     TimelineEntryEdited {
         incident_id: Uuid,
         entry_id: Uuid,
