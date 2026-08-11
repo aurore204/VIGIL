@@ -14,7 +14,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StepList } from '@/components/releases/StepList';
 import { useToast } from '@/components/ui/Toast';
 import { shadow } from '@/lib/tokens';
-import { ArrowLeft, Play, CheckCircle2, Lock, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Play, CheckCircle2, Lock, ShieldAlert, Users, Calendar } from 'lucide-react';
 import { PresenceIndicator } from '@/components/shared/PresenceIndicator';
 
 export default function ReleaseDetailPage() {
@@ -65,8 +65,8 @@ export default function ReleaseDetailPage() {
       vigilWs.off('release_step_validated', handleStep);
       vigilWs.off('presence_update', handlePresence);
     };
-  }, [id]);
-  
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!release?.team_id) return;
     vigilWs.watch(id, 'release', release.team_id);
@@ -81,6 +81,7 @@ export default function ReleaseDetailPage() {
   const isManager = myRole === 'manager';
   const isResponder = myRole === 'responder' || myRole === 'manager';
   const completedSteps = release.steps.filter(s => s.state === 'completed').length;
+  const creatorName = team?.members.find(m => m.user_id === release.created_by)?.username ?? t('unknownCreator');
 
   const handleStart = async () => {
     try { await api.startRelease(id); showToast(t('toastStarted'), 'success'); load(); }
@@ -100,37 +101,41 @@ export default function ReleaseDetailPage() {
   const currentStepIndex = release.steps.findIndex(s => s.state === 'pending');
 
   return (
-    <div style={{ padding: '28px clamp(16px, 4vw, 32px)', maxWidth: '900px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div style={{ padding: '28px clamp(16px, 4vw, 32px)', maxWidth: '1200px', fontFamily: 'Inter, system-ui, sans-serif' }}>
       <button
         onClick={() => router.push('/releases')}
         style={{
           display: 'flex', alignItems: 'center', gap: '6px',
           background: 'none', border: 'none', color: 'oklch(0.60 0.01 260)',
-          cursor: 'pointer', fontSize: '12px', fontWeight: 600, marginBottom: '16px', padding: 0,
+          cursor: 'pointer', fontSize: '12px', fontWeight: 600, marginBottom: '20px', padding: 0,
         }}
       >
-        <ArrowLeft size={19} aria-hidden="true" />
+        <ArrowLeft size={16} aria-hidden="true" />
         {t('back')}
       </button>
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
-            <div style={{ fontSize: '12px', fontFamily: 'ui-monospace, monospace', color: 'oklch(0.55 0.01 260)' }}>
+          {team?.name && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '4px 10px', borderRadius: '14px',
+              background: 'oklch(0.22 0.02 260)', border: '1px solid oklch(0.32 0.02 260)',
+              fontSize: '12px', fontWeight: 600, color: 'oklch(0.75 0.01 260)',
+              marginBottom: '10px',
+            }}>
+              <Users size={12} aria-hidden="true" />
+              {team.name}
             </div>
-            <ReleaseStateBadge state={release.state} />
-          </div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)', marginBottom: '4px' }}>
+          )}
+          <div style={{
+            fontSize: '24px', fontWeight: 700, color: 'oklch(0.95 0.005 260)',
+            lineHeight: 1.25, marginBottom: '10px',
+          }}>
             {release.title}
           </div>
-          <div style={{ fontSize: '12px', color: 'oklch(0.55 0.01 260)' }}>
-            {team?.name} · {completedSteps}/{release.steps.length} {t('steps')} · {t('createdBy')}{' '}
-            <strong style={{ color: 'oklch(0.75 0.01 260)' }}>
-              {team?.members.find(m => m.user_id === release.created_by)?.username ?? t('unknownCreator')}
-            </strong>
-            {' '}{t('on')} {new Date(release.created_at).toLocaleDateString(dateLocale)}
-          </div>
+          <ReleaseStateBadge state={release.state} />
         </div>
 
         {isManager && (
@@ -146,6 +151,27 @@ export default function ReleaseDetailPage() {
             )}
           </div>
         )}
+      </div>
+
+      {/* Détails */}
+      <div style={{
+        background: 'oklch(0.195 0.015 260)', border: '1px solid oklch(0.30 0.02 260)',
+        borderRadius: '12px', padding: '14px 18px',
+        display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap',
+        marginBottom: '20px', boxShadow: shadow.card,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', color: 'oklch(0.68 0.01 260)' }}>
+          <CheckCircle2 size={13} aria-hidden="true" style={{ flexShrink: 0, color: 'oklch(0.55 0.01 260)' }} />
+          {completedSteps}/{release.steps.length} {t('steps')}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', color: 'oklch(0.68 0.01 260)' }}>
+          <span>{t('createdBy')}</span>
+          <strong style={{ color: 'oklch(0.85 0.005 260)' }}>{creatorName}</strong>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', color: 'oklch(0.68 0.01 260)' }}>
+          <Calendar size={13} aria-hidden="true" style={{ flexShrink: 0, color: 'oklch(0.55 0.01 260)' }} />
+          {new Date(release.created_at).toLocaleDateString(dateLocale)}
+        </div>
       </div>
 
       <PresenceIndicator watchers={watchers} />

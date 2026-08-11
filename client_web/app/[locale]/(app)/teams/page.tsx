@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/shared/Modal';
 import { TeamCard } from '@/components/teams/TeamCard';
-import { Plus } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 
 export default function TeamsPage() {
   const { user } = useAuthStore();
@@ -43,7 +43,6 @@ export default function TeamsPage() {
     }
   };
 
-  // Recalcule le compteur d'incidents actifs d'une seule team
   const refreshTeamIncidentCount = async (teamId: string) => {
     try {
       const incidents = await api.getIncidents(teamId);
@@ -51,7 +50,6 @@ export default function TeamsPage() {
     } catch { }
   };
 
-  // Recharge une seule team
   const refreshTeam = async (teamId: string) => {
     try {
       const updated = await api.getTeam(teamId);
@@ -142,20 +140,49 @@ export default function TeamsPage() {
     color: 'oklch(0.72 0.01 260)', marginBottom: '6px',
   };
 
+  const totalActiveIncidents = Object.values(teamIncidents).reduce((sum, n) => sum + n, 0);
+
   if (loading) return (
     <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>{t('loading')}</div>
   );
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: '1100px' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)' }}>{t('title')}</div>
-          <div style={{ fontSize: '13px', color: 'oklch(0.60 0.01 260)', marginTop: '4px' }}>
-            {t('subtitle')}
+    <div style={{ padding: '28px clamp(16px, 4vw, 32px)', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: '28px', flexWrap: 'nowrap', gap: '16px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flexShrink: 1 }}>
+          <div style={{
+            width: '44px', height: '44px', borderRadius: '12px',
+            background: 'oklch(0.25 0.05 255)', border: '1px solid oklch(0.40 0.10 255)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <Users size={20} color="oklch(0.75 0.14 255)" aria-hidden="true" />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)', lineHeight: 1.2 }}>{t('title')}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+              <span style={{
+                fontSize: '12px', fontWeight: 600, color: 'oklch(0.72 0.01 260)',
+                padding: '2px 9px', borderRadius: '12px',
+                background: 'oklch(0.22 0.02 260)', border: '1px solid oklch(0.30 0.02 260)',
+              }}>
+                {teams.length} {teams.length > 1 ? 'teams' : 'team'}
+              </span>
+              {totalActiveIncidents > 0 && (
+                <span style={{
+                  fontSize: '12px', fontWeight: 600, color: 'oklch(0.78 0.14 25)',
+                  padding: '2px 9px', borderRadius: '12px',
+                  background: 'oklch(0.25 0.05 25)', border: '1px solid oklch(0.40 0.10 25)',
+                }}>
+                  {totalActiveIncidents} incident{totalActiveIncidents > 1 ? 's' : ''} actif{totalActiveIncidents > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexShrink: 0, flexWrap: 'wrap' }}>
           <Button variant="secondary" onClick={() => setShowJoin(true)}>{t('join')}</Button>
           <Button onClick={() => setShowCreate(true)}>
             <Plus size={14} aria-hidden="true" style={{ marginRight: '6px' }} />
@@ -168,18 +195,22 @@ export default function TeamsPage() {
         <div style={{
           background: 'oklch(0.195 0.015 260)',
           border: '1px solid oklch(0.30 0.02 260)',
-          borderRadius: '10px', padding: '48px', textAlign: 'center',
+          borderRadius: '14px', padding: '48px', textAlign: 'center',
         }}>
           <div style={{ fontSize: '14px', color: 'oklch(0.52 0.012 260)', marginBottom: '20px' }}>
             {t('emptyTitle')}
           </div>
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Button variant="secondary" onClick={() => setShowJoin(true)}>{t('joinWithCode')}</Button>
             <Button onClick={() => setShowCreate(true)}>{t('create')}</Button>
           </div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
+          gap: '18px',
+        }}>
           {teams.map(team => (
             <TeamCard
               key={team.id}

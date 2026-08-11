@@ -20,37 +20,36 @@ function resolveUsername(userId: string | null, members: TeamMember[]): string |
 
 export function StepList({ steps, members }: StepListProps) {
   return (
-    <div style={{ marginTop: '14px', marginBottom: '8px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
-        {steps.map(step => (
-          <div
-            key={step.id}
-            title={step.name}
-            style={{
-              flex: 1, height: '6px', borderRadius: '3px',
-              background: stepColors[step.state] ?? stepColors.pending,
-            }}
-          />
-        ))}
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-        {steps.map(step => {
-          const validator = resolveUsername(step.validated_by, members);
-          return (
-            <div key={step.id} style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '80px' }}>
-              <span style={{ fontSize: '10px', color: 'oklch(0.55 0.01 260)', fontWeight: 600 }}>
-                {step.name}
+    <div style={{ marginTop: '14px', marginBottom: '8px', display: 'flex', gap: '4px' }}>
+      {steps.map(step => {
+        const validator = resolveUsername(step.validated_by, members);
+        return (
+          <div key={step.id} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div
+              title={step.name}
+              style={{
+                height: '6px', borderRadius: '3px',
+                background: stepColors[step.state] ?? stepColors.pending,
+              }}
+            />
+            <span style={{
+              fontSize: '10px', color: 'oklch(0.55 0.01 260)', fontWeight: 600,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {step.name}
+            </span>
+            {validator && (
+              <span style={{
+                display: 'flex', alignItems: 'center', gap: '3px', fontSize: '10px', color: 'oklch(0.72 0.14 150)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                <CheckCircle2 size={10} aria-hidden="true" style={{ flexShrink: 0 }} />
+                {validator}
               </span>
-              {validator && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '10px', color: 'oklch(0.72 0.14 150)' }}>
-                  <CheckCircle2 size={10} aria-hidden="true" />
-                  {validator}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

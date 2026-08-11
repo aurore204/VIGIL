@@ -26,7 +26,7 @@ pub async fn create_release(
         Ok(release) => (
             StatusCode::CREATED,
             Json(serde_json::json!(ApiResponse::success(
-                &format!("Release '{}' créée avec succès", title),
+                &format!("Release '{}' crée avec succès", title),
                 release
             ))),
         ),

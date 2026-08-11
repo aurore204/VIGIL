@@ -53,6 +53,10 @@
     "toastDeleted": "Team deleted",
     "toastUnbanned": "{username} unbanned",
     "toastError": "Error",
+    "toastTransferred": "Manager role transferred to {username}",
+    "membersLabel": "Members",
+    "managerLabel": "Manager",
+    "createdOnLabel": "Created on",
     "confirmDialog": {
       "title": "Confirm action",
       "kickDescription": "Remove {target} from the team?",
@@ -62,7 +66,8 @@
       "confirmLabel": "Confirm",
       "cancelLabel": "Cancel",
       "banPermanent": "Permanent ban",
-      "banTemporary": "Temporary ban until:"
+      "banTemporary": "Temporary ban until:",
+      "transferDescription": "Transfer the Manager role to {target}? You will lose this role."
     }
   },
   "memberRow": {
@@ -73,7 +78,8 @@
     "makeObserver": "Observer",
     "kick": "Kick",
     "ban": "Ban",
-    "leave": "Leave"
+    "leave": "Leave",
+    "transfer": "Transfer"
   },
   "bannedRow": {
     "bannedBy": "Banned by",

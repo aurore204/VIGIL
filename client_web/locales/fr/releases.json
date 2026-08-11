@@ -7,7 +7,7 @@
     "createPlaceholder": "Modal de création à brancher",
     "loading": "Chargement...",
     "empty": "Aucune release",
-    "toastCreated": "Release créée avec succès",
+    "toastCreated": "Release crée avec succès",
     "toastError": "Erreur"
   },
   "card": {
@@ -17,7 +17,7 @@
   "detailPage": {
     "back": "Retour",
     "loading": "Chargement...",
-    "createdBy": "Créée par",
+    "createdBy": "Crée par",
     "on": "le",
     "unknownCreator": "inconnu",
     "steps": "étapes",

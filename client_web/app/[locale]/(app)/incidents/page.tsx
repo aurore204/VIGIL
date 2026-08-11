@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { IncidentTable } from '@/components/incidents/IncidentTable';
 import { CreateIncidentModal } from '@/components/incidents/CreateIncidentModal';
+import { AlertTriangle, Plus } from 'lucide-react';
 
 export default function IncidentsPage() {
   const { user } = useAuthStore();
@@ -101,6 +102,8 @@ export default function IncidentsPage() {
     return matchSearch && matchSev && matchState;
   });
 
+  const activeCount = incidents.filter(i => i.state !== 'resolved').length;
+
   const handleCreate = async (teamId: string, title: string, severity: IncidentSeverity, description?: string) => {
     try {
       await api.createIncident(teamId, { title, severity, description });
@@ -132,25 +135,61 @@ export default function IncidentsPage() {
 
   return (
     <div style={{ padding: '28px 32px', fontFamily: 'Inter, system-ui, sans-serif' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)' }}>{t('title')}</div>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: '28px', flexWrap: 'wrap', gap: '16px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{
+            width: '44px', height: '44px', borderRadius: '12px',
+            background: 'oklch(0.25 0.05 25)', border: '1px solid oklch(0.40 0.10 25)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <AlertTriangle size={20} color="oklch(0.75 0.14 25)" aria-hidden="true" />
+          </div>
+          <div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)', lineHeight: 1.2 }}>{t('title')}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+              <span style={{
+                fontSize: '12px', fontWeight: 600, color: 'oklch(0.72 0.01 260)',
+                padding: '2px 9px', borderRadius: '12px',
+                background: 'oklch(0.22 0.02 260)', border: '1px solid oklch(0.30 0.02 260)',
+              }}>
+                {incidents.length} {incidents.length > 1 ? 'incidents' : 'incident'}
+              </span>
+              {activeCount > 0 && (
+                <span style={{
+                  fontSize: '12px', fontWeight: 600, color: 'oklch(0.78 0.14 25)',
+                  padding: '2px 9px', borderRadius: '12px',
+                  background: 'oklch(0.25 0.05 25)', border: '1px solid oklch(0.40 0.10 25)',
+                }}>
+                  {activeCount} actif{activeCount > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'oklch(0.72 0.14 150)' }}>
-            <span aria-hidden="true" style={{
-              width: '6px', height: '6px', borderRadius: '50%', background: 'oklch(0.72 0.14 150)',
-            }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '7px',
+            padding: '6px 12px', borderRadius: '20px',
+            background: 'oklch(0.20 0.04 150 / 0.3)', border: '1px solid oklch(0.38 0.10 150)',
+            fontSize: '12px', fontWeight: 600, color: 'oklch(0.75 0.14 150)',
+          }}>
+            <span aria-hidden="true" style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'oklch(0.72 0.14 150)' }} />
             {onlineUsernames.length} {t('online')}
           </div>
           {managerTeams.length > 0 && (
-            <Button onClick={() => setShowCreate(true)}>{t('create')}</Button>
+            <Button onClick={() => setShowCreate(true)}>
+              <Plus size={14} aria-hidden="true" style={{ marginRight: '6px' }} />
+              {t('create').replace('+ ', '')}
+            </Button>
           )}
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '220px' }}>
           <Input
             label={t('search')}
@@ -184,7 +223,7 @@ export default function IncidentsPage() {
       <div style={{
         background: 'oklch(0.195 0.015 260)',
         border: '1px solid oklch(0.30 0.02 260)',
-        borderRadius: '12px', overflowX: 'auto',
+        borderRadius: '14px', overflowX: 'auto',
       }}>
         <div style={{
           display: 'grid',

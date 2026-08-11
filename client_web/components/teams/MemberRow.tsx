@@ -2,7 +2,7 @@ import type { TeamMember } from '@/lib/types';
 import { useTranslations } from 'next-intl';
 import { RoleBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { ArrowUpCircle, ArrowDownCircle, UserX, Ban } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, UserX, Ban, Crown } from 'lucide-react';
 
 interface MemberRowProps {
   member: TeamMember;
@@ -13,12 +13,13 @@ interface MemberRowProps {
   onRoleChange: (userId: string, currentRole: string) => void;
   onKick: (userId: string, username: string) => void;
   onBan: (userId: string, username: string) => void;
+  onTransfer: (userId: string, username: string) => void;
   onLeave: () => void;
 }
 
 export function MemberRow({
   member, isMe, isManager, isTargetManager, isOnline,
-  onRoleChange, onKick, onBan, onLeave,
+  onRoleChange, onKick, onBan, onTransfer, onLeave,
 }: MemberRowProps) {
   const t = useTranslations('teams.memberRow');
 
@@ -77,6 +78,19 @@ export function MemberRow({
           >
             {member.role === 'observer' ? <ArrowUpCircle size={12} aria-hidden="true" /> : <ArrowDownCircle size={12} aria-hidden="true" />}
             {member.role === 'observer' ? t('makeResponder') : t('makeObserver')}
+          </button>
+          <button
+            onClick={() => onTransfer(member.user_id, member.username)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '4px',
+              padding: '5px 10px', borderRadius: '6px',
+              border: '1px solid oklch(0.42 0.10 85 / 0.6)',
+              background: 'transparent', color: 'oklch(0.80 0.14 85)',
+              fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            <Crown size={12} aria-hidden="true" />
+            {t('transfer')}
           </button>
           <button
             onClick={() => onKick(member.user_id, member.username)}

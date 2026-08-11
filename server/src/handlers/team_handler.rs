@@ -28,7 +28,7 @@ pub async fn create_team(
         Ok(team) => (
             StatusCode::CREATED,
             Json(serde_json::json!(ApiResponse::success(
-                &format!("Team '{}' créée avec succès", name),
+                &format!("Team '{}' crée avec succès", name),
                 team
             ))),
         ),

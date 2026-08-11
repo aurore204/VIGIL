@@ -24,7 +24,7 @@
     "defaultIncidentTitle": "Build cassé",
     "incidentTitleSuffix": "sur {{repository.name}}",
     "incidentBody": "Le build \"{{workflow.name}}\" a échoué",
-    "toastCreated": "Règle créée avec succès",
+    "toastCreated": "Règle crée avec succès",
     "toastError": "Erreur"
   },
   "webhookModal": {

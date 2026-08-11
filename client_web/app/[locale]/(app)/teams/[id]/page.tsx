@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { vigilWs } from '@/lib/websocket';
@@ -13,9 +13,10 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { MemberRow } from '@/components/teams/MemberRow';
 import { InviteCodeBanner } from '@/components/teams/InviteCodeBanner';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Users, Calendar } from 'lucide-react';
 import { BannedMemberRow } from '@/components/teams/BannedMemberRow';
 import type { BannedMember } from '@/lib/types';
+import { shadow } from '@/lib/tokens';
 
 export default function TeamDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +24,8 @@ export default function TeamDetailPage() {
   const { showToast } = useToast();
   const router = useRouter();
   const t = useTranslations('teams.detailPage');
+  const locale = useLocale();
+  const dateLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -121,6 +124,9 @@ export default function TeamDetailPage() {
             : t('toastBannedPermanent', { username: confirm.target }),
           'success'
         );
+      } else if (confirm.action === 'transfer') {
+        await api.transferManager(id, confirm.userId);
+        showToast(t('toastTransferred', { username: confirm.target }), 'success');
       } else if (confirm.action === 'leave') {
         await api.leaveTeam(id);
         showToast(t('toastLeft'), 'success');
@@ -156,32 +162,54 @@ export default function TeamDetailPage() {
     <div style={{ padding: '32px', color: 'oklch(0.72 0.01 260)', fontSize: '13px' }}>{t('loading')}</div>
   );
 
+  const confirmDescription = () => {
+    if (!confirm) return '';
+    switch (confirm.action) {
+      case 'kick': return t('confirmDialog.kickDescription', { target: confirm.target });
+      case 'ban': return t('confirmDialog.banDescription', { target: confirm.target });
+      case 'transfer': return t('confirmDialog.transferDescription', { target: confirm.target });
+      case 'leave': return t('confirmDialog.leaveDescription', { target: confirm.target });
+      default: return t('confirmDialog.deleteDescription', { target: confirm.target });
+    }
+  };
+
+  const managerMember = team.members.find(m => m.user_id === team.manager_id);
+
   return (
-    <div style={{ padding: '28px 32px', maxWidth: '900px' }}>
+    <div style={{ padding: '28px clamp(16px, 4vw, 32px)', fontFamily: 'Inter, system-ui, sans-serif' }}>
       <button
         onClick={() => router.push('/teams')}
         style={{
           display: 'flex', alignItems: 'center', gap: '6px',
           background: 'none', border: 'none', color: 'oklch(0.60 0.01 260)',
-          cursor: 'pointer', fontSize: '12px', fontWeight: 600, marginBottom: '16px', padding: 0,
+          cursor: 'pointer', fontSize: '12px', fontWeight: 600, marginBottom: '20px', padding: 0,
         }}
       >
-        <ArrowLeft size={14} aria-hidden="true" />
+        <ArrowLeft size={16} aria-hidden="true" />
         {t('back')}
       </button>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-        <div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)' }}>{team.name}</div>
-          {team.description && (
-            <div style={{ fontSize: '13px', color: 'oklch(0.60 0.01 260)', marginTop: '4px' }}>{team.description}</div>
-          )}
-          <div style={{ fontSize: '12px', color: 'oklch(0.52 0.012 260)', marginTop: '4px' }}>
-            {t('memberCount', { count: team.members.length })}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+        marginBottom: '20px', flexWrap: 'wrap', gap: '16px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+          <div style={{
+            width: '44px', height: '44px', borderRadius: '12px',
+            background: 'oklch(0.25 0.05 255)', border: '1px solid oklch(0.40 0.10 255)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <Users size={20} color="oklch(0.75 0.14 255)" aria-hidden="true" />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)', lineHeight: 1.2 }}>{team.name}</div>
+            {team.description && (
+              <div style={{ fontSize: '13px', color: 'oklch(0.60 0.01 260)', marginTop: '4px' }}>{team.description}</div>
+            )}
           </div>
         </div>
         {isManager && (
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <Button variant="secondary" onClick={handleGenerateCode}>{t('generateCode')}</Button>
             <Button variant="danger" onClick={() => setConfirm({ action: 'delete', target: team.name, userId: '' })}>
               {t('delete')}
@@ -189,6 +217,17 @@ export default function TeamDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Détails */}
+      {team.created_at && (
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: '6px',
+          fontSize: '12px', color: 'oklch(0.55 0.01 260)', marginBottom: '20px',
+        }}>
+          <Calendar size={12} aria-hidden="true" />
+          {t('createdOnLabel')} {new Date(team.created_at).toLocaleDateString(dateLocale)}
+        </div>
+      )}
 
       {inviteCode && (
         <div style={{ marginBottom: '20px' }}>
@@ -202,10 +241,10 @@ export default function TeamDetailPage() {
       <div style={{
         background: 'oklch(0.195 0.015 260)',
         border: '1px solid oklch(0.30 0.02 260)',
-        borderRadius: '10px', overflow: 'hidden',
+        borderRadius: '14px', overflow: 'hidden',
       }}>
         <div style={{
-          padding: '12px 16px',
+          padding: '14px 18px',
           borderBottom: '1px solid oklch(0.30 0.02 260)',
           fontSize: '13px', fontWeight: 700, color: 'oklch(0.90 0.005 260)',
         }}>
@@ -225,6 +264,7 @@ export default function TeamDetailPage() {
               onRoleChange={handleRoleChange}
               onKick={(userId, username) => setConfirm({ action: 'kick', target: username, userId })}
               onBan={(userId, username) => setConfirm({ action: 'ban', target: username, userId })}
+              onTransfer={(userId, username) => setConfirm({ action: 'transfer', target: username, userId })}
               onLeave={() => setConfirm({ action: 'leave', target: team.name, userId: '' })}
             />
           </div>
@@ -236,10 +276,10 @@ export default function TeamDetailPage() {
           marginTop: '20px',
           background: 'oklch(0.195 0.015 260)',
           border: '1px solid oklch(0.30 0.02 260)',
-          borderRadius: '10px', overflow: 'hidden',
+          borderRadius: '14px', overflow: 'hidden',
         }}>
           <div style={{
-            padding: '12px 16px',
+            padding: '14px 18px',
             borderBottom: '1px solid oklch(0.30 0.02 260)',
             fontSize: '13px', fontWeight: 700, color: 'oklch(0.90 0.005 260)',
           }}>
@@ -259,12 +299,7 @@ export default function TeamDetailPage() {
       <ConfirmDialog
         isOpen={!!confirm}
         title={t('confirmDialog.title')}
-        description={
-          confirm?.action === 'kick' ? t('confirmDialog.kickDescription', { target: confirm.target }) :
-          confirm?.action === 'ban' ? t('confirmDialog.banDescription', { target: confirm.target }) :
-          confirm?.action === 'leave' ? t('confirmDialog.leaveDescription', { target: confirm?.target ?? '' }) :
-          t('confirmDialog.deleteDescription', { target: confirm?.target ?? '' })
-        }
+        description={confirmDescription()}
         confirmLabel={t('confirmDialog.confirmLabel')}
         cancelLabel={t('confirmDialog.cancelLabel')}
         onConfirm={confirmAction}
