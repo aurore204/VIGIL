@@ -77,6 +77,7 @@ export default function RulesPage() {
   };
 
   const managerTeams = teams.filter(t => t.manager_id === user?.id);
+  const activeRulesCount = rules.filter(r => r.enabled).length;
 
   const selectStyle: React.CSSProperties = {
     padding: '9px 12px', borderRadius: '8px',
@@ -99,15 +100,42 @@ export default function RulesPage() {
   }
 
   return (
-    <div style={{ padding: '28px clamp(16px, 4vw, 32px)', maxWidth: '900px', fontFamily: 'Inter, system-ui, sans-serif' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)' }}>{t('title')}</div>
-          <div style={{ fontSize: '13px', color: 'oklch(0.60 0.01 260)', marginTop: '4px' }}>
-            {t('summary', { count: rules.length })}
+    <div style={{ padding: '28px clamp(16px, 4vw, 32px)', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: '28px', gap: '16px', flexWrap: 'nowrap',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flexShrink: 1 }}>
+          <div style={{
+            width: '44px', height: '44px', borderRadius: '12px',
+            background: 'oklch(0.25 0.05 85)', border: '1px solid oklch(0.42 0.10 85)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <Zap size={20} color="oklch(0.80 0.14 85)" aria-hidden="true" />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: 'oklch(0.95 0.005 260)', lineHeight: 1.2 }}>{t('title')}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+              <span style={{
+                fontSize: '12px', fontWeight: 600, color: 'oklch(0.72 0.01 260)',
+                padding: '2px 9px', borderRadius: '12px',
+                background: 'oklch(0.22 0.02 260)', border: '1px solid oklch(0.30 0.02 260)',
+              }}>
+                {t('summary', { count: rules.length })}
+              </span>
+              {activeRulesCount > 0 && (
+                <span style={{
+                  fontSize: '12px', fontWeight: 600, color: 'oklch(0.75 0.14 150)',
+                  padding: '2px 9px', borderRadius: '12px',
+                  background: 'oklch(0.20 0.04 150 / 0.3)', border: '1px solid oklch(0.38 0.10 150)',
+                }}>
+                  {activeRulesCount} active{activeRulesCount > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
           <Button variant="secondary" onClick={() => setShowWebhookSecret(true)}>
             <KeyRound size={14} aria-hidden="true" style={{ marginRight: '6px' }} />
             {t('configureWebhook')}
@@ -130,7 +158,7 @@ export default function RulesPage() {
 
       <div style={{
         background: 'oklch(0.195 0.015 260)', border: '1px solid oklch(0.30 0.02 260)',
-        borderRadius: '12px', overflow: 'hidden',
+        borderRadius: '14px', overflow: 'hidden',
       }}>
         <div style={{
           padding: '12px 16px', borderBottom: '1px solid oklch(0.30 0.02 260)',
