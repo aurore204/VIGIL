@@ -45,19 +45,22 @@ export function CreateRuleModal({ teamId, onClose, onCreated }: CreateRuleModalP
     cursor: 'pointer', marginBottom: '10px',
   };
 
+  const INCIDENT_TITLE_SUFFIX = 'sur {{repository.name}}';
+  const INCIDENT_BODY_TEMPLATE = 'Le build "{{workflow.name}}" a échoué';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ruleName.trim()) return;
     setCreating(true);
     try {
       const finalTitle = includeRepoName
-        ? `${incidentTitleBase} ${t('incidentTitleSuffix')}`
+        ? `${incidentTitleBase} ${INCIDENT_TITLE_SUFFIX}`
         : incidentTitleBase;
 
       const reaction = reactionType === 'vigil_create_incident'
         ? {
             type: 'vigil_create_incident',
-            payload: { title: finalTitle, severity: incidentSeverity, body: t('incidentBody') },
+            payload: { title: finalTitle, severity: incidentSeverity, body: INCIDENT_BODY_TEMPLATE },
           }
         : {
             type: 'http_post',

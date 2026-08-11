@@ -16,8 +16,7 @@ import { IncidentInfo } from '@/components/incidents/IncidentInfo';
 import { PresenceIndicator } from '@/components/shared/PresenceIndicator';
 import { AssignModal } from '@/components/shared/AssignModal';
 import { EditIncidentModal } from '@/components/incidents/EditIncidentModal';
-import { shadow } from '@/lib/tokens';
-import { Users } from 'lucide-react';
+import { Users, FileText, ArrowLeft } from 'lucide-react';
 
 export default function IncidentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -92,7 +91,7 @@ export default function IncidentDetailPage() {
       vigilWs.off('reaction_removed', handleReactionRemoved);
       vigilWs.off('presence_update', handlePresence);
     };
-  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id]);
 
   useEffect(() => {
     if (!incident?.team_id) return;
@@ -153,58 +152,72 @@ export default function IncidentDetailPage() {
   };
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: '1200px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div style={{ padding: '28px 32px', fontFamily: 'Inter, system-ui, sans-serif' }}>
       <button
         onClick={() => router.push('/incidents')}
         style={{
-          display: 'flex', alignItems: 'center', gap: '6px',
-          background: 'none', border: 'none', color: 'oklch(0.60 0.01 260)',
-          cursor: 'pointer', fontSize: '12px', fontWeight: 600, marginBottom: '20px', padding: 0,
+          display: 'flex', alignItems: 'center', gap: '7px',
+          background: 'none', border: 'none', color: 'oklch(0.58 0.012 260)',
+          cursor: 'pointer', fontSize: '12.5px', fontWeight: 600, marginBottom: '22px', padding: '4px 0',
+          transition: 'color 0.15s ease',
         }}
+        onMouseEnter={e => { e.currentTarget.style.color = 'oklch(0.85 0.005 260)'; }}
+        onMouseLeave={e => { e.currentTarget.style.color = 'oklch(0.58 0.012 260)'; }}
       >
+        <ArrowLeft size={15} aria-hidden="true" />
         {t('back')}
       </button>
 
-      <div style={{ marginBottom: '24px' }}>
-        {team?.name && (
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            padding: '4px 10px', borderRadius: '14px',
-            background: 'oklch(0.22 0.02 260)', border: '1px solid oklch(0.32 0.02 260)',
-            fontSize: '12px', fontWeight: 600, color: 'oklch(0.75 0.01 260)',
-            marginBottom: '10px',
-          }}>
-            <Users size={12} aria-hidden="true" />
-            {team.name}
-          </div>
-        )}
+      <div style={{ marginBottom: '28px' }}>
         <div style={{
-          fontSize: '26px', fontWeight: 700, color: 'oklch(0.95 0.005 260)',
-          lineHeight: 1.25, marginBottom: '14px',
+          fontSize: '26px', fontWeight: 700, color: 'oklch(0.96 0.005 260)',
+          lineHeight: 1.25, marginBottom: '12px',
         }}>
           {incident.title}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           <SeverityBadge severity={incident.severity} />
           <IncidentStateBadge state={incident.state} />
+          {team?.name && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '4px 10px', borderRadius: '14px',
+              background: 'oklch(0.22 0.02 260)', border: '1px solid oklch(0.32 0.02 260)',
+              fontSize: '12px', fontWeight: 600, color: 'oklch(0.70 0.01 260)',
+            }}>
+              <Users size={12} aria-hidden="true" />
+              {team.name}
+            </div>
+          )}
         </div>
       </div>
 
       <PresenceIndicator watchers={watchers} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px',gap: '20px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '24px', alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {incident.description && (
             <div style={{
-              background: 'oklch(0.195 0.015 260)', border: '1px solid oklch(0.30 0.02 260)',
-              borderRadius: '12px', padding: '18px',
-              boxShadow: shadow.card,
+              background: 'oklch(0.20 0.016 260)', border: '1px solid oklch(0.30 0.02 260)',
+              borderRadius: '14px', padding: '20px',
+              boxShadow: '0 4px 20px oklch(0 0 0 / 0.25)',
             }}>
               <div style={{
-                fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
-                letterSpacing: '0.03em', color: 'oklch(0.55 0.01 260)', marginBottom: '10px',
+                display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '14px',
               }}>
-                {t('description')}
+                <div style={{
+                  width: '26px', height: '26px', borderRadius: '8px',
+                  background: 'oklch(0.24 0.02 260)', border: '1px solid oklch(0.34 0.02 260)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <FileText size={13} color="oklch(0.68 0.01 260)" aria-hidden="true" />
+                </div>
+                <div style={{
+                  fontSize: '12.5px', fontWeight: 700,
+                  color: 'oklch(0.85 0.005 260)',
+                }}>
+                  {t('description')}
+                </div>
               </div>
               <div style={{ fontSize: '13.5px', color: 'oklch(0.80 0.005 260)', lineHeight: 1.6 }}>
                 {incident.description}
