@@ -55,7 +55,7 @@ export default function TeamDetailPage() {
 
   useEffect(() => {
     load();
-    api.getOnlineUsers().then(setOnlineUsernames).catch(() => {});
+    api.getOnlineUsers().then(setOnlineUsernames).catch(() => { });
 
     const onMemberKicked = (e: WsEvent) => {
       if (e.type !== 'member_kicked' || e.team_id !== id) return;
@@ -69,6 +69,18 @@ export default function TeamDetailPage() {
       if (e.type !== 'member_unbanned' || e.team_id !== id) return;
       load();
     };
+    const onMemberJoined = (e: WsEvent) => {
+      if (e.type !== 'member_joined' || e.team_id !== id) return;
+      load();
+    };
+    const onMemberRoleChanged = (e: WsEvent) => {
+      if (e.type !== 'member_role_changed' || e.team_id !== id) return;
+      load();
+    };
+    const onManagerTransferred = (e: WsEvent) => {
+      if (e.type !== 'manager_transferred' || e.team_id !== id) return;
+      load();
+    };
     const onPresenceOnline = (e: WsEvent) => {
       if (e.type !== 'presence_online') return;
       setOnlineUsernames(e.usernames);
@@ -77,16 +89,21 @@ export default function TeamDetailPage() {
     vigilWs.on('member_kicked', onMemberKicked);
     vigilWs.on('member_banned', onMemberBanned);
     vigilWs.on('member_unbanned', onMemberUnbanned);
+    vigilWs.on('member_joined', onMemberJoined);
+    vigilWs.on('member_role_changed', onMemberRoleChanged);
+    vigilWs.on('manager_transferred', onManagerTransferred);
     vigilWs.on('presence_online', onPresenceOnline);
 
     return () => {
       vigilWs.off('member_kicked', onMemberKicked);
       vigilWs.off('member_banned', onMemberBanned);
       vigilWs.off('member_unbanned', onMemberUnbanned);
+      vigilWs.off('member_joined', onMemberJoined);
+      vigilWs.off('member_role_changed', onMemberRoleChanged);
+      vigilWs.off('manager_transferred', onManagerTransferred);
       vigilWs.off('presence_online', onPresenceOnline);
     };
-  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
-
+    }, [id]);
   const isManager = team?.manager_id === user?.id;
 
   const handleGenerateCode = async () => {

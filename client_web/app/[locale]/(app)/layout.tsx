@@ -81,7 +81,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       if (e.type !== 'release_state_changed') return;
       if (e.new_state === 'blocked') showToast('Release bloquée par un incident', 'error');
       else if (e.new_state === 'completed') showToast('Release complétée', 'success');
-      else showToast(`Release : ${e.new_state}`, 'info');
+      else if (e.new_state === 'in_progress') showToast('Release débloquée, reprise en cours', 'success');
     };
     const onReleaseStepValidated = (e: WsEvent) => {
       if (e.type !== 'release_step_validated') return;
