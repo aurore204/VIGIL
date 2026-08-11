@@ -43,6 +43,7 @@
     "copy": "Copier",
     "toastCodeCopied": "Code copié !",
     "membersHeading": "Membres",
+    "toastTransferred": "Rôle Manager transféré à {username}",
     "bannedHeading": "Membres bannis ({count})",
     "toastAccessLost": "Vous n'avez plus accès à cette team",
     "toastRoleUpdated": "Rôle mis à jour",
@@ -62,7 +63,8 @@
       "confirmLabel": "Confirmer",
       "cancelLabel": "Annuler",
       "banPermanent": "Bannissement permanent",
-      "banTemporary": "Bannissement temporaire jusqu'au :"
+      "banTemporary": "Bannissement temporaire jusqu'au :",
+      "transferDescription": "Transférer le rôle Manager à {target} ? Vous perdrez ce rôle."
     }
   },
   "memberRow": {
@@ -73,7 +75,8 @@
     "makeObserver": "Observer",
     "kick": "Kick",
     "ban": "Ban",
-    "leave": "Quitter"
+    "leave": "Quitter",
+    "transfer": "Transférer"
   },
   "bannedRow": {
     "bannedBy": "Banni par",
