@@ -11,7 +11,8 @@
     "yesterday": "Yesterday",
     "placeholder": "Write a message...",
     "send": "Send",
-    "selectContact": "Select a contact to start"
+    "selectContact": "Select a contact to start",
+    "limitReached": "limit reached"
   },
   "loading": "Loading...",
   "toastError": "Error"

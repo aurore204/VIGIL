@@ -124,26 +124,54 @@ pub async fn create_webhook_secret(
         );
     }
 
-    match crate::repositories::webhook_repository::upsert_secret(
-        &state.pool,
-        team_id,
-        &req.service_name,
-        &req.secret,
-    )
-    .await
-    {
-        Ok(_) => (
-            StatusCode::CREATED,
-            Json(serde_json::json!(ApiResponse::<()>::success_no_data(
-                "Secret webhook configuré"
-            ))),
-        ),
-        Err(_) => (
+    let key = match crate::services::crypto_service::load_encryption_key() {
+    Ok(k) => k,
+    Err(_) => {
+        return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!(ApiError::new(
-                "Erreur interne",
-                "INTERNAL_ERROR"
+                "Erreur de configuration du chiffrement",
+                "ENCRYPTION_CONFIG_ERROR"
             ))),
-        ),
+        );
     }
+};
+
+let (ciphertext_b64, nonce_b64) = match crate::services::crypto_service::encrypt(&req.secret, &key) {
+    Ok(pair) => pair,
+    Err(_) => {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!(ApiError::new(
+                "Erreur lors du chiffrement du secret",
+                "ENCRYPTION_ERROR"
+            ))),
+        );
+    }
+};
+
+let encrypted_secret = format!("{}:{}", nonce_b64, ciphertext_b64);
+
+match crate::repositories::webhook_repository::upsert_secret(
+    &state.pool,
+    team_id,
+    &req.service_name,
+    &encrypted_secret,
+)
+.await
+{
+    Ok(_) => (
+        StatusCode::CREATED,
+        Json(serde_json::json!(ApiResponse::<()>::success_no_data(
+            "Secret webhook configuré"
+        ))),
+    ),
+    Err(_) => (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!(ApiError::new(
+            "Erreur interne",
+            "INTERNAL_ERROR"
+        ))),
+    ),
+}
 }
