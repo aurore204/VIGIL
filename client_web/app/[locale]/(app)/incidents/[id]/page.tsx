@@ -192,7 +192,7 @@ export default function IncidentDetailPage() {
 
       <PresenceIndicator watchers={watchers} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '20px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px',gap: '20px', alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {incident.description && (
             <div style={{
