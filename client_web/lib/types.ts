@@ -207,6 +207,27 @@ export interface WsMemberUnbanned {
   by: string;
 }
 
+export interface WsMemberJoined {
+  type: 'member_joined';
+  team_id: string;
+  member: string;
+  role: TeamRole;
+}
+
+export interface WsMemberRoleChanged {
+  type: 'member_role_changed';
+  team_id: string;
+  member: string;
+  new_role: TeamRole;
+  by: string;
+}
+
+export interface WsManagerTransferred {
+  type: 'manager_transferred';
+  team_id: string;
+  new_manager: string;
+  previous_manager: string;
+}
 export interface WsPrivateMessageReceived {
   type: 'private_message_received';
   from: string;
@@ -262,6 +283,9 @@ export type WsEvent =
   | WsMemberKicked
   | WsMemberBanned
   | WsMemberUnbanned
+  | WsMemberJoined
+  | WsMemberRoleChanged
+  | WsManagerTransferred
   | WsPrivateMessageReceived
   | WsReactionAdded
   | WsReactionRemoved
