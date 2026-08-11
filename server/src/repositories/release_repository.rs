@@ -91,6 +91,26 @@ pub async fn find_by_id(pool: &PgPool, release_id: Uuid) -> Result<Option<Releas
     .await
 }
 
+// Récupère toutes les releases in_progress d'une team (pour blocage automatique)
+pub async fn find_in_progress_by_team(
+    pool: &PgPool,
+    team_id: Uuid,
+) -> Result<Vec<Release>, sqlx::Error> {
+    sqlx::query_as!(
+        Release,
+        r#"
+        SELECT
+            id, team_id, created_by, title, description,
+            state as "state: ReleaseState",
+            created_at, updated_at
+        FROM releases
+        WHERE team_id = $1 AND state = 'in_progress'
+        "#,
+        team_id
+    )
+    .fetch_all(pool)
+    .await
+}
 pub async fn find_by_team(pool: &PgPool, team_id: Uuid) -> Result<Vec<Release>, sqlx::Error> {
     sqlx::query_as!(
         Release,

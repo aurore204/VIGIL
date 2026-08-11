@@ -13,7 +13,7 @@ use crate::models::incident::{
     EditTimelineEntryRequest, EscalateIncidentRequest,
 };
 use crate::models::response::{ApiError, ApiResponse};
-use crate::repositories::user_repository;
+use crate::repositories::{release_repository, user_repository};
 use crate::services::incident_service::{self, IncidentError};
 use crate::services::release_service;
 use crate::state::AppState;
@@ -27,13 +27,35 @@ pub async fn create_incident(
 ) -> impl IntoResponse {
     let title = req.title.clone();
     match incident_service::create_incident(&state.pool, team_id, auth_user.id, req).await {
-        Ok(incident) => (
-            StatusCode::CREATED,
-            Json(serde_json::json!(ApiResponse::success(
-                &format!("Incident '{}' créé avec succès", title),
-                incident
-            ))),
-        ),
+        Ok(incident) => {
+            // Bloque automatiquement les releases in_progress de cette team,
+            // et diffuse release_state_changed pour chacune bloquée.
+            if let Ok(in_progress_releases) =
+                release_repository::find_in_progress_by_team(&state.pool, team_id).await
+            {
+                for release in in_progress_releases {
+                    if let Ok(blocked) =
+                        release_service::block_release_if_needed(&state.pool, release.id, incident.id)
+                            .await
+                    {
+                        if blocked {
+                            state.broadcaster.broadcast(WsEvent::ReleaseStateChanged {
+                                release_id: release.id,
+                                new_state: "blocked".to_string(),
+                            });
+                        }
+                    }
+                }
+            }
+
+            (
+                StatusCode::CREATED,
+                Json(serde_json::json!(ApiResponse::success(
+                    &format!("Incident '{}' créé avec succès", title),
+                    incident
+                ))),
+            )
+        }
         Err(IncidentError::NotMember) => (
             StatusCode::FORBIDDEN,
             Json(serde_json::json!(ApiError::new(
@@ -130,7 +152,6 @@ pub async fn acknowledge_incident(
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path(incident_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    // Récupérer le username pour l'event WS
     let username = user_repository::find_by_id(&state.pool, auth_user.id)
         .await
         .ok()
@@ -140,7 +161,6 @@ pub async fn acknowledge_incident(
 
     match incident_service::acknowledge_incident(&state.pool, incident_id, auth_user.id).await {
         Ok(incident) => {
-            // Diffuser l'événement WebSocket
             state.broadcaster.broadcast(WsEvent::IncidentStateChanged {
                 incident_id,
                 new_state: "acknowledged".to_string(),
@@ -209,13 +229,11 @@ pub async fn escalate_incident(
 
     match incident_service::escalate_incident(&state.pool, incident_id, auth_user.id, req).await {
         Ok(incident) => {
-            // Diffuser incident_state_changed
             state.broadcaster.broadcast(WsEvent::IncidentStateChanged {
                 incident_id,
                 new_state: "escalated".to_string(),
                 by: username.clone(),
             });
-            // Diffuser incident_escalated
             state.broadcaster.broadcast(WsEvent::IncidentEscalated {
                 incident_id,
                 new_severity,
@@ -282,11 +300,7 @@ pub async fn resolve_incident(
 
             // Débloquer automatiquement les releases liées
             if let Ok(linked_releases) =
-                crate::repositories::release_repository::get_releases_by_incident(
-                    &state.pool,
-                    incident_id,
-                )
-                .await
+                release_repository::get_releases_by_incident(&state.pool, incident_id).await
             {
                 for release_id in linked_releases {
                     if let Ok(unblocked) =
@@ -356,7 +370,6 @@ pub async fn assign_responder(
 ) -> impl IntoResponse {
     let assigned_to_id = req.user_id;
 
-    // Récupérer le username de la personne assignée
     let assigned_username = user_repository::find_by_id(&state.pool, assigned_to_id)
         .await
         .ok()
@@ -366,7 +379,6 @@ pub async fn assign_responder(
 
     match incident_service::assign_responder(&state.pool, incident_id, auth_user.id, req).await {
         Ok(incident) => {
-            // Diffuser incident_assigned
             state.broadcaster.broadcast(WsEvent::IncidentAssigned {
                 incident_id,
                 assigned_to: assigned_username,
@@ -418,7 +430,6 @@ pub async fn add_timeline_entry(
 ) -> impl IntoResponse {
     match incident_service::add_timeline_entry(&state.pool, incident_id, auth_user.id, req).await {
         Ok(entry) => {
-            // Diffuser timeline_entry_added
             state.broadcaster.broadcast(WsEvent::TimelineEntryAdded {
                 incident_id,
                 entry: TimelineEntryPayload {
@@ -475,7 +486,6 @@ pub async fn edit_timeline_entry(
     let _ = incident_id;
     match incident_service::edit_timeline_entry(&state.pool, entry_id, auth_user.id, req).await {
         Ok(entry) => {
-            // Diffuser timeline_entry_edited
             state.broadcaster.broadcast(WsEvent::TimelineEntryEdited {
                 incident_id: entry.incident_id,
                 entry_id,
@@ -514,7 +524,6 @@ pub async fn edit_timeline_entry(
     }
 }
 
-// PATCH /incidents/:incident_id
 pub async fn update_incident(
     State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
@@ -560,7 +569,6 @@ pub async fn update_incident(
     }
 }
 
-// DELETE /incidents/:incident_id
 pub async fn cancel_incident(
     State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,

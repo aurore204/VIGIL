@@ -19,7 +19,6 @@ pub enum IncidentError {
     DatabaseError(sqlx::Error),
 }
 
-// Valide qu'une transition d'état est autorisée
 fn validate_state_transition(current: &IncidentState, next: &IncidentState) -> bool {
     matches!(
         (current, next),
@@ -74,7 +73,6 @@ pub async fn create_incident(
     })
 }
 
-// Récupère un incident complet avec sa timeline
 pub async fn get_incident(
     pool: &PgPool,
     incident_id: Uuid,
@@ -85,7 +83,6 @@ pub async fn get_incident(
         .map_err(IncidentError::DatabaseError)?
         .ok_or(IncidentError::IncidentNotFound)?;
 
-    // Vérifier que l'utilisateur est membre de la team
     let is_member = team_repository::is_member(pool, incident.team_id, user_id)
         .await
         .map_err(IncidentError::DatabaseError)?;
@@ -100,7 +97,6 @@ pub async fn get_incident(
         .ok_or(IncidentError::IncidentNotFound)
 }
 
-// Récupère tous les incidents d'une team
 pub async fn get_team_incidents(
     pool: &PgPool,
     team_id: Uuid,
@@ -143,7 +139,6 @@ pub async fn get_team_incidents(
     Ok(responses)
 }
 
-// Acquitte un incident (Responder ou Manager)
 pub async fn acknowledge_incident(
     pool: &PgPool,
     incident_id: Uuid,
@@ -159,7 +154,6 @@ pub async fn acknowledge_incident(
         .map_err(IncidentError::DatabaseError)?
         .ok_or(IncidentError::NotMember)?;
 
-    // Observer ne peut pas acquitter
     if role == TeamRole::Observer {
         return Err(IncidentError::Forbidden);
     }
@@ -178,7 +172,6 @@ pub async fn acknowledge_incident(
         .ok_or(IncidentError::IncidentNotFound)
 }
 
-// Met à jour un incident (Manager uniquement)
 pub async fn update_incident(
     pool: &PgPool,
     incident_id: Uuid,
@@ -215,7 +208,6 @@ pub async fn update_incident(
         .ok_or(IncidentError::IncidentNotFound)
 }
 
-// Annule un incident (Manager uniquement)
 pub async fn cancel_incident(
     pool: &PgPool,
     incident_id: Uuid,
@@ -240,7 +232,6 @@ pub async fn cancel_incident(
         .map_err(IncidentError::DatabaseError)
 }
 
-// Escalade un incident avec nouvelle sévérité (Responder ou Manager)
 pub async fn escalate_incident(
     pool: &PgPool,
     incident_id: Uuid,
@@ -265,7 +256,6 @@ pub async fn escalate_incident(
         return Err(IncidentError::InvalidStateTransition);
     }
 
-    // Mettre à jour état ET sévérité
     incident_repository::update_state(pool, incident_id, IncidentState::Escalated)
         .await
         .map_err(IncidentError::DatabaseError)?;
@@ -280,7 +270,6 @@ pub async fn escalate_incident(
         .ok_or(IncidentError::IncidentNotFound)
 }
 
-// Résout un incident (Manager uniquement)
 pub async fn resolve_incident(
     pool: &PgPool,
     incident_id: Uuid,
@@ -314,7 +303,6 @@ pub async fn resolve_incident(
         .ok_or(IncidentError::IncidentNotFound)
 }
 
-// Assigne un Responder à un incident (Manager uniquement)
 pub async fn assign_responder(
     pool: &PgPool,
     incident_id: Uuid,
@@ -335,13 +323,11 @@ pub async fn assign_responder(
         return Err(IncidentError::Forbidden);
     }
 
-    // Vérifier que le Responder assigné est bien membre de la team
     let assignee_role = team_repository::get_member_role(pool, incident.team_id, req.user_id)
         .await
         .map_err(IncidentError::DatabaseError)?
         .ok_or(IncidentError::NotMember)?;
 
-    // On ne peut assigner qu'un Responder
     if assignee_role != TeamRole::Responder {
         return Err(IncidentError::Forbidden);
     }
@@ -356,7 +342,6 @@ pub async fn assign_responder(
         .ok_or(IncidentError::IncidentNotFound)
 }
 
-// Ajoute une entrée dans la timeline (Responder ou Manager)
 pub async fn add_timeline_entry(
     pool: &PgPool,
     incident_id: Uuid,
@@ -373,7 +358,6 @@ pub async fn add_timeline_entry(
         .map_err(IncidentError::DatabaseError)?
         .ok_or(IncidentError::NotMember)?;
 
-    // Observer ne peut pas ajouter d'entrée
     if role == TeamRole::Observer {
         return Err(IncidentError::Forbidden);
     }
@@ -383,7 +367,6 @@ pub async fn add_timeline_entry(
         .map_err(IncidentError::DatabaseError)
 }
 
-// Édite une entrée de timeline (auteur uniquement)
 pub async fn edit_timeline_entry(
     pool: &PgPool,
     entry_id: Uuid,
@@ -395,7 +378,6 @@ pub async fn edit_timeline_entry(
         .map_err(IncidentError::DatabaseError)?
         .ok_or(IncidentError::IncidentNotFound)?;
 
-    // Seul l'auteur peut éditer son entrée
     if entry.author_id != user_id {
         return Err(IncidentError::Forbidden);
     }

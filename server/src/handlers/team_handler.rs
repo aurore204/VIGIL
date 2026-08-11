@@ -106,14 +106,28 @@ pub async fn join_team(
     Extension(auth_user): Extension<AuthenticatedUser>,
     Json(req): Json<JoinTeamRequest>,
 ) -> impl IntoResponse {
+    let joining_username = user_repository::find_by_id(&state.pool, auth_user.id)
+        .await
+        .ok()
+        .flatten()
+        .map(|u| u.username)
+        .unwrap_or_default();
+
     match team_service::join_team(&state.pool, req, auth_user.id).await {
-        Ok(team) => (
-            StatusCode::OK,
-            Json(serde_json::json!(ApiResponse::success(
-                &format!("Vous avez rejoint la team '{}' avec succès", team.name),
-                team
-            ))),
-        ),
+        Ok(team) => {
+            state.broadcaster.broadcast(WsEvent::MemberJoined {
+                team_id: team.id,
+                member: joining_username,
+                role: "observer".to_string(),
+            });
+            (
+                StatusCode::OK,
+                Json(serde_json::json!(ApiResponse::success(
+                    &format!("Vous avez rejoint la team '{}' avec succès", team.name),
+                    team
+                ))),
+            )
+        }
         Err(TeamError::InvalidInvitationCode) => (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!(ApiError::new(
@@ -182,7 +196,6 @@ pub async fn generate_invitation(
     }
 }
 
-// DELETE /teams/:team_id/leave
 pub async fn leave_team(
     State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
@@ -218,12 +231,20 @@ pub async fn leave_team(
         ),
     }
 }
+
 pub async fn transfer_manager(
     State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path(team_id): Path<Uuid>,
     Json(req): Json<TransferManagerRequest>,
 ) -> impl IntoResponse {
+    let previous_manager_name = user_repository::find_by_id(&state.pool, auth_user.id)
+        .await
+        .ok()
+        .flatten()
+        .map(|u| u.username)
+        .unwrap_or_default();
+
     match team_service::transfer_manager(&state.pool, team_id, auth_user.id, req).await {
         Ok(team) => {
             let new_manager = team
@@ -232,6 +253,13 @@ pub async fn transfer_manager(
                 .find(|m| m.user_id == team.manager_id)
                 .map(|m| m.username.clone())
                 .unwrap_or_default();
+
+            state.broadcaster.broadcast(WsEvent::ManagerTransferred {
+                team_id,
+                new_manager: new_manager.clone(),
+                previous_manager: previous_manager_name,
+            });
+
             (
                 StatusCode::OK,
                 Json(serde_json::json!(ApiResponse::success(
@@ -276,7 +304,6 @@ pub async fn kick_member(
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path((team_id, user_id)): Path<(Uuid, Uuid)>,
 ) -> impl IntoResponse {
-    // Récupérer le username du membre kické
     let kicked_username = user_repository::find_by_id(&state.pool, user_id)
         .await
         .ok()
@@ -335,21 +362,46 @@ pub async fn kick_member(
         ),
     }
 }
+
 pub async fn update_member_role(
     State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path((team_id, user_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<UpdateMemberRoleRequest>,
 ) -> impl IntoResponse {
+    let target_username = user_repository::find_by_id(&state.pool, user_id)
+        .await
+        .ok()
+        .flatten()
+        .map(|u| u.username)
+        .unwrap_or_default();
+
+    let manager_username = user_repository::find_by_id(&state.pool, auth_user.id)
+        .await
+        .ok()
+        .flatten()
+        .map(|u| u.username)
+        .unwrap_or_default();
+
+    let new_role = format!("{:?}", req.role).to_lowercase();
+
     match team_service::update_member_role(&state.pool, team_id, auth_user.id, user_id, req.role)
         .await
     {
-        Ok(_) => (
-            StatusCode::OK,
-            Json(serde_json::json!(ApiResponse::<()>::success_no_data(
-                "Rôle mis à jour avec succès"
-            ))),
-        ),
+        Ok(_) => {
+            state.broadcaster.broadcast(WsEvent::MemberRoleChanged {
+                team_id,
+                member: target_username,
+                new_role,
+                by: manager_username,
+            });
+            (
+                StatusCode::OK,
+                Json(serde_json::json!(ApiResponse::<()>::success_no_data(
+                    "Rôle mis à jour avec succès"
+                ))),
+            )
+        }
         Err(TeamError::NotMember) => (
             StatusCode::FORBIDDEN,
             Json(serde_json::json!(ApiError::new(
@@ -527,7 +579,6 @@ pub async fn unban_member(
     }
 }
 
-// PATCH /teams/:team_id
 pub async fn update_team(
     State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
@@ -566,7 +617,6 @@ pub async fn update_team(
     }
 }
 
-// DELETE /teams/:team_id
 pub async fn delete_team(
     State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
@@ -603,7 +653,6 @@ pub async fn delete_team(
     }
 }
 
-// GET /teams/:team_id/members
 pub async fn get_team_members(
     State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
@@ -634,7 +683,6 @@ pub async fn get_team_members(
     }
 }
 
-// GET /teams/:team_id/bans
 pub async fn get_banned_members(
     State(state): State<AppState>,
     Extension(auth_user): Extension<AuthenticatedUser>,
