@@ -36,7 +36,12 @@
     "cancel": "Cancel",
     "submit": "Save",
     "toastSaved": "Webhook secret configured successfully",
-    "toastError": "Error"
+    "toastError": "Error",
+    "subtitle": "Connect GitHub to this team",
+    "urlSectionLabel": "URL to use on GitHub's side",
+    "copyUrl": "Copy",
+    "toastUrlCopied": "URL copied!",
+    "secretHint": "Choose a random string, keep it secret"
   },
   "listPage": {
     "title": "Automation rules",

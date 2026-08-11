@@ -4,7 +4,7 @@ use uuid::Uuid;
 use crate::state::AppState;
 use crate::websocket::events::WsEvent;
 
-/// Point d'entrée appelé par les webhook handlers dès qu'un événement externe arrive.
+// Point d'entrée appelé par les webhook handlers dès qu'un événement externe arrive.
 pub async fn process_incoming_event(
     state: &AppState,
     team_id: Uuid,
