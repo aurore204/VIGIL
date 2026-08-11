@@ -210,7 +210,7 @@ export default function MessagesPage() {
           </div>
 
           {/* Messages */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {messages.length === 0 ? (
               <div style={{ textAlign: 'center', color: 'oklch(0.52 0.012 260)', fontSize: '13px', marginTop: '40px' }}>
                 {t('conversation.empty')}
@@ -249,6 +249,7 @@ export default function MessagesPage() {
                         maxWidth: '70%', padding: '10px 14px', borderRadius: '12px',
                         background: isMe ? 'oklch(0.50 0.14 255)' : 'oklch(0.235 0.015 260)',
                         color: 'oklch(0.95 0.005 260)', fontSize: '13px', lineHeight: 1.5,
+                        wordBreak: 'break-word', overflowWrap: 'anywhere',
                       }}>
                         {msg.content}
                       </div>
@@ -265,30 +266,38 @@ export default function MessagesPage() {
           </div>
 
           {/* Input */}
-          <form
-            onSubmit={handleSend}
-            style={{
-              padding: '16px 20px', borderTop: '1px solid oklch(0.30 0.02 260)',
-              display: 'flex', gap: '8px',
-              background: 'oklch(0.195 0.015 260)',
-            }}
-          >
-            <input
-              value={newMessage}
-              onChange={e => setNewMessage(e.target.value)}
-              placeholder={t('conversation.placeholder')}
-              maxLength={2000}
-              style={{
-                flex: 1, padding: '10px 14px', borderRadius: '8px',
-                border: '1px solid oklch(0.34 0.02 260)',
-                background: 'oklch(0.16 0.015 260)',
-                color: 'oklch(0.95 0.005 260)', fontSize: '13px', outline: 'none',
-              }}
-            />
-            <Button type="submit" loading={sending} disabled={!newMessage.trim()}>
-              {t('conversation.send')}
-            </Button>
-          </form>
+          <div style={{
+            padding: '12px 20px 16px', borderTop: '1px solid oklch(0.30 0.02 260)',
+            background: 'oklch(0.195 0.015 260)',
+          }}>
+            {newMessage.length > 1800 && (
+              <div style={{
+                fontSize: '11px', marginBottom: '6px', textAlign: 'right',
+                color: newMessage.length >= 2000 ? 'oklch(0.75 0.15 25)' : 'oklch(0.60 0.01 260)',
+                fontWeight: newMessage.length >= 2000 ? 600 : 400,
+              }}>
+                {newMessage.length} / 2000
+                {newMessage.length >= 2000 && ` — ${t('conversation.limitReached')}`}
+              </div>
+            )}
+            <form onSubmit={handleSend} style={{ display: 'flex', gap: '8px' }}>
+              <input
+                value={newMessage}
+                onChange={e => setNewMessage(e.target.value)}
+                placeholder={t('conversation.placeholder')}
+                maxLength={2000}
+                style={{
+                  flex: 1, padding: '10px 14px', borderRadius: '8px',
+                  border: `1px solid ${newMessage.length >= 2000 ? 'oklch(0.55 0.15 25)' : 'oklch(0.34 0.02 260)'}`,
+                  background: 'oklch(0.16 0.015 260)',
+                  color: 'oklch(0.95 0.005 260)', fontSize: '13px', outline: 'none',
+                }}
+              />
+              <Button type="submit" loading={sending} disabled={!newMessage.trim()}>
+                {t('conversation.send')}
+              </Button>
+            </form>
+          </div>
         </div>
       ) : (
         <div style={{

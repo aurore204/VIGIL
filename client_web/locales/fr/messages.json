@@ -11,7 +11,8 @@
     "yesterday": "Hier",
     "placeholder": "Écrire un message...",
     "send": "Envoyer",
-    "selectContact": "Sélectionnez un contact pour commencer"
+    "selectContact": "Sélectionnez un contact pour commencer",
+    "limitReached": "limite atteinte"
   },
   "loading": "Chargement...",
   "toastError": "Erreur"
