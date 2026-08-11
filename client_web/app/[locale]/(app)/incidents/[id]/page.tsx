@@ -12,10 +12,12 @@ import { IncidentStateBadge, SeverityBadge } from '@/components/ui/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { IncidentTimeline } from '@/components/incidents/IncidentTimeline';
 import { IncidentActions } from '@/components/incidents/IncidentActions';
+import { IncidentInfo } from '@/components/incidents/IncidentInfo';
 import { PresenceIndicator } from '@/components/shared/PresenceIndicator';
 import { AssignModal } from '@/components/shared/AssignModal';
 import { EditIncidentModal } from '@/components/incidents/EditIncidentModal';
 import { shadow } from '@/lib/tokens';
+import { Users } from 'lucide-react';
 
 export default function IncidentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -157,22 +159,34 @@ export default function IncidentDetailPage() {
         style={{
           display: 'flex', alignItems: 'center', gap: '6px',
           background: 'none', border: 'none', color: 'oklch(0.60 0.01 260)',
-          cursor: 'pointer', fontSize: '12px', fontWeight: 600, marginBottom: '18px', padding: 0,
+          cursor: 'pointer', fontSize: '12px', fontWeight: 600, marginBottom: '20px', padding: 0,
         }}
       >
         {t('back')}
       </button>
 
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
-          <SeverityBadge severity={incident.severity} />
-          <IncidentStateBadge state={incident.state} />
-        </div>
-        <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(0.95 0.005 260)', marginBottom: '6px' }}>
+      <div style={{ marginBottom: '24px' }}>
+        {team?.name && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            padding: '4px 10px', borderRadius: '14px',
+            background: 'oklch(0.22 0.02 260)', border: '1px solid oklch(0.32 0.02 260)',
+            fontSize: '12px', fontWeight: 600, color: 'oklch(0.75 0.01 260)',
+            marginBottom: '10px',
+          }}>
+            <Users size={12} aria-hidden="true" />
+            {team.name}
+          </div>
+        )}
+        <div style={{
+          fontSize: '26px', fontWeight: 700, color: 'oklch(0.95 0.005 260)',
+          lineHeight: 1.25, marginBottom: '14px',
+        }}>
           {incident.title}
         </div>
-        <div style={{ fontSize: '12.5px', color: 'oklch(0.55 0.01 260)' }}>
-          {team?.name} · {t('createdOn')} {new Date(incident.created_at).toLocaleString(dateLocale, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <SeverityBadge severity={incident.severity} />
+          <IncidentStateBadge state={incident.state} />
         </div>
       </div>
 
@@ -212,21 +226,25 @@ export default function IncidentDetailPage() {
           />
         </div>
 
-        <IncidentActions
-          incident={incident}
-          canAcknowledge={isResponder && incident.state === 'open'}
-          canEscalate={isResponder && incident.state === 'acknowledged'}
-          canResolve={isManager && (incident.state === 'acknowledged' || incident.state === 'escalated')}
-          canAssign={isManager && incident.state !== 'resolved'}
-          canEdit={isManager}
-          canDelete={isManager}
-          onAcknowledge={handleAcknowledge}
-          onEscalate={handleEscalate}
-          onResolve={handleResolve}
-          onAssign={() => setShowAssign(true)}
-          onEdit={() => setShowEdit(true)}
-          onDelete={handleDelete}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <IncidentInfo incident={incident} team={team} />
+
+          <IncidentActions
+            incident={incident}
+            canAcknowledge={isResponder && incident.state === 'open'}
+            canEscalate={isResponder && incident.state === 'acknowledged'}
+            canResolve={isManager && (incident.state === 'acknowledged' || incident.state === 'escalated')}
+            canAssign={isManager && incident.state !== 'resolved'}
+            canEdit={isManager}
+            canDelete={isManager}
+            onAcknowledge={handleAcknowledge}
+            onEscalate={handleEscalate}
+            onResolve={handleResolve}
+            onAssign={() => setShowAssign(true)}
+            onEdit={() => setShowEdit(true)}
+            onDelete={handleDelete}
+          />
+        </div>
       </div>
 
       {showAssign && (
