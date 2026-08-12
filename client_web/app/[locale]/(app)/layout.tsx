@@ -164,17 +164,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         position: 'sticky', top: 0, height: '100vh', overflow: 'hidden',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '11px', overflow: 'hidden' }}>
+          <div style={{
+            width: collapsed ? '36px' : '106px',
+            height: '36px',
+            overflow: 'hidden',
+            flexShrink: 0,
+            transition: 'width 0.2s ease',
+          }}>
             <img
               src="/vigil-logo.png"
               alt="VIGIL"
-              width={32}
-              height={32}
-              style={{ borderRadius: '9px', flexShrink: 0, display: 'block' }}
+              width={106}
+              height={36}
+              style={{
+                borderRadius: '10px',
+                display: 'block',
+                objectFit: 'cover',
+                objectPosition: 'left center',
+                width: '106px',
+                height: '36px',
+                maxWidth: 'none',
+              }}
             />
-            {!collapsed && (
-              <span style={{ fontWeight: 700, fontSize: '17px', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>VIGIL</span>
-            )}
           </div>
           <button
             onClick={toggleCollapsed}
@@ -189,7 +200,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
           {navItems.map(item => {
             const isActive = pathname.startsWith(item.href);
             const label = t(item.labelKey);
@@ -199,8 +210,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 title={collapsed ? label : undefined}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                  padding: collapsed ? '11px' : '11px 13px', borderRadius: '10px',
+                  display: 'flex', alignItems: 'center', gap: '14px',
+                  padding: collapsed ? '13px' : '13px 15px', borderRadius: '10px',
                   justifyContent: collapsed ? 'center' : 'flex-start',
                   fontSize: '13.5px', fontWeight: 500, textDecoration: 'none',
                   background: isActive ? '#182238' : 'transparent',
