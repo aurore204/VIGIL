@@ -204,7 +204,7 @@ export default function DashboardPage() {
 
   return (
     <div style={{
-      padding: '26px 30px', maxWidth: '1200px', fontFamily: 'Inter, sans-serif',
+      padding: '26px 30px',  fontFamily: 'Inter, sans-serif',
       color: COLORS.text, background: COLORS.bg, minHeight: '100vh',
     }}>
       <div style={{
@@ -230,7 +230,7 @@ export default function DashboardPage() {
       </div>
 
       <div style={{
-        display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)', gap: '14px', marginBottom: '16px',
+        display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '14px', marginBottom: '16px',
       }}>
         <div style={cardStyle}>
           <div style={{ height: '3px', background: COLORS.blueStrip }} />
@@ -382,41 +382,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div style={cardStyle}>
-          <div style={{ height: '3px', background: COLORS.blueStrip }} />
-          <div style={{ padding: '17px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>
-              <Activity size={15} color={COLORS.blueText} aria-hidden="true" />
-              {t('activityCard.title')}
-            </div>
-
-            {activityFeed.length === 0 ? (
-              <div style={{ fontSize: '13px', color: COLORS.muted, padding: '12px 0' }}>{t('activityCard.empty')}</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {activityFeed.map(item => (
-                  <div key={`${item.kind}-${item.id}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '9px' }}>
-                    <div style={{
-                      width: '26px', height: '26px', borderRadius: '8px', flexShrink: 0,
-                      background: item.kind === 'incident' ? COLORS.blueBg : COLORS.greenBg,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      {item.kind === 'incident'
-                        ? <AlertTriangle size={13} color={COLORS.blueText} aria-hidden="true" />
-                        : <Rocket size={13} color={COLORS.greenText} aria-hidden="true" />}
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '12px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {item.label}
-                      </div>
-                      <div style={{ fontSize: '11px', color: COLORS.muted, marginTop: '1px' }}>{item.detail}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        
       </div>
 
       <div>
