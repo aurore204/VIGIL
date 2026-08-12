@@ -27,19 +27,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         borderRight: '1px solid oklch(0.34 0.02 260)'
       }}>
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '34px', height: '34px', borderRadius: '8px',
-            background: 'oklch(0.66 0.16 255)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="oklch(0.16 0.015 260)" strokeWidth="2.4"/>
-              <circle cx="12" cy="12" r="2.6" fill="oklch(0.16 0.015 260)"/>
-            </svg>
-          </div>
-          <div style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '0.02em' }}>VIGIL</div>
-        </div>
+        <img
+          src="/vigil-logo.png"
+          alt="VIGIL"
+          width={156}
+          height={56}
+          style={{ borderRadius: '14px', flexShrink: 0, display: 'block' }}
+        />
 
         {/* Tagline */}
         <div>

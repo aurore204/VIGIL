@@ -11,7 +11,7 @@ import type { WsEvent } from '@/lib/types';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import {
   LayoutGrid, AlertTriangle, Rocket, Users, MessageCircle,
-  ChevronLeft, ChevronRight, LogOut, Radar, Zap,
+  ChevronLeft, ChevronRight, LogOut,Zap
 } from 'lucide-react';
 
 const navItems = [
@@ -148,7 +148,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     router.push('/auth/login');
   };
 
-  const sidebarWidth = collapsed ? '76px' : '224px';
+  const sidebarWidth = collapsed ? '80px' : '244px';
 
   return (
     <div style={{
@@ -160,26 +160,38 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }}>
       <div style={{
         background: '#0E1320', borderRight: '1px solid #1A2232',
-        display: 'flex', flexDirection: 'column', padding: '20px 14px',
+        display: 'flex', flexDirection: 'column', padding: '22px 16px',
         position: 'sticky', top: 0, height: '100vh', overflow: 'hidden',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '22px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '9px', overflow: 'hidden' }}>
-            <div style={{
-              width: '28px', height: '28px', borderRadius: '8px', background: '#3D6FD1',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              <Radar size={16} color="#0B0F1A" aria-hidden="true" />
-            </div>
-            {!collapsed && (
-              <span style={{ fontWeight: 700, fontSize: '16px', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>VIGIL</span>
-            )}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+          <div style={{
+            width: collapsed ? '36px' : '106px',
+            height: '36px',
+            overflow: 'hidden',
+            flexShrink: 0,
+            transition: 'width 0.2s ease',
+          }}>
+            <img
+              src="/vigil-logo.png"
+              alt="VIGIL"
+              width={106}
+              height={36}
+              style={{
+                borderRadius: '10px',
+                display: 'block',
+                objectFit: 'cover',
+                objectPosition: 'left center',
+                width: '106px',
+                height: '36px',
+                maxWidth: 'none',
+              }}
+            />
           </div>
           <button
             onClick={toggleCollapsed}
             aria-label={collapsed ? t('expand') : t('collapse')}
             style={{
-              width: '26px', height: '26px', borderRadius: '7px', border: '1px solid #232C3E',
+              width: '28px', height: '28px', borderRadius: '8px', border: '1px solid #232C3E',
               background: '#131A28', color: '#6B7889', display: 'flex', alignItems: 'center',
               justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
             }}
@@ -188,7 +200,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1 }}>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
           {navItems.map(item => {
             const isActive = pathname.startsWith(item.href);
             const label = t(item.labelKey);
@@ -198,16 +210,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 title={collapsed ? label : undefined}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '11px',
-                  padding: collapsed ? '9px' : '9px 10px', borderRadius: '8px',
+                  display: 'flex', alignItems: 'center', gap: '14px',
+                  padding: collapsed ? '13px' : '13px 15px', borderRadius: '10px',
                   justifyContent: collapsed ? 'center' : 'flex-start',
-                  fontSize: '13px', fontWeight: 500, textDecoration: 'none',
+                  fontSize: '13.5px', fontWeight: 500, textDecoration: 'none',
                   background: isActive ? '#182238' : 'transparent',
                   color: isActive ? '#9DC0F0' : '#79879C',
                   whiteSpace: 'nowrap', overflow: 'hidden',
                 }}
               >
-                <item.Icon size={17} style={{ flexShrink: 0 }} aria-hidden="true" />
+                <item.Icon size={18} style={{ flexShrink: 0 }} aria-hidden="true" />
                 {!collapsed && label}
               </Link>
             );
@@ -215,33 +227,33 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div style={{
-          background: '#131A28', border: '1px solid #202A3C', borderRadius: '11px',
-          padding: '11px', display: 'flex', flexDirection: 'column', gap: '9px',
+          background: '#131A28', border: '1px solid #202A3C', borderRadius: '13px',
+          padding: '13px', display: 'flex', flexDirection: 'column', gap: '11px',
         }}>
           <Link
             href="/profile"
             title={collapsed ? 'Profil' : undefined}
             style={{
-              display: 'flex', alignItems: 'center', gap: '9px',
+              display: 'flex', alignItems: 'center', gap: '10px',
               justifyContent: collapsed ? 'center' : 'flex-start',
-              textDecoration: 'none', borderRadius: '8px',
-              padding: '4px', margin: '-4px',
+              textDecoration: 'none', borderRadius: '9px',
+              padding: '5px', margin: '-5px',
               background: pathname.startsWith('/profile') ? '#182238' : 'transparent',
             }}
           >
             <div style={{
-              width: '29px', height: '29px', borderRadius: '50%', background: '#1E3A63',
+              width: '31px', height: '31px', borderRadius: '50%', background: '#1E3A63',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '11px', fontWeight: 600, color: '#8FB3E8', flexShrink: 0,
+              fontSize: '11.5px', fontWeight: 600, color: '#8FB3E8', flexShrink: 0,
             }}>
               {user?.username?.slice(0, 2).toUpperCase()}
             </div>
             {!collapsed && (
               <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                <div style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#EAEEF5' }}>
+                <div style={{ fontSize: '12.5px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#EAEEF5' }}>
                   {user?.username}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10px', color: '#5FAE84' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10.5px', color: '#5FAE84', marginTop: '1px' }}>
                   <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#42B085', flexShrink: 0 }} />
                   {t('connected')}
                 </div>
@@ -249,7 +261,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </Link>
 
-          <div style={{ borderTop: '1px solid #202A3C', paddingTop: '9px' }}>
+          <div style={{ borderTop: '1px solid #202A3C', paddingTop: '11px' }}>
             <LanguageSwitcher collapsed={collapsed} />
           </div>
 
@@ -257,12 +269,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onClick={handleLogout}
             title={collapsed ? t('logout') : undefined}
             style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-              padding: '6px', borderRadius: '7px', border: '1px solid #262F41', background: 'transparent',
-              color: '#8592A6', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+              padding: '7px', borderRadius: '8px', border: '1px solid #262F41', background: 'transparent',
+              color: '#8592A6', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer',
             }}
           >
-            <LogOut size={13} aria-hidden="true" />
+            <LogOut size={14} aria-hidden="true" />
             {!collapsed && t('logout')}
           </button>
         </div>
