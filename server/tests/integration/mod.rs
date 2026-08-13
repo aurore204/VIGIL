@@ -5,3 +5,5 @@ pub mod reaction_integration_test;
 pub mod release_integration_test;
 mod team_integration_test;
 mod websocket_integration_test;
+mod integration_rule_repository;
+mod integration_webhook_repository;
