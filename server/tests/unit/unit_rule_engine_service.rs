@@ -67,7 +67,7 @@ fn find_in_payload_finds_repository_full_name() {
 
     let result = find_in_payload(&payload, "repository");
 
-    assert_eq!(result, Some(&json!("my-org/my-repo")));
+    assert_eq!(result, Some(&json!({"full_name": "my-org/my-repo"})));
 }
 
 #[test]
