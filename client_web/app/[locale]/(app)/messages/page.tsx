@@ -90,6 +90,7 @@ export default function MessagesPage() {
 
   // Chargement de la conversation à chaque changement de contact sélectionné
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement de la conversation au changement de contact, comportement voulu
     if (selectedContact) loadConversation(selectedContact);
   }, [selectedContact]);
 

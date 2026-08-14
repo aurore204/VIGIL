@@ -2,7 +2,7 @@ import type { WsEvent } from "./types";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws";
 
-type WsEventHandler = (event: any) => void;
+type WsEventHandler = (event: WsEvent) => void;
 class VIGILWebSocket {
   private ws: WebSocket | null = null;
   private handlers: Map<string, WsEventHandler[]> = new Map();

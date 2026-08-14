@@ -40,6 +40,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("vigil_sidebar_collapsed");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lecture ponctuelle de localStorage au montage, pas de boucle de rendu possible
     if (stored === "true") setCollapsed(true);
   }, []);
 
