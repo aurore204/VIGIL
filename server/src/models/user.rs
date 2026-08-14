@@ -42,7 +42,6 @@ pub struct UserPublic {
     pub created_at: DateTime<Utc>,
 }
 
-
 #[derive(Debug, Deserialize)]
 pub struct UpdateProfileRequest {
     pub username: Option<String>,

@@ -130,12 +130,24 @@ async fn test_find_by_team_returns_all_team_rules() {
     let (team_id, user_id) = create_valid_team(&server, &uuid::Uuid::new_v4().to_string()).await;
 
     rule_repository::create_rule(
-        &pool, team_id, user_id, "Règle 1", true, sample_trigger(), sample_reaction(),
+        &pool,
+        team_id,
+        user_id,
+        "Règle 1",
+        true,
+        sample_trigger(),
+        sample_reaction(),
     )
     .await
     .unwrap();
     rule_repository::create_rule(
-        &pool, team_id, user_id, "Règle 2", true, sample_trigger(), sample_reaction(),
+        &pool,
+        team_id,
+        user_id,
+        "Règle 2",
+        true,
+        sample_trigger(),
+        sample_reaction(),
     )
     .await
     .unwrap();
@@ -163,7 +175,13 @@ async fn test_find_matching_rules_matches_service_and_event() {
     let (team_id, user_id) = create_valid_team(&server, &uuid::Uuid::new_v4().to_string()).await;
 
     rule_repository::create_rule(
-        &pool, team_id, user_id, "Règle GitHub", true, sample_trigger(), sample_reaction(),
+        &pool,
+        team_id,
+        user_id,
+        "Règle GitHub",
+        true,
+        sample_trigger(),
+        sample_reaction(),
     )
     .await
     .unwrap();
@@ -182,7 +200,13 @@ async fn test_find_matching_rules_ignores_disabled_rules() {
     let (team_id, user_id) = create_valid_team(&server, &uuid::Uuid::new_v4().to_string()).await;
 
     rule_repository::create_rule(
-        &pool, team_id, user_id, "Règle désactivée", false, sample_trigger(), sample_reaction(),
+        &pool,
+        team_id,
+        user_id,
+        "Règle désactivée",
+        false,
+        sample_trigger(),
+        sample_reaction(),
     )
     .await
     .unwrap();
@@ -201,7 +225,11 @@ async fn test_find_matching_rules_ignores_different_service() {
     let (team_id, user_id) = create_valid_team(&server, &uuid::Uuid::new_v4().to_string()).await;
 
     rule_repository::create_rule(
-        &pool, team_id, user_id, "Règle GitLab", true,
+        &pool,
+        team_id,
+        user_id,
+        "Règle GitLab",
+        true,
         json!({"service": "gitlab", "event": "pipeline"}),
         sample_reaction(),
     )
@@ -222,7 +250,13 @@ async fn test_log_execution_success_does_not_error() {
     let (team_id, user_id) = create_valid_team(&server, &uuid::Uuid::new_v4().to_string()).await;
 
     let rule = rule_repository::create_rule(
-        &pool, team_id, user_id, "Règle avec log", true, sample_trigger(), sample_reaction(),
+        &pool,
+        team_id,
+        user_id,
+        "Règle avec log",
+        true,
+        sample_trigger(),
+        sample_reaction(),
     )
     .await
     .unwrap();
@@ -246,7 +280,13 @@ async fn test_log_execution_failure_does_not_error() {
     let (team_id, user_id) = create_valid_team(&server, &uuid::Uuid::new_v4().to_string()).await;
 
     let rule = rule_repository::create_rule(
-        &pool, team_id, user_id, "Règle avec échec", true, sample_trigger(), sample_reaction(),
+        &pool,
+        team_id,
+        user_id,
+        "Règle avec échec",
+        true,
+        sample_trigger(),
+        sample_reaction(),
     )
     .await
     .unwrap();

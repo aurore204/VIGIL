@@ -21,20 +21,34 @@ pub async fn github_webhook(
 ) -> impl IntoResponse {
     //  Récupère le secret configuré pour cette team
     let stored_secret =
-    match crate::repositories::webhook_repository::get_secret(&state.pool, team_id, "github")
-        .await
-    {
-        Ok(Some(s)) => s,
-        Ok(None) => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(serde_json::json!(ApiError::new(
-                    "Aucun webhook GitHub configuré pour cette team",
-                    "WEBHOOK_NOT_CONFIGURED"
-                ))),
-            );
-        }
-        Err(_) => {
+        match crate::repositories::webhook_repository::get_secret(&state.pool, team_id, "github")
+            .await
+        {
+            Ok(Some(s)) => s,
+            Ok(None) => {
+                return (
+                    StatusCode::NOT_FOUND,
+                    Json(serde_json::json!(ApiError::new(
+                        "Aucun webhook GitHub configuré pour cette team",
+                        "WEBHOOK_NOT_CONFIGURED"
+                    ))),
+                );
+            }
+            Err(_) => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!(ApiError::new(
+                        "Erreur interne",
+                        "INTERNAL_ERROR"
+                    ))),
+                );
+            }
+        };
+
+    let (nonce_b64, ciphertext_b64) = match stored_secret.split_once(':') {
+        Some(pair) => pair,
+        None => {
+            tracing::error!("Format de secret invalide en base pour team_id={}", team_id);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!(ApiError::new(
@@ -45,87 +59,79 @@ pub async fn github_webhook(
         }
     };
 
-let (nonce_b64, ciphertext_b64) = match stored_secret.split_once(':') {
-    Some(pair) => pair,
-    None => {
-        tracing::error!("Format de secret invalide en base pour team_id={}", team_id);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!(ApiError::new(
-                "Erreur interne",
-                "INTERNAL_ERROR"
-            ))),
-        );
-    }
-};
+    let key = match crate::services::crypto_service::load_encryption_key() {
+        Ok(k) => k,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!(ApiError::new(
+                    "Erreur de configuration du chiffrement",
+                    "ENCRYPTION_CONFIG_ERROR"
+                ))),
+            );
+        }
+    };
 
-let key = match crate::services::crypto_service::load_encryption_key() {
-    Ok(k) => k,
-    Err(_) => {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!(ApiError::new(
-                "Erreur de configuration du chiffrement",
-                "ENCRYPTION_CONFIG_ERROR"
-            ))),
-        );
-    }
-};
+    let secret = match crate::services::crypto_service::decrypt(ciphertext_b64, nonce_b64, &key) {
+        Ok(s) => s,
+        Err(_) => {
+            tracing::error!(
+                "Échec du déchiffrement du secret webhook pour team_id={}",
+                team_id
+            );
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!(ApiError::new(
+                    "Erreur interne",
+                    "INTERNAL_ERROR"
+                ))),
+            );
+        }
+    };
 
-let secret = match crate::services::crypto_service::decrypt(ciphertext_b64, nonce_b64, &key) {
-    Ok(s) => s,
-    Err(_) => {
-        tracing::error!("Échec du déchiffrement du secret webhook pour team_id={}", team_id);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!(ApiError::new(
-                "Erreur interne",
-                "INTERNAL_ERROR"
-            ))),
-        );
-    }
-};
+    let (nonce_b64, ciphertext_b64) = match stored_secret.split_once(':') {
+        Some(pair) => pair,
+        None => {
+            tracing::error!("Format de secret invalide en base pour team_id={}", team_id);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!(ApiError::new(
+                    "Erreur interne",
+                    "INTERNAL_ERROR"
+                ))),
+            );
+        }
+    };
 
-let (nonce_b64, ciphertext_b64) = match stored_secret.split_once(':') {
-    Some(pair) => pair,
-    None => {
-        tracing::error!("Format de secret invalide en base pour team_id={}", team_id);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!(ApiError::new(
-                "Erreur interne",
-                "INTERNAL_ERROR"
-            ))),
-        );
-    }
-};
+    let key = match crate::services::crypto_service::load_encryption_key() {
+        Ok(k) => k,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!(ApiError::new(
+                    "Erreur de configuration du chiffrement",
+                    "ENCRYPTION_CONFIG_ERROR"
+                ))),
+            );
+        }
+    };
 
-let key = match crate::services::crypto_service::load_encryption_key() {
-    Ok(k) => k,
-    Err(_) => {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!(ApiError::new(
-                "Erreur de configuration du chiffrement",
-                "ENCRYPTION_CONFIG_ERROR"
-            ))),
-        );
-    }
-};
-
-let secret = match crate::services::crypto_service::decrypt(ciphertext_b64, nonce_b64, &key) {
-    Ok(s) => s,
-    Err(_) => {
-        tracing::error!("Échec du déchiffrement du secret webhook pour team_id={}", team_id);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!(ApiError::new(
-                "Erreur interne",
-                "INTERNAL_ERROR"
-            ))),
-        );
-    }
-};
+    let secret = match crate::services::crypto_service::decrypt(ciphertext_b64, nonce_b64, &key) {
+        Ok(s) => s,
+        Err(_) => {
+            tracing::error!(
+                "Échec du déchiffrement du secret webhook pour team_id={}",
+                team_id
+            );
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!(ApiError::new(
+                    "Erreur interne",
+                    "INTERNAL_ERROR"
+                ))),
+            );
+        }
+    };
 
     //  Vérifie la signature HMAC AVANT tout traitement
     let signature = match headers

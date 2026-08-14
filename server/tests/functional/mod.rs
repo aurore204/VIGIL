@@ -1,11 +1,11 @@
 mod auth_functional_test;
+mod functional_about_handler;
+mod functional_rule_handler;
+mod functional_token_handler;
+mod functional_webhook_handler;
 mod incident_functional_test;
 pub mod message_functional_test;
 pub mod reaction_functional_test;
 pub mod release_functional_test;
 mod team_functional_test;
 mod websocket_functional_test;
-mod functional_webhook_handler;
-mod functional_rule_handler;
-mod functional_token_handler;
-mod functional_about_handler;

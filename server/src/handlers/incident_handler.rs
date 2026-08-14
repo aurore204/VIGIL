@@ -34,9 +34,12 @@ pub async fn create_incident(
                 release_repository::find_in_progress_by_team(&state.pool, team_id).await
             {
                 for release in in_progress_releases {
-                    if let Ok(blocked) =
-                        release_service::block_release_if_needed(&state.pool, release.id, incident.id)
-                            .await
+                    if let Ok(blocked) = release_service::block_release_if_needed(
+                        &state.pool,
+                        release.id,
+                        incident.id,
+                    )
+                    .await
                     {
                         if blocked {
                             state.broadcaster.broadcast(WsEvent::ReleaseStateChanged {

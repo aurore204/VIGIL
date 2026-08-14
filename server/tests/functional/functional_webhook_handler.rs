@@ -44,11 +44,7 @@ fn ensure_encryption_key() {
     }
 }
 
-async fn create_team_with_webhook_secret(
-    server: &TestServer,
-    token: &str,
-    secret: &str,
-) -> String {
+async fn create_team_with_webhook_secret(server: &TestServer, token: &str, secret: &str) -> String {
     let (name, value) = auth_header(token);
     let create_response = server
         .post("/teams")

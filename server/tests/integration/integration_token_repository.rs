@@ -90,12 +90,26 @@ async fn test_upsert_token_overwrites_existing_token() {
     let server = setup_server(pool.clone()).await;
     let user_id = create_valid_user(&server, &uuid::Uuid::new_v4().to_string()).await;
 
-    token_repository::upsert_token(&pool, user_id, "github", "oauth2", "ancien-token", "ancien-nonce")
-        .await
-        .unwrap();
-    token_repository::upsert_token(&pool, user_id, "github", "oauth2", "nouveau-token", "nouveau-nonce")
-        .await
-        .unwrap();
+    token_repository::upsert_token(
+        &pool,
+        user_id,
+        "github",
+        "oauth2",
+        "ancien-token",
+        "ancien-nonce",
+    )
+    .await
+    .unwrap();
+    token_repository::upsert_token(
+        &pool,
+        user_id,
+        "github",
+        "oauth2",
+        "nouveau-token",
+        "nouveau-nonce",
+    )
+    .await
+    .unwrap();
 
     let result = token_repository::find_token(&pool, user_id, "github")
         .await
@@ -112,9 +126,16 @@ async fn test_find_token_is_scoped_per_service() {
     let server = setup_server(pool.clone()).await;
     let user_id = create_valid_user(&server, &uuid::Uuid::new_v4().to_string()).await;
 
-    token_repository::upsert_token(&pool, user_id, "github", "oauth2", "token-github", "nonce-github")
-        .await
-        .unwrap();
+    token_repository::upsert_token(
+        &pool,
+        user_id,
+        "github",
+        "oauth2",
+        "token-github",
+        "nonce-github",
+    )
+    .await
+    .unwrap();
 
     let gitlab_result = token_repository::find_token(&pool, user_id, "gitlab")
         .await

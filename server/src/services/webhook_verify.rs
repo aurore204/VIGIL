@@ -28,7 +28,7 @@ pub fn verify_github_signature(
     let expected_bytes =
         hex::decode(expected_hex).map_err(|_| VerifyError::InvalidSignatureFormat)?;
 
-    // verify_slice fait une comparaison en temps constant 
+    // verify_slice fait une comparaison en temps constant
     mac.verify_slice(&expected_bytes)
         .map_err(|_| VerifyError::SignatureMismatch)
 }

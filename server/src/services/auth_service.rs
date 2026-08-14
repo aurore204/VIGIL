@@ -8,15 +8,17 @@ use sqlx::PgPool;
 use std::env;
 use uuid::Uuid;
 
-use crate::models::user::{AuthResponse, LoginRequest, RegisterRequest, UpdateProfileRequest, UserPublic};
+use crate::models::user::{
+    AuthResponse, LoginRequest, RegisterRequest, UpdateProfileRequest, UserPublic,
+};
 use crate::repositories::user_repository;
 
 // Structure des claims du token JWT
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String, 
-    pub iat: i64,    // date d'émission du token
-    pub exp: usize,  
+    pub sub: String,
+    pub iat: i64, // date d'émission du token
+    pub exp: usize,
 }
 
 // Erreurs possibles du service auth

@@ -1,6 +1,6 @@
-use vigil_server::services::webhook_verify::{verify_github_signature, VerifyError};
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
+use vigil_server::services::webhook_verify::{verify_github_signature, VerifyError};
 
 type HmacSha256 = Hmac<Sha256>;
 

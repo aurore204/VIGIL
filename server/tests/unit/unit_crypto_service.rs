@@ -1,4 +1,4 @@
-use vigil_server::services::crypto_service::{encrypt, decrypt};
+use vigil_server::services::crypto_service::{decrypt, encrypt};
 
 #[test]
 fn encrypt_then_decrypt_returns_original_plaintext() {
@@ -6,7 +6,8 @@ fn encrypt_then_decrypt_returns_original_plaintext() {
     let plaintext = "mon-secret-webhook-token";
 
     let (ciphertext_b64, nonce_b64) = encrypt(plaintext, &key).expect("l'encryption doit réussir");
-    let decrypted = decrypt(&ciphertext_b64, &nonce_b64, &key).expect("le déchiffrement doit réussir");
+    let decrypted =
+        decrypt(&ciphertext_b64, &nonce_b64, &key).expect("le déchiffrement doit réussir");
 
     assert_eq!(decrypted, plaintext);
 }

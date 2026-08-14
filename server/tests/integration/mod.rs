@@ -1,11 +1,14 @@
 mod auth_integration_test;
 mod incident_integration_test;
+mod integration_rule_repository;
+mod integration_team_repository_gaps;
+mod integration_team_service_gaps;
+mod integration_token_repository;
+mod integration_token_service;
+mod integration_user_repository;
+mod integration_webhook_repository;
 pub mod message_integration_test;
 pub mod reaction_integration_test;
 pub mod release_integration_test;
 mod team_integration_test;
 mod websocket_integration_test;
-mod integration_rule_repository;
-mod integration_webhook_repository;
-mod integration_token_repository;
-mod integration_token_service;
