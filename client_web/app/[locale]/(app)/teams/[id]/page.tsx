@@ -61,6 +61,7 @@ export default function TeamDetailPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement initial des données de la team au montage
     load();
     api
       .getOnlineUsers()
