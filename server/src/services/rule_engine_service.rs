@@ -75,7 +75,7 @@ pub async fn process_incoming_event(
 }
 
 // Vérifie que les filtres définis dans le trigger de la règle correspondent au payload reçu.
-fn filters_match(trigger: &Value, payload: &Value) -> bool {
+pub fn filters_match(trigger: &Value, payload: &Value) -> bool {
     let filters = match trigger.get("filters").and_then(|f| f.as_object()) {
         Some(f) => f,
         None => return true,
@@ -92,7 +92,7 @@ fn filters_match(trigger: &Value, payload: &Value) -> bool {
 }
 
 // Cherche une clé dans le payload GitHub, en tentant plusieurs emplacements usuels
-fn find_in_payload<'a>(payload: &'a Value, key: &str) -> Option<&'a Value> {
+pub fn find_in_payload<'a>(payload: &'a Value, key: &str) -> Option<&'a Value> {
     if let Some(v) = payload.get(key) {
         return Some(v);
     }
@@ -189,7 +189,7 @@ async fn execute_reaction(
 }
 
 // Remplace les placeholders dans un template par les valeurs du payload.
-fn interpolate(template: &str, payload: &Value) -> String {
+pub fn interpolate(template: &str, payload: &Value) -> String {
     let mut result = template.to_string();
     if let Some(repo_name) = payload
         .get("repository")

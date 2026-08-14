@@ -4,4 +4,8 @@ pub mod message_unit_test;
 pub mod reaction_unit_test;
 pub mod release_unit_test;
 mod team_unit_test;
+mod unit_auth_service;
+mod unit_crypto_service;
+mod unit_rule_engine_service;
+mod unit_webhook_verify;
 mod websocket_unit_test;
