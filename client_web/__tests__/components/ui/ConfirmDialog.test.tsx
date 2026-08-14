@@ -20,7 +20,7 @@ describe('ConfirmDialog', () => {
 
   it('affiche le titre et la description', () => {
     render(<ConfirmDialog {...defaultProps} />);
-    expect(screen.getByText('Confirmer')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Confirmer' })).toBeInTheDocument();
     expect(screen.getByText('Êtes-vous sûr ?')).toBeInTheDocument();
   });
 
