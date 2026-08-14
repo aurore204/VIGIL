@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Button } from './Button';
+import { useEffect, useRef } from "react";
+import { Button } from "./Button";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -32,10 +32,10 @@ export function ConfirmDialog({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) onCancel();
+      if (e.key === "Escape" && isOpen) onCancel();
     };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onCancel]);
 
   if (!isOpen) return null;
@@ -47,38 +47,71 @@ export function ConfirmDialog({
       aria-labelledby="dialog-title"
       aria-describedby="dialog-description"
       style={{
-        position: 'fixed', inset: 0, zIndex: 200,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
       <div
         onClick={onCancel}
         aria-hidden="true"
-        style={{ position: 'absolute', inset: 0, background: 'oklch(0 0 0 / 0.65)' }}
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "oklch(0 0 0 / 0.65)",
+        }}
       />
-      <div style={{
-        position: 'relative',
-        background: 'oklch(0.195 0.015 260)',
-        border: '1px solid oklch(0.34 0.02 260)',
-        borderRadius: '14px', padding: '24px',
-        width: '100%', maxWidth: '400px',
-        boxShadow: '0 8px 40px oklch(0 0 0 / 0.5)',
-      }}>
+      <div
+        style={{
+          position: "relative",
+          background: "oklch(0.195 0.015 260)",
+          border: "1px solid oklch(0.34 0.02 260)",
+          borderRadius: "14px",
+          padding: "24px",
+          width: "100%",
+          maxWidth: "400px",
+          boxShadow: "0 8px 40px oklch(0 0 0 / 0.5)",
+        }}
+      >
         <h2
           id="dialog-title"
-          style={{ fontSize: '16px', fontWeight: 700, color: 'oklch(0.95 0.005 260)', margin: '0 0 8px' }}
+          style={{
+            fontSize: "16px",
+            fontWeight: 700,
+            color: "oklch(0.95 0.005 260)",
+            margin: "0 0 8px",
+          }}
         >
           {title}
         </h2>
         <p
           id="dialog-description"
-          style={{ fontSize: '13px', color: 'oklch(0.72 0.01 260)', margin: children ? '0 0 12px' : '0 0 20px' }}
+          style={{
+            fontSize: "13px",
+            color: "oklch(0.72 0.01 260)",
+            margin: children ? "0 0 12px" : "0 0 20px",
+          }}
         >
           {description}
         </p>
         {children}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: children ? '4px' : 0 }}>
-          <Button ref={cancelRef} variant="secondary" onClick={onCancel} disabled={loading}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "8px",
+            marginTop: children ? "4px" : 0,
+          }}
+        >
+          <Button
+            ref={cancelRef}
+            variant="secondary"
+            onClick={onCancel}
+            disabled={loading}
+          >
             {cancelLabel}
           </Button>
           <Button variant="danger" onClick={onConfirm} loading={loading}>

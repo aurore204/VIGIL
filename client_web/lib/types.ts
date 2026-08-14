@@ -13,7 +13,7 @@ export interface AuthResponse {
 }
 
 // Teams
-export type TeamRole = 'observer' | 'responder' | 'manager';
+export type TeamRole = "observer" | "responder" | "manager";
 
 export interface TeamMember {
   user_id: string;
@@ -32,8 +32,6 @@ export interface Team {
   created_at: string;
 }
 
-
-
 export interface TeamInvitation {
   code: string;
 }
@@ -50,8 +48,8 @@ export interface BannedMember {
 }
 
 // Incidents
-export type IncidentState = 'open' | 'acknowledged' | 'escalated' | 'resolved';
-export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type IncidentState = "open" | "acknowledged" | "escalated" | "resolved";
+export type IncidentSeverity = "low" | "medium" | "high" | "critical";
 
 export interface TimelineReaction {
   emoji: string;
@@ -86,8 +84,9 @@ export interface Incident {
 }
 
 // Releases
-export type ReleaseState = 'created' | 'in_progress' | 'completed' | 'cancelled' | 'blocked';
-export type StepState = 'pending' | 'in_progress' | 'completed' | 'cancelled';
+export type ReleaseState =
+  "created" | "in_progress" | "completed" | "cancelled" | "blocked";
+export type StepState = "pending" | "in_progress" | "completed" | "cancelled";
 
 export interface ReleaseStep {
   id: string;
@@ -128,27 +127,27 @@ export interface PrivateMessage {
 
 // WebSocket events
 export interface WsIncidentStateChanged {
-  type: 'incident_state_changed';
+  type: "incident_state_changed";
   incident_id: string;
   new_state: IncidentState;
   by: string;
 }
 
 export interface WsIncidentEscalated {
-  type: 'incident_escalated';
+  type: "incident_escalated";
   incident_id: string;
   new_severity: IncidentSeverity;
   by: string;
 }
 
 export interface WsIncidentAssigned {
-  type: 'incident_assigned';
+  type: "incident_assigned";
   incident_id: string;
   assigned_to: string;
 }
 
 export interface WsTimelineEntryAdded {
-  type: 'timeline_entry_added';
+  type: "timeline_entry_added";
   incident_id: string;
   entry: {
     content: string;
@@ -158,7 +157,7 @@ export interface WsTimelineEntryAdded {
 }
 
 export interface WsTimelineEntryEdited {
-  type: 'timeline_entry_edited';
+  type: "timeline_entry_edited";
   incident_id: string;
   entry_id: string;
   new_content: string;
@@ -166,34 +165,34 @@ export interface WsTimelineEntryEdited {
 }
 
 export interface WsPresenceUpdate {
-  type: 'presence_update';
+  type: "presence_update";
   resource_id: string;
   resource_type: string;
   watchers: string[];
 }
 
 export interface WsReleaseStateChanged {
-  type: 'release_state_changed';
+  type: "release_state_changed";
   release_id: string;
   new_state: ReleaseState;
 }
 
 export interface WsReleaseStepValidated {
-  type: 'release_step_validated';
+  type: "release_step_validated";
   release_id: string;
   step: string;
   by: string;
 }
 
 export interface WsMemberKicked {
-  type: 'member_kicked';
+  type: "member_kicked";
   team_id: string;
   member: string;
   by: string;
 }
 
 export interface WsMemberBanned {
-  type: 'member_banned';
+  type: "member_banned";
   team_id: string;
   member: string;
   until: string | null;
@@ -201,21 +200,21 @@ export interface WsMemberBanned {
 }
 
 export interface WsMemberUnbanned {
-  type: 'member_unbanned';
+  type: "member_unbanned";
   team_id: string;
   member: string;
   by: string;
 }
 
 export interface WsMemberJoined {
-  type: 'member_joined';
+  type: "member_joined";
   team_id: string;
   member: string;
   role: TeamRole;
 }
 
 export interface WsMemberRoleChanged {
-  type: 'member_role_changed';
+  type: "member_role_changed";
   team_id: string;
   member: string;
   new_role: TeamRole;
@@ -223,13 +222,13 @@ export interface WsMemberRoleChanged {
 }
 
 export interface WsManagerTransferred {
-  type: 'manager_transferred';
+  type: "manager_transferred";
   team_id: string;
   new_manager: string;
   previous_manager: string;
 }
 export interface WsPrivateMessageReceived {
-  type: 'private_message_received';
+  type: "private_message_received";
   from: string;
   to: string;
   content: string;
@@ -237,7 +236,7 @@ export interface WsPrivateMessageReceived {
 }
 
 export interface WsReactionAdded {
-  type: 'reaction_added';
+  type: "reaction_added";
   incident_id: string;
   entry_id: string;
   emoji: string;
@@ -245,7 +244,7 @@ export interface WsReactionAdded {
 }
 
 export interface WsReactionRemoved {
-  type: 'reaction_removed';
+  type: "reaction_removed";
   incident_id: string;
   entry_id: string;
   emoji: string;
@@ -253,19 +252,19 @@ export interface WsReactionRemoved {
 }
 
 export interface WsPresenceOnline {
-  type: 'presence_online';
+  type: "presence_online";
   usernames: string[];
 }
 
 export interface WsRuleTriggered {
-  type: 'rule_triggered';
+  type: "rule_triggered";
   rule_name: string;
   result: string;
   incident_id: string | null;
 }
 
 export interface WsRuleFailed {
-  type: 'rule_failed';
+  type: "rule_failed";
   rule_name: string;
   error: string;
 }
@@ -277,7 +276,7 @@ export type WsEvent =
   | WsTimelineEntryAdded
   | WsTimelineEntryEdited
   | WsPresenceUpdate
-  | WsPresenceOnline 
+  | WsPresenceOnline
   | WsReleaseStateChanged
   | WsReleaseStepValidated
   | WsMemberKicked
@@ -304,7 +303,6 @@ export interface ApiError {
   error: string;
   code: string;
 }
-
 
 export interface Rule {
   id: string;
