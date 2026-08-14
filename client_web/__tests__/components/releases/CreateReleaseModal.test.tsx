@@ -3,8 +3,14 @@ import userEvent from '@testing-library/user-event';
 import { CreateReleaseModal } from '@/components/releases/CreateReleaseModal';
 import type { Team } from '@/lib/types';
 
-jest.mock('@/components/shared/Modal');
-
+jest.mock('@/components/shared/Modal', () => ({
+  Modal: ({ title, children }: { title: string; children: React.ReactNode; onClose: () => void }) => (
+    <div role="dialog">
+      <h2>{title}</h2>
+      {children}
+    </div>
+  ),
+}));
 const teams: Team[] = [
   { id: 'team-1', name: 'Team Alpha', description: null, manager_id: 'u1', members: [], created_at: '2026-01-01T00:00:00Z' },
 ];

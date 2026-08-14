@@ -14,19 +14,19 @@ describe('AssignModal', () => {
     expect(screen.getByText('ana')).toBeInTheDocument();
   });
 
-  it('le bouton "Assigner" est désactivé tant qu\'aucun responder n\'est sélectionné', () => {
+  it('le bouton de soumission est désactivé tant qu\'aucun responder n\'est sélectionné', () => {
     render(<AssignModal responders={mockResponders} onClose={jest.fn()} onAssign={jest.fn()} />);
-    expect(screen.getByText('Assigner').closest('button')).toBeDisabled();
+    expect(screen.getByText('submit').closest('button')).toBeDisabled();
   });
 
-  it('sélectionne un responder au clic, puis appelle onAssign avec son user_id au clic sur Assigner', async () => {
+  it('sélectionne un responder au clic, puis appelle onAssign avec son user_id au clic sur submit', async () => {
     const handleAssign = jest.fn().mockResolvedValue(undefined);
     render(<AssignModal responders={mockResponders} onClose={jest.fn()} onAssign={handleAssign} />);
 
     fireEvent.click(screen.getByText('aurore'));
-    expect(screen.getByText('Assigner').closest('button')).toBeEnabled();
+    expect(screen.getByText('submit').closest('button')).toBeEnabled();
 
-    fireEvent.click(screen.getByText('Assigner'));
+    fireEvent.click(screen.getByText('submit'));
 
     await waitFor(() => expect(handleAssign).toHaveBeenCalledWith('user-1'));
   });
@@ -37,21 +37,21 @@ describe('AssignModal', () => {
 
     fireEvent.click(screen.getByText('aurore'));
     fireEvent.click(screen.getByText('ana'));
-    fireEvent.click(screen.getByText('Assigner'));
+    fireEvent.click(screen.getByText('submit'));
 
     await waitFor(() => expect(handleAssign).toHaveBeenCalledWith('user-2'));
     expect(handleAssign).not.toHaveBeenCalledWith('user-1');
   });
 
-  it('appelle onClose au clic sur Annuler', () => {
+  it('appelle onClose au clic sur cancel', () => {
     const handleClose = jest.fn();
     render(<AssignModal responders={mockResponders} onClose={handleClose} onAssign={jest.fn()} />);
-    fireEvent.click(screen.getByText('Annuler'));
+    fireEvent.click(screen.getByText('cancel'));
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
 
   it('affiche un message si aucun responder n\'est disponible', () => {
     render(<AssignModal responders={[]} onClose={jest.fn()} onAssign={jest.fn()} />);
-    expect(screen.getByText('Aucun Responder dans cette team')).toBeInTheDocument();
+    expect(screen.getByText('empty')).toBeInTheDocument();
   });
 });

@@ -4,7 +4,7 @@ import { IncidentTimeline } from '@/components/incidents/IncidentTimeline';
 import type { TimelineEntry } from '@/lib/types';
 
 const makeEntry = (overrides: Partial<TimelineEntry> = {}): TimelineEntry => ({
-  id: 'entry-1', author_id: 'user-1', author_username: 'alice',
+  id: 'entry-1', incident_id: 'inc-1', author_id: 'user-1', author_username: 'alice',
   content: 'Premier message', created_at: '2026-01-01T10:00:00Z',
   edited_at: null, reactions: [],
   ...overrides,
@@ -51,13 +51,13 @@ describe('IncidentTimeline', () => {
     expect(screen.queryByPlaceholderText('placeholder')).not.toBeInTheDocument();
   });
 
-  it('affiche le bouton edit uniquement pour l\'auteur du message', () => {
+  it("affiche le bouton edit uniquement pour l'auteur du message", () => {
     render(<IncidentTimeline {...baseProps} timeline={[makeEntry({ author_id: 'user-1' })]} currentUserId="user-1" />);
 
     expect(screen.getByText('editButton')).toBeInTheDocument();
   });
 
-  it('n\'affiche pas le bouton edit pour un autre auteur', () => {
+  it("n'affiche pas le bouton edit pour un autre auteur", () => {
     render(<IncidentTimeline {...baseProps} timeline={[makeEntry({ author_id: 'other-user' })]} currentUserId="user-1" />);
 
     expect(screen.queryByText('editButton')).not.toBeInTheDocument();

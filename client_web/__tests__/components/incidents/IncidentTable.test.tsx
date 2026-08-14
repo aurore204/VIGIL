@@ -12,14 +12,19 @@ jest.mock('@/components/ui/Badge', () => ({
 }));
 
 const makeIncident = (overrides: Partial<Incident> = {}): Incident => ({
-  id: 'inc-1', team_id: 'team-1', title: 'Panne serveur', description: null,
-  state: 'open', severity: 'critical', assigned_to: null,
-  created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z', resolved_at: null,
+  id: 'inc-1', team_id: 'team-1', created_by: 'user-1', assigned_to: null,
+  title: 'Panne serveur', description: null, state: 'open', severity: 'critical',
+  timeline: [], resolved_at: null,
+  created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
   ...overrides,
 });
 
 const teams: Team[] = [
-  { id: 'team-1', name: 'Team Alpha', description: null, manager_id: 'u1', members: [{ user_id: 'u1', username: 'alice', email: 'a@test.com', role: 'manager', joined_at: '2026-01-01T00:00:00Z' }], created_at: '2026-01-01T00:00:00Z' },
+  {
+    id: 'team-1', name: 'Team Alpha', description: null, manager_id: 'u1',
+    members: [{ user_id: 'u1', username: 'alice', email: 'a@test.com', role: 'manager', joined_at: '2026-01-01T00:00:00Z' }],
+    created_at: '2026-01-01T00:00:00Z',
+  },
 ];
 
 describe('IncidentTable', () => {
@@ -51,5 +56,12 @@ describe('IncidentTable', () => {
     render(<IncidentTable incidents={[makeIncident({ assigned_to: 'u1' })]} teams={teams} />);
 
     expect(screen.getByText('alice')).toBeInTheDocument();
+  });
+
+  it('rend un lien vers la page de détail de chaque incident', () => {
+    render(<IncidentTable incidents={[makeIncident({ id: 'inc-42' })]} teams={teams} />);
+
+    const link = screen.getByText('Panne serveur').closest('a');
+    expect(link).toHaveAttribute('href', '/incidents/inc-42');
   });
 });

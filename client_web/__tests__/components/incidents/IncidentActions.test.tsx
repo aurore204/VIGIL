@@ -4,9 +4,10 @@ import { IncidentActions } from '@/components/incidents/IncidentActions';
 import type { Incident } from '@/lib/types';
 
 const incident: Incident = {
-  id: 'inc-1', team_id: 'team-1', title: 'Incident test', description: null,
-  state: 'open', severity: 'medium', assigned_to: null,
-  created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z', resolved_at: null,
+  id: 'inc-1', team_id: 'team-1', created_by: 'user-1', assigned_to: null,
+  title: 'Incident test', description: null,
+  state: 'open', severity: 'medium', timeline: [], resolved_at: null,
+  created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
 };
 
 const baseProps = {
