@@ -16,7 +16,7 @@ impl From<CryptoError> for TokenError {
     }
 }
 
-// Chiffre un token en clair, puis délègue sa persistance au repository.
+// Chiffre un token en clair.
 pub async fn save_token(
     pool: &PgPool,
     user_id: Uuid,

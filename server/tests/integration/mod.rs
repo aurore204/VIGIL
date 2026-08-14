@@ -7,3 +7,5 @@ mod team_integration_test;
 mod websocket_integration_test;
 mod integration_rule_repository;
 mod integration_webhook_repository;
+mod integration_token_repository;
+mod integration_token_service;

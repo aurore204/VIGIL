@@ -7,3 +7,5 @@ mod team_functional_test;
 mod websocket_functional_test;
 mod functional_webhook_handler;
 mod functional_rule_handler;
+mod functional_token_handler;
+mod functional_about_handler;
