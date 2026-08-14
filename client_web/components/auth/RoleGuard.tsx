@@ -1,5 +1,5 @@
-import type { Team } from '@/lib/types';
-import { useIsManager, useIsResponder } from '@/hooks/useTeamRole';
+import type { Team } from "@/lib/types";
+import { useIsManager, useIsResponder } from "@/hooks/useTeamRole";
 
 interface RoleGuardProps {
   team: Team | null;

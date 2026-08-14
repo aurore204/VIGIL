@@ -12,7 +12,7 @@
     "collapse": "Collapse navigation bar",
     "profile": "Profile"
   },
-  
+
   "incidentState": {
     "open": "Open",
     "acknowledged": "Acknowledged",

@@ -1,6 +1,6 @@
-import type { WsEvent } from './types';
+import type { WsEvent } from "./types";
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws';
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws";
 
 type WsEventHandler = (event: any) => void;
 class VIGILWebSocket {
@@ -18,7 +18,8 @@ class VIGILWebSocket {
     if (
       this.token === token &&
       this.ws &&
-      (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
+      (this.ws.readyState === WebSocket.OPEN ||
+        this.ws.readyState === WebSocket.CONNECTING)
     ) {
       return;
     }
@@ -29,13 +30,17 @@ class VIGILWebSocket {
   }
 
   private attachVisibilityHandler() {
-    if (this.visibilityHandlerAttached || typeof document === 'undefined') return;
+    if (this.visibilityHandlerAttached || typeof document === "undefined")
+      return;
     this.visibilityHandlerAttached = true;
 
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
         // si le socket n'est plus ouvert, on relance une connexion propre.
-        if (this.token && (!this.ws || this.ws.readyState === WebSocket.CLOSED)) {
+        if (
+          this.token &&
+          (!this.ws || this.ws.readyState === WebSocket.CLOSED)
+        ) {
           if (this.reconnectTimeout) {
             clearTimeout(this.reconnectTimeout);
             this.reconnectTimeout = null;
@@ -47,10 +52,15 @@ class VIGILWebSocket {
     });
 
     // Le navigateur va parfois couper le WS juste avant de mettre la page en bfcache.
-    window.addEventListener('pageshow', (event) => {
+    window.addEventListener("pageshow", (event) => {
       if (event.persisted) {
-        console.log('Page restaurée depuis le bfcache — reconnexion WS si nécessaire');
-        if (this.token && (!this.ws || this.ws.readyState === WebSocket.CLOSED)) {
+        console.log(
+          "Page restaurée depuis le bfcache — reconnexion WS si nécessaire",
+        );
+        if (
+          this.token &&
+          (!this.ws || this.ws.readyState === WebSocket.CLOSED)
+        ) {
           this.reconnectDelay = 1000;
           this.createConnection();
         }
@@ -64,7 +74,7 @@ class VIGILWebSocket {
     this.ws = new WebSocket(`${WS_URL}?token=${this.token}`);
 
     this.ws.onopen = () => {
-      console.log('WebSocket connecté', WS_URL);
+      console.log("WebSocket connecté", WS_URL);
       this.reconnectDelay = 1000;
       this.startHeartbeat();
     };
@@ -73,34 +83,46 @@ class VIGILWebSocket {
       try {
         const data = JSON.parse(event.data) as WsEvent;
         const handlers = this.handlers.get(data.type) || [];
-        handlers.forEach(handler => handler(data));
+        handlers.forEach((handler) => handler(data));
 
-        const allHandlers = this.handlers.get('*') || [];
-        allHandlers.forEach(handler => handler(data));
+        const allHandlers = this.handlers.get("*") || [];
+        allHandlers.forEach((handler) => handler(data));
       } catch (e) {
-        console.error('Erreur parsing WS message', e);
+        console.error("Erreur parsing WS message", e);
       }
     };
 
     this.ws.onclose = (event) => {
-      console.log('WebSocket fermé — code:', event.code, 'reason:', event.reason, 'clean:', event.wasClean);
+      console.log(
+        "WebSocket fermé — code:",
+        event.code,
+        "reason:",
+        event.reason,
+        "clean:",
+        event.wasClean,
+      );
       this.stopHeartbeat();
 
-
-      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "hidden"
+      ) {
         return;
       }
 
       if (this.shouldReconnect) {
         this.reconnectTimeout = setTimeout(() => {
-          this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay);
+          this.reconnectDelay = Math.min(
+            this.reconnectDelay * 2,
+            this.maxReconnectDelay,
+          );
           this.createConnection();
         }, this.reconnectDelay);
       }
     };
 
     this.ws.onerror = (error) => {
-      console.error('WebSocket erreur:', error);
+      console.error("WebSocket erreur:", error);
     };
   }
 
@@ -108,7 +130,7 @@ class VIGILWebSocket {
     this.stopHeartbeat();
     this.heartbeatInterval = setInterval(() => {
       if (this.ws?.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ type: 'ping' }));
+        this.ws.send(JSON.stringify({ type: "ping" }));
       }
     }, 25000);
   }
@@ -129,15 +151,28 @@ class VIGILWebSocket {
 
   off(eventType: string, handler: WsEventHandler) {
     const handlers = this.handlers.get(eventType) || [];
-    this.handlers.set(eventType, handlers.filter(h => h !== handler));
+    this.handlers.set(
+      eventType,
+      handlers.filter((h) => h !== handler),
+    );
   }
 
   watch(resourceId: string, resourceType: string, teamId: string) {
-    this.send({ type: 'watch', resource_id: resourceId, resource_type: resourceType, team_id: teamId });
+    this.send({
+      type: "watch",
+      resource_id: resourceId,
+      resource_type: resourceType,
+      team_id: teamId,
+    });
   }
 
   unwatch(resourceId: string, resourceType: string, teamId: string) {
-    this.send({ type: 'unwatch', resource_id: resourceId, resource_type: resourceType, team_id: teamId });
+    this.send({
+      type: "unwatch",
+      resource_id: resourceId,
+      resource_type: resourceType,
+      team_id: teamId,
+    });
   }
 
   private send(data: object) {
