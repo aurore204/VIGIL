@@ -100,4 +100,4 @@ Niveau ciblé : conformité aux critères minimaux définis par le cahier des ch
 ![alt text](image-1.png)
 
 ---
-*Document rédigé dans le cadre du projet VIGIL — Epitech T-DEV-600.*
+*Document rédigé dans le cadre du projet VIGIL — Epitech.*
