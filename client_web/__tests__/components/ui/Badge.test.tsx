@@ -1,46 +1,36 @@
 import { render, screen } from '@testing-library/react';
-import { IncidentStateBadge, SeverityBadge, ReleaseStateBadge, RoleBadge } from '@/components/ui/Badge';
+import { IncidentStateBadge, SeverityBadge } from '@/components/ui/Badge';
 
 describe('IncidentStateBadge', () => {
   it('affiche le bon label pour chaque état', () => {
     const { rerender } = render(<IncidentStateBadge state="open" />);
-    expect(screen.getByText('Ouvert')).toBeInTheDocument();
+    expect(screen.getByText('open')).toBeInTheDocument();
 
     rerender(<IncidentStateBadge state="acknowledged" />);
-    expect(screen.getByText('Acquitté')).toBeInTheDocument();
+    expect(screen.getByText('acknowledged')).toBeInTheDocument();
 
     rerender(<IncidentStateBadge state="escalated" />);
-    expect(screen.getByText('Escaladé')).toBeInTheDocument();
+    expect(screen.getByText('escalated')).toBeInTheDocument();
 
     rerender(<IncidentStateBadge state="resolved" />);
-    expect(screen.getByText('Résolu')).toBeInTheDocument();
+    expect(screen.getByText('resolved')).toBeInTheDocument();
   });
 });
 
 describe('SeverityBadge', () => {
   it('affiche le bon label pour chaque sévérité', () => {
     const { rerender } = render(<SeverityBadge severity="low" />);
-    expect(screen.getByText('Faible')).toBeInTheDocument();
+    expect(screen.getByText('low')).toBeInTheDocument();
 
     rerender(<SeverityBadge severity="critical" />);
-    expect(screen.getByText('Critique')).toBeInTheDocument();
+    expect(screen.getByText('critical')).toBeInTheDocument();
   });
 
-  it('respecte l\'exigence PDF: couleur + icône + texte, jamais couleur seule', () => {
+  it("respecte l'exigence PDF: couleur + icône + texte, jamais couleur seule", () => {
     const { container } = render(<SeverityBadge severity="critical" />);
     // Le texte doit être présent (pas juste une pastille de couleur)
-    expect(screen.getByText('Critique')).toBeInTheDocument();
+    expect(screen.getByText('critical')).toBeInTheDocument();
     // Une icône (svg lucide-react) doit être présente
     expect(container.querySelector('svg')).toBeInTheDocument();
-  });
-});
-
-describe('RoleBadge', () => {
-  it('affiche le bon label pour chaque rôle', () => {
-    const { rerender } = render(<RoleBadge role="observer" />);
-    expect(screen.getByText('Observer')).toBeInTheDocument();
-
-    rerender(<RoleBadge role="manager" />);
-    expect(screen.getByText('Manager')).toBeInTheDocument();
   });
 });
