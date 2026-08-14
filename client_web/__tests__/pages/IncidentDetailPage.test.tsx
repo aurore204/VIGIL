@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import IncidentDetailPage from '@/app/(app)/incidents/[id]/page';
+import IncidentDetailPage from '@/app/[locale]/(app)/incidents/[id]/page';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
 import { renderWithProviders } from '../test-utils';

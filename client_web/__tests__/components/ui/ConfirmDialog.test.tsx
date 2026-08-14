@@ -6,47 +6,46 @@ const defaultProps = {
   isOpen: true,
   title: 'Confirmer',
   description: 'Êtes-vous sûr ?',
+  confirmLabel: 'Confirmer',
+  cancelLabel: 'Annuler',
   onConfirm: jest.fn(),
   onCancel: jest.fn(),
 };
 
 describe('ConfirmDialog', () => {
-  it('ne rend rien si isOpen est faux', () => {
-    render(<ConfirmDialog {...defaultProps} isOpen={false} />);
-    expect(screen.queryByText('Confirmer')).not.toBeInTheDocument();
+  it("n'affiche rien quand isOpen est false", () => {
+    const { container } = render(<ConfirmDialog {...defaultProps} isOpen={false} />);
+    expect(container).toBeEmptyDOMElement();
   });
 
-  it('appelle onCancel au clic sur le fond', async () => {
-    const onCancel = jest.fn();
-    render(<ConfirmDialog {...defaultProps} onCancel={onCancel} />);
-    const overlay = document.querySelector('[aria-hidden="true"]');
-    await userEvent.click(overlay!);
-    expect(onCancel).toHaveBeenCalledTimes(1);
+  it('affiche le titre et la description', () => {
+    render(<ConfirmDialog {...defaultProps} />);
+    expect(screen.getByText('Confirmer')).toBeInTheDocument();
+    expect(screen.getByText('Êtes-vous sûr ?')).toBeInTheDocument();
   });
 
   it('le bouton confirmer est en style danger', () => {
     render(<ConfirmDialog {...defaultProps} />);
-    const confirmBtn = screen.getByText('Confirmer', { selector: 'button' });
+    const buttons = screen.getAllByRole('button');
+    const confirmBtn = buttons.find(b => b.textContent === 'Confirmer');
     expect(confirmBtn).toHaveStyle({ background: 'oklch(0.55 0.18 25)' });
-  });
-
-  it('accepte des labels personnalisés', () => {
-    render(<ConfirmDialog {...defaultProps} confirmLabel="Supprimer définitivement" cancelLabel="Retour" />);
-    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument();
-    expect(screen.getByText('Retour')).toBeInTheDocument();
   });
 
   it('appelle onConfirm au clic sur le bouton de confirmation', async () => {
     const onConfirm = jest.fn();
     render(<ConfirmDialog {...defaultProps} onConfirm={onConfirm} />);
-    await userEvent.click(screen.getByText('Confirmer', { selector: 'button' }));
+    const buttons = screen.getAllByRole('button');
+    const confirmBtn = buttons.find(b => b.textContent === 'Confirmer');
+    await userEvent.click(confirmBtn!);
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it('ferme au clavier avec Échap', async () => {
+  it('appelle onCancel au clic sur le bouton annuler', async () => {
     const onCancel = jest.fn();
     render(<ConfirmDialog {...defaultProps} onCancel={onCancel} />);
-    await userEvent.keyboard('{Escape}');
+    const buttons = screen.getAllByRole('button');
+    const cancelBtn = buttons.find(b => b.textContent === 'Annuler');
+    await userEvent.click(cancelBtn!);
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 });

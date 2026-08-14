@@ -3,12 +3,20 @@ import userEvent from '@testing-library/user-event';
 import { EditIncidentModal } from '@/components/incidents/EditIncidentModal';
 import type { Incident } from '@/lib/types';
 
-jest.mock('@/components/shared/Modal');
+jest.mock('@/components/shared/Modal', () => ({
+  Modal: ({ title, children }: { title: string; children: React.ReactNode; onClose: () => void }) => (
+    <div role="dialog">
+      <h2>{title}</h2>
+      {children}
+    </div>
+  ),
+}));
 
 const incident: Incident = {
-  id: 'inc-1', team_id: 'team-1', title: 'Titre initial', description: 'Desc initiale',
-  state: 'open', severity: 'medium', assigned_to: null,
-  created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z', resolved_at: null,
+  id: 'inc-1', team_id: 'team-1', created_by: 'user-1', assigned_to: null,
+  title: 'Titre initial', description: 'Desc initiale',
+  state: 'open', severity: 'medium', timeline: [], resolved_at: null,
+  created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
 };
 
 describe('EditIncidentModal', () => {
