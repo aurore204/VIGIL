@@ -150,7 +150,7 @@ export function ReleaseCard({ release, teamName }: ReleaseCardProps) {
       )}
 
       <Link
-        href={`/releases/${release.id}`}
+        href={`/release-detail?id=${release.id}`}
         style={{ textDecoration: "none", marginTop: "auto" }}
       >
         <div

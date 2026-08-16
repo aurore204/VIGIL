@@ -46,7 +46,7 @@ export function IncidentTable({ incidents, teams }: IncidentTableProps) {
         return (
           <Link
             key={incident.id}
-            href={`/incidents/${incident.id}`}
+            href={`/incident-detail?id=${incident.id}`}
             style={{
               display: "grid",
               gridTemplateColumns: "2.2fr 110px 120px 130px 140px 90px",
