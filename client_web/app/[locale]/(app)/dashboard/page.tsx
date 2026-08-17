@@ -431,7 +431,8 @@ export default function DashboardPage() {
                   return (
                     <Link
                       key={incident.id}
-                      href={`/incidents/${incident.id}`}
+                      href={`/incident-detail?id=${incident.id}`}
+
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -674,7 +675,7 @@ export default function DashboardPage() {
                   return (
                     <Link
                       key={release.id}
-                      href={`/releases/${release.id}`}
+                      href={`/release-detail?id=${release.id}`}
                       style={{ textDecoration: "none", color: COLORS.text }}
                     >
                       <div
@@ -790,7 +791,7 @@ export default function DashboardPage() {
             return (
               <Link
                 key={team.id}
-                href={`/teams/${team.id}`}
+                href={`/team-detail?id=${team.id}`}
                 style={{ textDecoration: "none", color: COLORS.text }}
               >
                 <div style={{ ...cardStyle, minHeight: "150px" }}>

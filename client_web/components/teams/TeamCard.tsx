@@ -100,7 +100,7 @@ export function TeamCard({
         </span>
       </div>
 
-      <Link href={`/teams/${team.id}`} style={{ textDecoration: "none" }}>
+      <Link href={`/team-detail?id=${team.id}`} style={{ textDecoration: "none" }}>
         <div
           style={{
             width: "100%",

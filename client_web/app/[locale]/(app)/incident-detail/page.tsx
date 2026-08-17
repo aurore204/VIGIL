@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState,Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { useAuthStore } from "@/lib/store";
@@ -18,8 +18,9 @@ import { AssignModal } from "@/components/shared/AssignModal";
 import { EditIncidentModal } from "@/components/incidents/EditIncidentModal";
 import { Users, FileText, ArrowLeft } from "lucide-react";
 
-export default function IncidentDetailPage() {
-  const { id } = useParams<{ id: string }>();
+function IncidentDetailContent() {
+const searchParams = useSearchParams();
+  const id = searchParams.get("id") ?? "";
   const { user } = useAuthStore();
   const { showToast } = useToast();
   const router = useRouter();
@@ -410,5 +411,13 @@ export default function IncidentDetailPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function IncidentDetailPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "32px", color: "oklch(0.72 0.01 260)", fontSize: "13px" }}>Loading...</div>}>
+      <IncidentDetailContent />
+    </Suspense>
   );
 }
