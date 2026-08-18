@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useAuthStore } from "@/lib/store";
@@ -9,6 +9,7 @@ import { vigilWs } from "@/lib/websocket";
 import { useToast } from "@/components/ui/Toast";
 import type { WsEvent } from "@/lib/types";
 import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
+import { notifyOS } from "@/lib/notifications";
 import {
   LayoutGrid,
   AlertTriangle,
@@ -30,6 +31,7 @@ const navItems = [
   { href: "/messages", labelKey: "messages", Icon: MessageCircle },
 ] as const;
 
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, token, isAuthenticated, clearAuth, setUser } = useAuthStore();
   const router = useRouter();
@@ -38,11 +40,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const t = useTranslations("nav");
 
+   const userRef = useRef(user);
+    useEffect(() => {
+      userRef.current = user;
+    }, [user]);
+  
   useEffect(() => {
     const stored = localStorage.getItem("vigil_sidebar_collapsed");
     // eslint-disable-next-line react-hooks/set-state-in-effect -- lecture ponctuelle de localStorage au montage, pas de boucle de rendu possible
     if (stored === "true") setCollapsed(true);
   }, []);
+
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -76,16 +84,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       if (e.type !== "incident_state_changed") return;
       showToast(`Incident ${e.new_state} par ${e.by}`, "info");
     };
-    const onIncidentEscalated = (e: WsEvent) => {
+   const onIncidentEscalated = (e: WsEvent) => {
       if (e.type !== "incident_escalated") return;
       showToast(
         `Incident escaladé en ${e.new_severity} par ${e.by}`,
         "warning",
       );
+      if (e.new_severity === "critical") {
+        notifyOS("Incident critique", `Un incident a été escaladé en sévérité critique par ${e.by}`);
+      }
     };
     const onIncidentAssigned = (e: WsEvent) => {
       if (e.type !== "incident_assigned") return;
       showToast(`Incident assigné à ${e.assigned_to}`, "info");
+      if (e.assigned_to === userRef.current?.username) {
+        notifyOS("Incident assigné", "Vous avez été assigné à un incident");
+      }
     };
     const onTimelineEntryAdded = (e: WsEvent) => {
       if (e.type !== "timeline_entry_added") return;
@@ -93,8 +107,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     };
     const onReleaseStateChanged = (e: WsEvent) => {
       if (e.type !== "release_state_changed") return;
-      if (e.new_state === "blocked")
+      if (e.new_state === "blocked") {
         showToast("Release bloquée par un incident", "error");
+        notifyOS("Release bloquée", "Une release a été bloquée par un incident actif");
+      }
       else if (e.new_state === "completed")
         showToast("Release complétée", "success");
       else if (e.new_state === "in_progress")
