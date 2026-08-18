@@ -252,13 +252,20 @@ pub async fn escalate_incident(
         return Err(IncidentError::Forbidden);
     }
 
-    if !validate_state_transition(&incident.state, &IncidentState::Escalated) {
+    // L'incident doit être acquitté ou déjà escaladé pour pouvoir (re)escalader la sévérité.
+    if !matches!(
+        incident.state,
+        IncidentState::Acknowledged | IncidentState::Escalated
+    ) {
         return Err(IncidentError::InvalidStateTransition);
     }
 
-    incident_repository::update_state(pool, incident_id, IncidentState::Escalated)
-        .await
-        .map_err(IncidentError::DatabaseError)?;
+    // La transition d'état ne se fait qu'une fois, au premier passage vers Escalated.
+    if incident.state != IncidentState::Escalated {
+        incident_repository::update_state(pool, incident_id, IncidentState::Escalated)
+            .await
+            .map_err(IncidentError::DatabaseError)?;
+    }
 
     incident_repository::update_severity(pool, incident_id, req.severity)
         .await
