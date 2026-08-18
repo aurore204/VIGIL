@@ -233,10 +233,15 @@ export const api = {
   startRelease: (releaseId: string) =>
     request<Release>(`/releases/${releaseId}/start`, { method: "PATCH" }),
 
-  cancelRelease: (releaseId: string) =>
+    cancelRelease: (releaseId: string) =>
     request<void>(`/releases/${releaseId}/cancel`, { method: "PATCH" }),
 
-    linkIncidentToRelease: (releaseId: string, incidentId: string) =>
+  validateStep: (releaseId: string, stepId: string) =>
+    request<Release>(`/releases/${releaseId}/steps/${stepId}/validate`, {
+      method: "PATCH",
+    }),
+
+  linkIncidentToRelease: (releaseId: string, incidentId: string) =>
     request<void>(`/releases/${releaseId}/incidents/${incidentId}`, {
       method: "POST",
     }),

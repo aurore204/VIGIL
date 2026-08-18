@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "com.epitech.vigil",
   "build": {
-    "frontendDist": "../client_web/out",
+  "frontendDist": "../../client_web/out",
     "devUrl": "http://localhost:3005",
     "beforeDevCommand": "cd ../client_web && npm run dev -- -p 3005",
     "beforeBuildCommand": "cd ../client_web && npm run build"
