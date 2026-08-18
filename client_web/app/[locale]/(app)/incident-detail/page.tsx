@@ -124,7 +124,6 @@ const searchParams = useSearchParams();
   const handleAcknowledge = async () => {
     try {
       await api.acknowledgeIncident(id);
-      showToast(t("toastAcknowledged"), "success");
       load();
     } catch (err) {
       showToast(err instanceof Error ? err.message : t("toastError"), "error");
@@ -136,7 +135,7 @@ const searchParams = useSearchParams();
         id,
         incident.severity === "high" ? "critical" : "high",
       );
-      showToast(t("toastEscalated"), "warning");
+
       load();
     } catch (err) {
       showToast(err instanceof Error ? err.message : t("toastError"), "error");
@@ -145,7 +144,6 @@ const searchParams = useSearchParams();
   const handleResolve = async () => {
     try {
       await api.resolveIncident(id);
-      showToast(t("toastResolved"), "success");
       load();
     } catch (err) {
       showToast(err instanceof Error ? err.message : t("toastError"), "error");
@@ -163,7 +161,6 @@ const searchParams = useSearchParams();
   const handleAssign = async (userId: string) => {
     try {
       await api.assignResponder(id, userId);
-      showToast(t("toastAssigned"), "success");
       setShowAssign(false);
       load();
     } catch (err) {
