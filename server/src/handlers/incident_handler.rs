@@ -273,7 +273,7 @@ pub async fn resolve_incident(
             state.broadcaster.broadcast(WsEvent::IncidentStateChanged {
                 incident_id,
                 new_state: "resolved".to_string(),
-                by: username,
+                by: username.clone(),
             });
 
             // Débloquer automatiquement les releases liées
@@ -288,6 +288,7 @@ pub async fn resolve_incident(
                             state.broadcaster.broadcast(WsEvent::ReleaseStateChanged {
                                 release_id,
                                 new_state: "in_progress".to_string(),
+                                by: Some(username.clone()),
                             });
                         }
                     }
@@ -508,12 +509,19 @@ pub async fn update_incident(
     Path(incident_id): Path<Uuid>,
     Json(req): Json<UpdateIncidentRequest>,
 ) -> impl IntoResponse {
+    let username = user_repository::find_by_id(&state.pool, auth_user.id)
+        .await
+        .ok()
+        .flatten()
+        .map(|u| u.username)
+        .unwrap_or_default();
+
     match incident_service::update_incident(&state.pool, incident_id, auth_user.id, req).await {
         Ok(incident) => {
             state.broadcaster.broadcast(WsEvent::IncidentStateChanged {
                 incident_id,
                 new_state: format!("{:?}", incident.state).to_lowercase(),
-                by: "system".to_string(),
+                by: username,
             });
             (
                 StatusCode::OK,

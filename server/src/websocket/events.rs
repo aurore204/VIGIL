@@ -95,6 +95,7 @@ pub enum WsEvent {
     ReleaseStateChanged {
         release_id: Uuid,
         new_state: String,
+        by: Option<String>,
     },
 
     PresenceOnline {
