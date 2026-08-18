@@ -9,6 +9,7 @@ import {
   Trash2,
   Pencil,
   Zap,
+  Link2,
 } from "lucide-react";
 
 interface IncidentActionsProps {
@@ -17,16 +18,17 @@ interface IncidentActionsProps {
   canEscalate: boolean;
   canResolve: boolean;
   canAssign: boolean;
+  canLinkRelease: boolean;
   canEdit: boolean;
   canDelete: boolean;
   onAcknowledge: () => void;
   onEscalate: () => void;
   onResolve: () => void;
   onAssign: () => void;
+  onLinkRelease: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }
-
 function ActionButton({
   Icon,
   label,
@@ -104,6 +106,7 @@ export function IncidentActions({
   canEscalate,
   canResolve,
   canAssign,
+  canLinkRelease,
   canEdit,
   canDelete,
   onAcknowledge,
@@ -111,14 +114,14 @@ export function IncidentActions({
   onResolve,
   onEdit,
   onAssign,
+  onLinkRelease,
   onDelete,
-}: IncidentActionsProps) {
+}: IncidentActionsProps)  {
   const [confirmAction, setConfirmAction] = useState<
     "resolve" | "delete" | null
   >(null);
   const noActions =
-    !canAcknowledge && !canEscalate && !canResolve && !canAssign;
-  const t = useTranslations("incidents.actions");
+      !canAcknowledge && !canEscalate && !canResolve && !canAssign && !canLinkRelease;  const t = useTranslations("incidents.actions");
   const tCommon = useTranslations("common");
 
   return (
@@ -185,6 +188,13 @@ export function IncidentActions({
             Icon={UserPlus}
             label={t("assign")}
             onClick={onAssign}
+          />
+        )}
+        {canLinkRelease && (
+          <ActionButton
+            Icon={Link2}
+            label={t("linkRelease")}
+            onClick={onLinkRelease}
           />
         )}
         {canEdit && (

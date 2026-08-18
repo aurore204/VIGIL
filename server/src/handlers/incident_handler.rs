@@ -27,38 +27,13 @@ pub async fn create_incident(
 ) -> impl IntoResponse {
     let title = req.title.clone();
     match incident_service::create_incident(&state.pool, team_id, auth_user.id, req).await {
-        Ok(incident) => {
-            // Bloque automatiquement les releases in_progress de cette team,
-            // et diffuse release_state_changed pour chacune bloquée.
-            if let Ok(in_progress_releases) =
-                release_repository::find_in_progress_by_team(&state.pool, team_id).await
-            {
-                for release in in_progress_releases {
-                    if let Ok(blocked) = release_service::block_release_if_needed(
-                        &state.pool,
-                        release.id,
-                        incident.id,
-                    )
-                    .await
-                    {
-                        if blocked {
-                            state.broadcaster.broadcast(WsEvent::ReleaseStateChanged {
-                                release_id: release.id,
-                                new_state: "blocked".to_string(),
-                            });
-                        }
-                    }
-                }
-            }
-
-            (
-                StatusCode::CREATED,
-                Json(serde_json::json!(ApiResponse::success(
-                    &format!("Incident '{}' créé avec succès", title),
-                    incident
-                ))),
-            )
-        }
+        Ok(incident) => (
+            StatusCode::CREATED,
+            Json(serde_json::json!(ApiResponse::success(
+                &format!("Incident '{}' créé avec succès", title),
+                incident
+            ))),
+        ),
         Err(IncidentError::NotMember) => (
             StatusCode::FORBIDDEN,
             Json(serde_json::json!(ApiError::new(

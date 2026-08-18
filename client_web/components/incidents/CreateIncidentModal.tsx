@@ -2,23 +2,26 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import type { Team, IncidentSeverity } from "@/lib/types";
+import type { Team, IncidentSeverity,Release } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/shared/Modal";
 
 interface CreateIncidentModalProps {
   teams: Team[];
+  releases: Release[];//releases dans la team
   onClose: () => void;
   onSubmit: (
     teamId: string,
     title: string,
     severity: IncidentSeverity,
     description?: string,
+    releaseId?: string,
   ) => Promise<void>;
 }
 
 export function CreateIncidentModal({
   teams,
+  releases,
   onClose,
   onSubmit,
 }: CreateIncidentModalProps) {
@@ -26,25 +29,29 @@ export function CreateIncidentModal({
   const [title, setTitle] = useState("");
   const [severity, setSeverity] = useState<IncidentSeverity>("medium");
   const [description, setDescription] = useState("");
+  const [releaseId, setReleaseId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const t = useTranslations("incidents.createModal");
   const tSeverity = useTranslations("severity");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || !teamId) return;
-    setSubmitting(true);
-    try {
-      await onSubmit(
-        teamId,
-        title.trim(),
-        severity,
-        description.trim() || undefined,
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const teamReleases = releases.filter((r) => r.team_id === teamId);
+
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!title.trim() || !teamId) return;
+  setSubmitting(true);
+  try {
+    await onSubmit(
+      teamId,
+      title.trim(),
+      severity,
+      description.trim() || undefined,
+      releaseId || undefined,
+    );
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const selectStyle: React.CSSProperties = {
     width: "100%",
@@ -129,6 +136,24 @@ export function CreateIncidentModal({
             <option value="critical">{tSeverity("critical")}</option>
           </select>
         </div>
+
+        {teamReleases.length > 0 && (
+          <div>
+            <label style={labelStyle}>{t("linkRelease")}</label>
+            <select
+              value={releaseId}
+              onChange={(e) => setReleaseId(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">{t("linkReleaseNone")}</option>
+              {teamReleases.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label style={labelStyle}>{t("description")}</label>
           <textarea

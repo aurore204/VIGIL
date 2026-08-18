@@ -27,7 +27,8 @@
     "confirmResolveLabel": "Résoudre",
     "confirmDeleteTitle": "Supprimer l'incident",
     "confirmDeleteDescription": "Supprimer définitivement \"{title}\" ? Cette action est irréversible.",
-    "confirmDeleteLabel": "Supprimer"
+    "confirmDeleteLabel": "Supprimer",
+    "linkRelease": "Lier à une release"
   },
   "timeline": {
     "title": "Timeline",
@@ -49,7 +50,9 @@
     "description": "Description (optionnelle)",
     "descriptionPlaceholder": "Décrivez le problème...",
     "cancel": "Annuler",
-    "submit": "Créer l'incident"
+    "submit": "Créer l'incident",
+    "linkRelease": "Lier à une release (optionnel)",
+    "linkReleaseNone": "Aucune"
   },
   "editModal": {
     "title": "Modifier l'incident",

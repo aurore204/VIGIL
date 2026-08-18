@@ -19,16 +19,22 @@ async function ensurePermission(): Promise<boolean> {
   return permissionGranted;
 }
 
-export async function notifyOS(title: string, body: string) {//ne s'execute que si on est dans un environnement Tauri (desktop) et pas dans un navigateur web
+export async function notifyOS(title: string, body: string) {
+  console.log("[DEBUG] notifyOS appelé:", title, body);
+  console.log("[DEBUG] dans Tauri ?", typeof window !== "undefined" && "__TAURI_INTERNALS__" in window);
+
   if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) {
+    console.log("[DEBUG] pas dans Tauri, on arrête");
     return;
   }
 
   try {
     const granted = await ensurePermission();
+    console.log("[DEBUG] permission accordée ?", granted);
     if (!granted) return;
     sendNotification({ title, body });
+    console.log("[DEBUG] sendNotification appelé avec succès");
   } catch (e) {
-    console.error("Erreur envoi notification OS:", e);
+    console.error("[DEBUG] Erreur envoi notification OS:", e);
   }
 }

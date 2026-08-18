@@ -7,7 +7,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useAuthStore } from "@/lib/store";
 import { api } from "@/lib/api";
 import { vigilWs } from "@/lib/websocket";
-import type { Incident, Team, WsEvent } from "@/lib/types";
+import type { Incident, Team, WsEvent} from "@/lib/types";
 import { IncidentStateBadge, SeverityBadge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
 import { IncidentTimeline } from "@/components/incidents/IncidentTimeline";
@@ -27,7 +27,7 @@ const searchParams = useSearchParams();
   const t = useTranslations("incidents.detailPage");
   const locale = useLocale();
   const dateLocale = locale === "fr" ? "fr-FR" : "en-US";
-
+  
   const [incident, setIncident] = useState<Incident | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,17 +37,17 @@ const searchParams = useSearchParams();
   const [availableReactions, setAvailableReactions] = useState<string[]>([]);
 
   const load = async () => {
-    try {
-      const inc = await api.getIncident(id);
-      setIncident(inc);
-      const t = await api.getTeam(inc.team_id);
-      setTeam(t);
-      const reactions = await api.getAvailableReactions();
-      setAvailableReactions(reactions);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    const inc = await api.getIncident(id);
+    setIncident(inc);
+    const t = await api.getTeam(inc.team_id);
+    setTeam(t);
+    const reactions = await api.getAvailableReactions();
+    setAvailableReactions(reactions);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     load();

@@ -236,9 +236,9 @@ export const api = {
   cancelRelease: (releaseId: string) =>
     request<void>(`/releases/${releaseId}/cancel`, { method: "PATCH" }),
 
-  validateStep: (releaseId: string, stepId: string) =>
-    request<Release>(`/releases/${releaseId}/steps/${stepId}/validate`, {
-      method: "PATCH",
+    linkIncidentToRelease: (releaseId: string, incidentId: string) =>
+    request<void>(`/releases/${releaseId}/incidents/${incidentId}`, {
+      method: "POST",
     }),
 
   // Présence
