@@ -27,7 +27,8 @@
     "confirmResolveLabel": "Resolve",
     "confirmDeleteTitle": "Delete incident",
     "confirmDeleteDescription": "Permanently delete \"{title}\"? This action cannot be undone.",
-    "confirmDeleteLabel": "Delete"
+    "confirmDeleteLabel": "Delete",
+    "linkRelease": "Link to a release"
   },
   "timeline": {
     "title": "Timeline",
@@ -49,7 +50,9 @@
     "description": "Description (optional)",
     "descriptionPlaceholder": "Describe the problem...",
     "cancel": "Cancel",
-    "submit": "Create incident"
+    "submit": "Create incident",
+    "linkRelease": "Link to a release (optional)",
+    "linkReleaseNone": "None"
   },
   "editModal": {
     "title": "Edit incident",

@@ -141,6 +141,7 @@ pub async fn start_release(
             state.broadcaster.broadcast(WsEvent::ReleaseStateChanged {
                 release_id,
                 new_state: "in_progress".to_string(),
+                by: None,
             });
             (
                 StatusCode::OK,
@@ -213,6 +214,7 @@ pub async fn validate_step(
                 state.broadcaster.broadcast(WsEvent::ReleaseStateChanged {
                     release_id,
                     new_state: "completed".to_string(),
+                    by: None,
                 });
             }
 
@@ -280,6 +282,7 @@ pub async fn cancel_release(
             state.broadcaster.broadcast(WsEvent::ReleaseStateChanged {
                 release_id,
                 new_state: "cancelled".to_string(),
+                by: None,
             });
             (
                 StatusCode::OK,
@@ -318,12 +321,20 @@ pub async fn link_incident(
     Extension(auth_user): Extension<AuthenticatedUser>,
     Path((release_id, incident_id)): Path<(Uuid, Uuid)>,
 ) -> impl IntoResponse {
+    let username = user_repository::find_by_id(&state.pool, auth_user.id)
+        .await
+        .ok()
+        .flatten()
+        .map(|u| u.username)
+        .unwrap_or_default();
+
     match release_service::block_release_if_needed(&state.pool, release_id, incident_id).await {
         Ok(blocked) => {
             if blocked {
                 state.broadcaster.broadcast(WsEvent::ReleaseStateChanged {
                     release_id,
                     new_state: "blocked".to_string(),
+                    by: Some(username),
                 });
             }
             (

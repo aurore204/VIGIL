@@ -10,6 +10,7 @@ import type {
   IncidentState,
   IncidentSeverity,
   Team,
+  Release,
   WsEvent,
 } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -24,6 +25,7 @@ export default function IncidentsPage() {
   const { showToast } = useToast();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [releases, setReleases] = useState<Release[]>([]);
   const [onlineUsernames, setOnlineUsernames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -36,30 +38,38 @@ export default function IncidentsPage() {
   const tSeverity = useTranslations("severity");
   const tIncidentState = useTranslations("incidentState");
 
-  const load = async () => {
-    try {
-      const teamsData = await api.getTeams();
-      setTeams(teamsData);
-      const all: Incident[] = [];
-      await Promise.all(
-        teamsData.map(async (t) => {
-          try {
-            const inc = await api.getIncidents(t.id);
-            all.push(...inc);
-          } catch {
-            /* ignore */
-          }
-        }),
-      );
-      all.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
-      setIncidents(all);
-    } finally {
-      setLoading(false);
-    }
-  };
+const load = async () => {
+  try {
+    const teamsData = await api.getTeams();
+    setTeams(teamsData);
+    const all: Incident[] = [];
+    const allReleases: Release[] = [];
+    await Promise.all(
+      teamsData.map(async (t) => {
+        try {
+          const inc = await api.getIncidents(t.id);
+          all.push(...inc);
+        } catch {
+          /* ignore */
+        }
+        try {
+          const rel = await api.getReleases(t.id);
+          allReleases.push(...rel.filter((r) => r.state === "in_progress"));
+        } catch {
+          /* ignore */
+        }
+      }),
+    );
+    all.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+    setIncidents(all);
+    setReleases(allReleases);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const refreshIncident = async (incidentId: string) => {
     try {
@@ -122,21 +132,25 @@ export default function IncidentsPage() {
 
   const activeCount = incidents.filter((i) => i.state !== "resolved").length;
 
-  const handleCreate = async (
-    teamId: string,
-    title: string,
-    severity: IncidentSeverity,
-    description?: string,
-  ) => {
-    try {
-      await api.createIncident(teamId, { title, severity, description });
-      showToast(t("toastCreated"), "success");
-      setShowCreate(false);
-      load();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : t("toastError"), "error");
+const handleCreate = async (
+  teamId: string,
+  title: string,
+  severity: IncidentSeverity,
+  description?: string,
+  releaseId?: string,
+) => {
+  try {
+    const incident = await api.createIncident(teamId, { title, severity, description });
+    if (releaseId) {
+      await api.linkIncidentToRelease(releaseId, incident.id);
     }
-  };
+    showToast(t("toastCreated"), "success");
+    setShowCreate(false);
+    load();
+  } catch (err) {
+    showToast(err instanceof Error ? err.message : t("toastError"), "error");
+  }
+};
 
   const selectStyle: React.CSSProperties = {
     padding: "9px 12px",
@@ -403,6 +417,7 @@ export default function IncidentsPage() {
       {showCreate && (
         <CreateIncidentModal
           teams={managerTeams}
+          releases={releases}
           onClose={() => setShowCreate(false)}
           onSubmit={handleCreate}
         />

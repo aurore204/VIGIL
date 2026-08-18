@@ -2,7 +2,7 @@
 
 Plateforme de contrôle opérationnel collaboratif pour la gestion des Releases et des Incidents en temps réel.
 
-VIGIL permet à une équipe technique de coordonner ses déploiements (Releases) et de gérer les incidents de production (Incidents) depuis une interface unifiée, avec mise à jour en temps réel pour tous les membres connectés.
+VIGIL permet à une équipe technique de coordonner ses déploiements (Releases) et de gérer les incidents de production (Incidents) depuis une interface unifiée, avec mise à jour en temps réel pour tous les membres connectés, sur navigateur ou sur application desktop native.
 
 ---
 
@@ -56,15 +56,15 @@ Tauri a été retenu car le backend est déjà en Rust. Tauri utilise Rust pour 
     +----------------------------------+
               |
               | WebSocket + REST
-        +-----+------+
-        v             v
-    Web Client    Desktop Client
-    (Next.js)     (Tauri)
+        +-----+------+------------+
+        v             v            v
+    Web Client    Desktop Client   (même codebase Next.js,
+    (Next.js)     (Tauri)          export statique pour Tauri)
 
 ### Où vit chaque responsabilité
 
 | Couche        | Chemin                        | Rôle                                              |
-|---------------|-------------------------------|---------------------------------------------------|
+|---------------|--------------------------------|----------------------------------------------------|
 | Handlers      | `server/src/handlers/`        | Reçoivent les requêtes HTTP, appellent les services |
 | Services      | `server/src/services/`        | Logique métier, règles de validation               |
 | Repositories  | `server/src/repositories/`    | Accès exclusif à la base de données               |
@@ -72,6 +72,7 @@ Tauri a été retenu car le backend est déjà en Rust. Tauri utilise Rust pour 
 | Middleware    | `server/src/middleware/`      | Vérification JWT et permissions par rôle          |
 | Models        | `server/src/models/`          | Structures de données et types                    |
 | State         | `server/src/state.rs`         | État partagé : pool PostgreSQL + broadcaster      |
+| Desktop natif | `client_desktop/src-tauri/`   | Tray icon, notifications OS, wrapper de `client_web` |
 
 ---
 
@@ -193,7 +194,11 @@ Tauri a été retenu car le backend est déjà en Rust. Tauri utilise Rust pour 
       UNIQUE (release_id, position)
     )
 
-    -- Liaison release/incident déclenchant le blocage automatique
+    -- Liaison release/incident déclenchant le blocage automatique.
+    -- Le lien est créé explicitement via POST /releases/:id/incidents/:iid
+    -- (par exemple depuis le formulaire de création d'incident, en sélectionnant
+    -- une release "in_progress" de la même team). Quand tous les incidents liés
+    -- à une release sont résolus, la release repasse automatiquement à in_progress.
     release_incidents (
       id UUID PK,
       release_id UUID -> releases,
@@ -256,7 +261,7 @@ Tauri a été retenu car le backend est déjà en Rust. Tauri utilise Rust pour 
 ### Authentification
 
 | Méthode | Route            | Description                              | Auth |
-|---------|------------------|------------------------------------------|------|
+|---------|------------------|-------------------------------------------|------|
 | POST    | /auth/register   | Inscription email/password               | Non  |
 | POST    | /auth/login      | Connexion, retourne un token JWT         | Non  |
 | GET     | /me              | Utilisateur connecté                     | Oui  |
@@ -265,7 +270,7 @@ Tauri a été retenu car le backend est déjà en Rust. Tauri utilise Rust pour 
 ### Teams
 
 | Méthode | Route                              | Description                    | Rôle requis |
-|---------|------------------------------------|--------------------------------|-------------|
+|---------|--------------------------------------|---------------------------------|-------------|
 | GET     | /teams                             | Mes teams                      | Membre      |
 | POST    | /teams                             | Créer une team                 | Tout user   |
 | GET     | /teams/:id                         | Détail d'une team              | Membre      |
@@ -284,23 +289,23 @@ Tauri a été retenu car le backend est déjà en Rust. Tauri utilise Rust pour 
 ### Incidents
 
 | Méthode | Route                                    | Description                    | Rôle requis        |
-|---------|------------------------------------------|--------------------------------|--------------------|
+|---------|-------------------------------------------|----------------------------------|--------------------|
 | GET     | /teams/:id/incidents                     | Liste des incidents            | Membre             |
-| POST    | /teams/:id/incidents                     | Créer un incident              | Manager            |
+| POST    | /teams/:id/incidents                     | Créer un incident               | Manager            |
 | GET     | /incidents/:id                           | Détail d'un incident           | Membre             |
 | PATCH   | /incidents/:id                           | Modifier titre/sévérité        | Manager            |
 | DELETE  | /incidents/:id                           | Supprimer un incident          | Manager            |
 | PATCH   | /incidents/:id/acknowledge               | Acquitter                      | Responder/Manager  |
-| PATCH   | /incidents/:id/escalate                  | Escalader                      | Responder/Manager  |
-| PATCH   | /incidents/:id/resolve                   | Résoudre                       | Manager            |
-| POST    | /incidents/:id/assign                    | Assigner un Responder          | Manager            |
+| PATCH   | /incidents/:id/escalate                  | Escalader (état + sévérité, répétable jusqu'à `critical`) | Responder/Manager |
+| PATCH   | /incidents/:id/resolve                   | Résoudre (débloque les releases liées) | Manager     |
+| POST    | /incidents/:id/assign                    | Assigner un Responder           | Manager            |
 | POST    | /incidents/:id/timeline                  | Ajouter une entrée timeline    | Responder/Manager  |
 | PATCH   | /incidents/:id/timeline/:eid             | Modifier son entrée            | Auteur uniquement  |
 
 ### Réactions
 
 | Méthode | Route                                          | Description              | Rôle requis |
-|---------|------------------------------------------------|--------------------------|-------------|
+|---------|---------------------------------------------------|-----------------------------|-------------|
 | GET     | /reactions/available                           | Liste des emojis         | Non         |
 | POST    | /incidents/:id/timeline/:eid/reactions         | Ajouter une réaction     | Membre      |
 | DELETE  | /incidents/:id/timeline/:eid/reactions/:emoji  | Retirer une réaction     | Membre      |
@@ -308,19 +313,19 @@ Tauri a été retenu car le backend est déjà en Rust. Tauri utilise Rust pour 
 ### Releases
 
 | Méthode | Route                                  | Description                    | Rôle requis        |
-|---------|----------------------------------------|--------------------------------|--------------------|
+|---------|-------------------------------------------|-----------------------------------|--------------------|
 | GET     | /teams/:id/releases                    | Liste des releases             | Membre             |
-| POST    | /teams/:id/releases                    | Créer une release              | Manager            |
+| POST    | /teams/:id/releases                    | Créer une release               | Manager            |
 | GET     | /releases/:id                          | Détail d'une release           | Membre             |
 | PATCH   | /releases/:id/start                    | Démarrer une release           | Manager            |
 | PATCH   | /releases/:id/cancel                   | Annuler une release            | Manager            |
 | PATCH   | /releases/:id/steps/:sid/validate      | Valider une étape              | Responder/Manager  |
-| POST    | /releases/:id/incidents/:iid           | Lier un incident               | Manager            |
+| POST    | /releases/:id/incidents/:iid           | Lier un incident (bloque la release si elle est `in_progress`) | Manager |
 
 ### Messages privés
 
 | Méthode | Route                | Description              | Rôle requis |
-|---------|----------------------|--------------------------|-------------|
+|---------|-------------------------|------------------------------|-------------|
 | POST    | /users/:id/messages  | Envoyer un message       | Membre      |
 | GET     | /users/:id/messages  | Historique conversation  | Membre      |
 | PATCH   | /messages/:id/read   | Marquer comme lu         | Destinataire|
@@ -328,13 +333,13 @@ Tauri a été retenu car le backend est déjà en Rust. Tauri utilise Rust pour 
 ### WebSocket
 
 | Méthode | Route | Description                                    |
-|---------|-------|------------------------------------------------|
+|---------|-------|--------------------------------------------------|
 | GET     | /ws   | Connexion WebSocket (token via header ou query)|
 
 ### Phase 2
 
 | Méthode | Route        | Description                        |
-|---------|--------------|------------------------------------|
+|---------|--------------|---------------------------------------|
 | GET     | /about.json  | Catalogue des services disponibles |
 
 ---
@@ -363,9 +368,31 @@ Le serveur expose 6 emojis fixes via `GET /reactions/available` :
 ## Limites
 
 | Ressource            | Limite          |
-|----------------------|-----------------|
+|-----------------------|-----------------|
 | Entrées de timeline  | 2000 caractères |
 | Messages privés      | 2000 caractères |
+
+---
+
+## Application desktop (Tauri)
+
+Le client desktop réutilise intégralement le code de `client_web` (export statique Next.js), sans logique métier dupliquée, avec deux comportements natifs additionnels :
+
+### Tray icon
+
+L'application reste active en arrière-plan lorsque la fenêtre est fermée : la fermeture cache la fenêtre au lieu de tuer le processus, ce qui permet à la connexion WebSocket de rester ouverte. Une icône dans la zone de notification système permet de rouvrir la fenêtre (clic gauche ou "Ouvrir VIGIL" dans le menu) ou de quitter réellement l'application ("Quitter").
+
+### Notifications natives
+
+Trois déclencheurs envoient une notification OS via `tauri-plugin-notification`, en plus du toast affiché dans l'interface :
+
+| Déclencheur                        | Condition exacte                                              |
+|--------------------------------------|-------------------------------------------------------------------|
+| Assignation à un incident          | `incident_assigned` reçu et `assigned_to` correspond à l'utilisateur connecté |
+| Incident en sévérité critique      | `incident_escalated` reçu avec `new_severity == "critical"`  |
+| Release bloquée par un incident    | `release_state_changed` reçu avec `new_state == "blocked"`   |
+
+La permission système est demandée automatiquement au premier événement recevable.
 
 ---
 
@@ -380,7 +407,7 @@ Ne committe jamais le fichier `.env`. Il est listé dans `.gitignore`.
 ### Variables requises
 
 | Variable      | Description                              |
-|---------------|------------------------------------------|
+|---------------|--------------------------------------------|
 | DATABASE_URL  | URL de connexion PostgreSQL              |
 | SERVER_HOST   | Hôte du serveur (0.0.0.0)               |
 | SERVER_PORT   | Port du serveur (8080)                   |
@@ -400,7 +427,7 @@ Ne committe jamais le fichier `.env`. Il est listé dans `.gitignore`.
 
     cargo install sqlx-cli --version "^0.7" --no-default-features --features postgres
 
-### Étapes
+### Étapes — serveur et client web
 
     # 1. Cloner le projet
     git clone https://github.com/TON_USERNAME/vigil.git
@@ -423,6 +450,19 @@ Ne committe jamais le fichier `.env`. Il est listé dans `.gitignore`.
     cd ../client_web
     npm install
     npm run dev
+
+### Étapes — client desktop (Tauri)
+
+    # Prérequis système Linux (Debian/Ubuntu) :
+    sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file \
+      libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+    # Lancement en mode développement (serveur + client web doivent déjà tourner) :
+    cd client_desktop/src-tauri
+    cargo tauri dev
+
+    # Build de l'exécutable final :
+    cargo tauri build
 
 ---
 
@@ -472,3 +512,9 @@ Coverage :
 ## Exemptions T-DEV-600
 
 - `repo_cicd` : pipeline CI/CD validé lors du T-DEV-600, exemption déclarée au kickoff.
+
+---
+
+## État du Docker Compose (Phase 3)
+
+Le service `client_desktop` exposant le binaire desktop via `client_web` (port 8081) est en cours de finalisation et n'est pas encore intégré au `docker-compose.yml`. Cette section sera complétée une fois le service ajouté.
