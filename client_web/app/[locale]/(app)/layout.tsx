@@ -39,6 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
   const [collapsed, setCollapsed] = useState(false);
   const t = useTranslations("nav");
+  const tIncidentState = useTranslations("incidentState");
 
    const userRef = useRef(user);
     useEffect(() => {
@@ -82,9 +83,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     const onIncidentStateChanged = (e: WsEvent) => {
       if (e.type !== "incident_state_changed") return;
-      showToast(`Incident ${e.new_state} par ${e.by}`, "info");
+      showToast(`Incident ${tIncidentState(e.new_state)} par ${e.by}`, "info");
     };
-   const onIncidentEscalated = (e: WsEvent) => {
+      const onIncidentEscalated = (e: WsEvent) => {
       if (e.type !== "incident_escalated") return;
       showToast(
         `Incident escaladé en ${e.new_severity} par ${e.by}`,
