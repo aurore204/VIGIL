@@ -373,7 +373,11 @@ const searchParams = useSearchParams();
           <IncidentActions
             incident={incident}
             canAcknowledge={isResponder && incident.state === "open"}
-            canEscalate={isResponder && incident.state === "acknowledged"}
+            canEscalate={
+              isResponder &&
+              (incident.state === "acknowledged" || incident.state === "escalated") &&
+              incident.severity !== "critical"
+            }
             canResolve={
               isManager &&
               (incident.state === "acknowledged" ||
