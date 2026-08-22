@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n    INSERT INTO user_tokens (user_id, service_name, token_type, access_token, encryption_nonce)\n    VALUES ($1, $2, $3::token_type, $4, $5)\n    ON CONFLICT (user_id, service_name)\n    DO UPDATE SET access_token = $4, encryption_nonce = $5, token_type = $3::token_type, updated_at = NOW()\n    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        {
+          "Custom": {
+            "name": "token_type",
+            "kind": {
+              "Enum": [
+                "oauth2",
+                "personal"
+              ]
+            }
+          }
+        },
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1e3c4c7be13d43accb58c129194d4db8fbbb0da7cdb98f60b97641419e7e3faf"
+}

@@ -1,0 +1,65 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            pm.id,\n            pm.sender_id,\n            s.username as \"sender_username!\",\n            pm.receiver_id,\n            r.username as \"receiver_username!\",\n            pm.content,\n            pm.read_at,\n            pm.created_at\n        FROM private_messages pm\n        JOIN users s ON s.id = pm.sender_id\n        JOIN users r ON r.id = pm.receiver_id\n        WHERE (pm.sender_id = $1 AND pm.receiver_id = $2)\n           OR (pm.sender_id = $2 AND pm.receiver_id = $1)\n        ORDER BY pm.created_at ASC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "sender_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "sender_username!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "receiver_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "receiver_username!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "read_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "61df6a45b94f11220f70b1d1dd35c5712542ea84d731729877f8c508f5d5546f"
+}

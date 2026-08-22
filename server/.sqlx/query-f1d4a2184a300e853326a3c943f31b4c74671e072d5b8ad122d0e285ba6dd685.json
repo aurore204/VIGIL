@@ -1,0 +1,66 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO private_messages (sender_id, receiver_id, content)\n        VALUES ($1, $2, $3)\n        RETURNING\n            id,\n            sender_id,\n            (SELECT username FROM users WHERE id = sender_id) as \"sender_username!\",\n            receiver_id,\n            (SELECT username FROM users WHERE id = receiver_id) as \"receiver_username!\",\n            content,\n            read_at,\n            created_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "sender_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "sender_username!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "receiver_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "receiver_username!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "read_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null,
+      false,
+      null,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "f1d4a2184a300e853326a3c943f31b4c74671e072d5b8ad122d0e285ba6dd685"
+}

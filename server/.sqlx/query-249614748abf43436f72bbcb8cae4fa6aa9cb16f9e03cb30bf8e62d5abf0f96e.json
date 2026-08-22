@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO webhook_secrets (team_id, service_name, secret_hash)\n        VALUES ($1, $2, $3)\n        ON CONFLICT (team_id, service_name)\n        DO UPDATE SET secret_hash = $3\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "249614748abf43436f72bbcb8cae4fa6aa9cb16f9e03cb30bf8e62d5abf0f96e"
+}
