@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO rule_logs (rule_id, status, result)\n        VALUES ($1, $2, $3)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        {
+          "Custom": {
+            "name": "rule_log_status",
+            "kind": {
+              "Enum": [
+                "success",
+                "failed"
+              ]
+            }
+          }
+        },
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "020d1fb67f40be192ab13c54bfbd0836e120203a033f13028365a696bf76967c"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE private_messages\n        SET read_at = NOW()\n        WHERE id = $1 AND receiver_id = $2 AND read_at IS NULL\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4574f35332ac648aaa68244fdd4d3248481c4fe335749c3eda26c6ff999a7967"
+}

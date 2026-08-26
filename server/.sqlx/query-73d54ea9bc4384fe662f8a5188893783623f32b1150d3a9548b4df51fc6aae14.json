@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT tr.emoji, u.username\n        FROM timeline_reactions tr\n        JOIN users u ON u.id = tr.user_id\n        WHERE tr.entry_id = $1\n        ORDER BY tr.created_at ASC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "emoji",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "73d54ea9bc4384fe662f8a5188893783623f32b1150d3a9548b4df51fc6aae14"
+}
