@@ -9,6 +9,12 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
         .setup(|app| {
+            // Force la fenêtre principale à s'afficher au lancement
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
@@ -17,7 +23,7 @@ pub fn run() {
                 )?;
             }
 
-            // --- Tray icon ---
+            // --- Configuration du Tray Icon ---
             let open_item = MenuItem::with_id(app, "open", "Ouvrir VIGIL", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quitter", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&open_item, &quit_item])?;
@@ -58,11 +64,17 @@ pub fn run() {
         })
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
-                // On cache la fenêtre au lieu de fermer l'app, pour que le WebSocket et les notifications continuent de fonctionner en arrière-plan.
-                window.hide().unwrap();
+                // Empêche la fermeture réelle de la fenêtre et la masque
+                let _ = window.hide();
                 api.prevent_close();
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app_handle, event| match event {
+            tauri::RunEvent::ExitRequested { api, .. } => {
+                api.prevent_exit();
+            }
+            _ => {}
+        });
 }
