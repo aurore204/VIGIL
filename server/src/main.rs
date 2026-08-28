@@ -15,6 +15,7 @@ async fn main() {
         .allow_origin([
             "http://localhost:3000".parse::<HeaderValue>().unwrap(),
             "http://localhost:3005".parse::<HeaderValue>().unwrap(),
+            "http://localhost:8081".parse::<HeaderValue>().unwrap(),
         ])
         .allow_methods([
             Method::GET,

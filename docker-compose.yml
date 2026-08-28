@@ -32,7 +32,6 @@ services:
       db:
         condition: service_healthy
 
-  # Construit le binaire desktop (.AppImage) et le dépose dans un volume
   client_desktop:
     build:
       context: .
@@ -41,15 +40,16 @@ services:
     volumes:
       - vigil_desktop_bin:/output
 
-  # Sert le client web statique ET expose le binaire desktop récupéré depuis le volume partagé avec client_desktop.
   client_web:
     build:
       context: ./client_web
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8080
+        NEXT_PUBLIC_WS_URL: ws://localhost:8080/ws
     container_name: vigil-client-web
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8080
-      NEXT_PUBLIC_WS_URL: ws://localhost:8080/ws
+      PORT: 8081
     ports:
       - "8081:8081"
     depends_on:
