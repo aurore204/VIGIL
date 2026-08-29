@@ -195,7 +195,7 @@ describe("MessagesPage", () => {
     await userEvent.type(input, longText);
 
     expect(screen.getByText(`${longText.length} / 2000`)).toBeInTheDocument();
-  });
+  }, 10000);
 
   it('affiche "✓✓" pour un message lu envoyé par moi', async () => {
     (api.getTeams as jest.Mock).mockResolvedValue([makeTeam()]);

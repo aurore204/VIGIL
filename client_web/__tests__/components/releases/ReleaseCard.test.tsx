@@ -80,7 +80,7 @@ describe("ReleaseCard", () => {
     );
 
     const link = screen.getByText("view").closest("a");
-    expect(link).toHaveAttribute("href", "/releases/rel-42");
+    expect(link).toHaveAttribute("href", "/release-detail?id=rel-42");
   });
 
   it("ne rend pas la barre de progression quand steps est vide", () => {

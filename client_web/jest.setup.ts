@@ -15,3 +15,4 @@ jest.mock("next-intl", () => ({
   NextIntlClientProvider: ({ children }: { children: React.ReactNode }) =>
     children,
 }));
+window.HTMLElement.prototype.scrollIntoView = jest.fn();

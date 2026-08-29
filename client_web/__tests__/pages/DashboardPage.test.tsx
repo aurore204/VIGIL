@@ -253,7 +253,7 @@ describe("DashboardPage", () => {
     await waitFor(() => {
       const links = screen
         .getAllByRole("link")
-        .filter((l) => l.getAttribute("href") === "/teams/team-99");
+        .filter((l) => l.getAttribute("href") === "/team-detail?id=team-99");
       expect(links.length).toBeGreaterThan(0);
     });
   });

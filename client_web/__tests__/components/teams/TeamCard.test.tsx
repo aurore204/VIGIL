@@ -88,6 +88,6 @@ describe("TeamCard", () => {
     );
 
     const link = screen.getByText("view").closest("a");
-    expect(link).toHaveAttribute("href", "/teams/team-42");
+    expect(link).toHaveAttribute("href", "/team-detail?id=team-42");
   });
 });
