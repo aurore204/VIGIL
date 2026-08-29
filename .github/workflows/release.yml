@@ -34,7 +34,10 @@ jobs:
 
       - name: Build Tauri installer
         working-directory: client_desktop/src-tauri
-        run: cargo tauri build --config "{\"build\":{\"beforeBuildCommand\":\"\"}}"
+        shell: bash
+        run: |
+          echo '{"build":{"beforeBuildCommand":""}}' > override.json
+          cargo tauri build --config override.json
 
       - name: Locate and rename binary
         shell: bash
