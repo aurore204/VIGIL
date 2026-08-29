@@ -7,8 +7,8 @@ on:
 
 jobs:
   build-desktop:
-    name: Build desktop binary (Linux AppImage)
-    runs-on: ubuntu-latest
+    name: Build desktop binary (Windows)
+    runs-on: windows-latest
     permissions:
       contents: write
 
@@ -23,13 +23,6 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install Tauri system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev build-essential curl wget file \
-            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
-
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "^2"
 
@@ -39,31 +32,21 @@ jobs:
           npm ci
           npm run build
 
-      - name: Debug paths
-        run: |
-          echo "=== Racine du repo ==="
-          pwd
-          echo "=== Contenu de client_web/out ==="
-          ls -la client_web/out | head -20
-          echo "=== Chemin résolu depuis client_desktop/src-tauri ==="
-          cd client_desktop/src-tauri
-          pwd
-          echo "=== ../../client_web/out ==="
-          ls -la ../../client_web/out 2>&1 | head -20
-
-      - name: Build Tauri AppImage
+      - name: Build Tauri installer
         working-directory: client_desktop/src-tauri
-        run: cargo tauri build --bundles appimage
+        run: cargo tauri build
 
-      - name: Rename binary
+      - name: Locate and rename binary
+        shell: bash
         run: |
-          find client_desktop/src-tauri/target/release/bundle/appimage -name "*.AppImage" \
-            -exec cp {} client.AppImage \;
+          find client_desktop/src-tauri/target/release/bundle -iname "*.exe" -o -iname "*.msi" | head -5
+          MSI=$(find client_desktop/src-tauri/target/release/bundle/msi -name "*.msi" | head -1)
+          cp "$MSI" client.exe || echo "MSI introuvable, vérifier le nom exact du bundle"
 
       - name: Upload desktop binary to release
         uses: softprops/action-gh-release@v1
         with:
-          files: client.AppImage
+          files: client.exe
           generate_release_notes: true
 
   build-docker-image:
