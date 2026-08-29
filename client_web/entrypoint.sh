@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 
-if [ -f /desktop-bin/client.AppImage ]; then
-  cp /desktop-bin/client.AppImage /usr/share/nginx/html/client.AppImage
-  echo "Binaire desktop copié : /client.AppImage"
+if [ -f /desktop-bin/client.exe ]; then
+  cp /desktop-bin/client.exe /usr/share/nginx/html/client.exe
+  echo "Binaire desktop copié : /client.exe"
 else
   echo "ATTENTION : aucun binaire desktop trouvé dans /desktop-bin"
 fi
