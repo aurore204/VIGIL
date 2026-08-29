@@ -22,11 +22,12 @@ services:
       dockerfile: Dockerfile
     container_name: vigil-server
     environment:
-      DATABASE_URL: postgres://vigil:vigil_password@db:5432/vigil
-      SERVER_HOST: 0.0.0.0
-      SERVER_PORT: 8080-
+      DATABASE_URL: ${DATABASE_URL_DOCKER}
+      SERVER_HOST: ${SERVER_HOST}
+      SERVER_PORT: ${SERVER_PORT}
       JWT_SECRET: ${JWT_SECRET}
-      RUST_LOG: debug
+      RUST_LOG: ${RUST_LOG}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
     ports:
       - "8080:8080"
     depends_on:
@@ -46,11 +47,11 @@ services:
       context: ./client_web
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8080
-        NEXT_PUBLIC_WS_URL: ws://localhost:8080/ws
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL}
     container_name: vigil-client-web
     environment:
-      PORT: 8081
+      PORT: ${CLIENT_WEB_PORT}
     ports:
       - "8081:8081"
     depends_on:

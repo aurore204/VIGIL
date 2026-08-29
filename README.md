@@ -1,8 +1,26 @@
 # VIGIL
 
-Plateforme de contrôle opérationnel collaboratif pour la gestion des Releases et des Incidents en temps réel.
+Une équipe qui déploie en production gère deux types de situations très différentes. D'un côté, du **planifié** : une release préparée à l'avance, validée étape par étape avant d'atteindre la prod. De l'autre, de **l'imprévu** : un incident détecté qui doit être trié, escaladé, assigné et résolu, souvent dans l'urgence. La plupart des outils traitent ces deux réalités séparément — VIGIL les traite ensemble, dans une seule salle de contrôle collaborative, parce qu'elles sont liées dans la vraie vie : un incident actif peut bloquer une release en cours, et une release peut déclencher un incident si elle échoue.
 
-VIGIL permet à une équipe technique de coordonner ses déploiements (Releases) et de gérer les incidents de production (Incidents) depuis une interface unifiée, avec mise à jour en temps réel pour tous les membres connectés, sur navigateur ou sur application desktop native.
+VIGIL est ce produit : une plateforme temps réel où une équipe technique coordonne ses Releases et ses Incidents, avec un rôle par personne (Observer, Responder, Manager), une timeline collaborative, et — en Phase 2 — un moteur de règles qui connecte VIGIL à des services externes comme GitHub.
+
+Trois interfaces partagent le même serveur et la même logique métier : un client web, un client desktop natif (avec tray icon et notifications système), et une API REST/WebSocket ouverte.
+
+---
+
+## Vue d'ensemble fonctionnelle
+
+Avant le détail technique, voici comment le produit s'utilise concrètement :
+
+1. Un utilisateur s'inscrit, crée une **Team** ou en rejoint une via un code d'invitation généré par le Manager.
+2. Chaque membre a un rôle : **Observer** (lecture seule), **Responder** (acquitte, escalade, commente), **Manager** (crée, assigne, modère).
+3. Un **Incident** suit un cycle de vie linéaire — `open → acknowledged → escalated → resolved` — pendant que sa **sévérité** (`low → medium → high → critical`) peut continuer à monter tant qu'il n'est pas résolu.
+4. Une **Release** avance par étapes séquentielles validées une à une. Si elle est explicitement liée à un incident actif, elle se **bloque automatiquement** et reprend dès que l'incident est résolu.
+5. Tout ce qui se passe est diffusé en temps réel via WebSocket à tous les membres connectés — timeline, changements d'état, présence, messages privés.
+6. En Phase 2, des **règles Action → REAction** automatisent des réponses : par exemple, un échec de CI sur GitHub crée automatiquement un incident dans VIGIL.
+7. Le client desktop ajoute deux choses que le web ne peut pas faire : rester actif en arrière-plan via une icône dans la zone de notification, et envoyer de vraies notifications système (assignation, sévérité critique, release bloquée).
+
+Le reste de ce document détaille l'implémentation : stack, architecture, schéma de données, API, et procédures d'installation.
 
 ---
 
@@ -18,21 +36,13 @@ VIGIL permet à une équipe technique de coordonner ses déploiements (Releases)
 | Conteneurisation | Docker Compose  | Environnement reproductible            |
 | CI/CD            | GitHub Actions  | Exemption T-DEV-600 déclarée au kickoff|
 
----
+### Pourquoi ces choix, concrètement
 
-## Justification des choix techniques
+**Rust plutôt que NodeJS.** Le vrai argument n'est pas la vitesse brute mais la prévisibilité : pas de garbage collector qui pause le serveur au mauvais moment quand plusieurs centaines de connexions WebSocket sont ouvertes en même temps. Axum + Tokio gèrent cette concurrence nativement, et sqlx vérifie les requêtes SQL à la compilation — une erreur de colonne ou de type se voit à `cargo build`, pas en production.
 
-### Rust (Axum) vs NodeJS
+**PostgreSQL plutôt que SQLite.** VIGIL a des écritures concurrentes réelles : deux Responders qui acquittent des incidents en même temps, un Manager qui valide une étape de release pendant qu'un autre modifie l'équipe. SQLite verrouille la base entière à l'écriture, ce qui devient vite un goulot d'étranglement dès qu'on sort d'un usage mono-utilisateur — pas adapté ici.
 
-Rust a été retenu pour sa gestion mémoire sans garbage collector, garantissant des performances stables et prévisibles sous forte charge. VIGIL gère des milliers de connexions WebSocket simultanées — l'écosystème Axum + sqlx + Tokio est particulièrement adapté : Tokio gère la concurrence asynchrone nativement, Axum fournit un routing HTTP ergonomique, et sqlx permet des requêtes PostgreSQL typées et vérifiées à la compilation.
-
-### PostgreSQL vs SQLite
-
-PostgreSQL a été retenu car VIGIL est une application multi-utilisateurs avec des écritures concurrentes : plusieurs Responders peuvent acquitter des Incidents simultanément, plusieurs Managers peuvent modifier des Releases en parallèle. PostgreSQL gère cette concurrence nativement avec son système de verrous et de transactions ACID. SQLite est conçu pour un usage mono-utilisateur et aurait posé des problèmes de cohérence dans ce contexte.
-
-### Tauri vs Electron
-
-Tauri a été retenu car le backend est déjà en Rust. Tauri utilise Rust pour sa partie native, ce qui permet de partager des connaissances et des outils entre le serveur et le client desktop. Le binaire produit est significativement plus léger qu'Electron car il utilise le moteur de rendu natif du système d'exploitation plutôt que d'embarquer Chromium.
+**Tauri plutôt qu'Electron.** Puisque le serveur est déjà en Rust, autant réutiliser cette compétence côté desktop plutôt que d'ajouter un runtime Node embarqué. Le binaire produit est nettement plus léger (quelques dizaines de Mo contre plusieurs centaines pour Electron) parce que Tauri s'appuie sur le moteur de rendu déjà présent sur l'OS au lieu d'embarquer Chromium.
 
 ---
 
@@ -58,10 +68,12 @@ Tauri a été retenu car le backend est déjà en Rust. Tauri utilise Rust pour 
               | WebSocket + REST
         +-----+------+------------+
         v             v            v
-    Web Client    Desktop Client   (même codebase Next.js,
-    (Next.js)     (Tauri)          export statique pour Tauri)
+    Web Client    Desktop Client   (même codebase Next.js ;
+    (Next.js)     (Tauri)          export statique pour le desktop)
 
 ### Où vit chaque responsabilité
+
+Pour naviguer rapidement dans le code :
 
 | Couche        | Chemin                        | Rôle                                              |
 |---------------|--------------------------------|----------------------------------------------------|
@@ -194,11 +206,11 @@ Tauri a été retenu car le backend est déjà en Rust. Tauri utilise Rust pour 
       UNIQUE (release_id, position)
     )
 
-    -- Liaison release/incident déclenchant le blocage automatique.
-    -- Le lien est créé explicitement via POST /releases/:id/incidents/:iid
-    -- (par exemple depuis le formulaire de création d'incident, en sélectionnant
-    -- une release "in_progress" de la même team). Quand tous les incidents liés
-    -- à une release sont résolus, la release repasse automatiquement à in_progress.
+    -- Liaison release/incident, créée explicitement via
+    -- POST /releases/:id/incidents/:iid (depuis le formulaire de création
+    -- d'incident, en choisissant une release "in_progress" de la même team).
+    -- Quand tous les incidents liés à une release sont résolus, la release
+    -- repasse automatiquement à in_progress.
     release_incidents (
       id UUID PK,
       release_id UUID -> releases,
@@ -346,7 +358,7 @@ Tauri a été retenu car le backend est déjà en Rust. Tauri utilise Rust pour 
 
 ## WebSockets
 
-Voir [WEBSOCKET_SPEC.md](./WEBSOCKET_SPEC.md) pour la documentation complète des événements.
+Voir [WEBSOCKET_SPEC.md](./WEBSOCKET_SPEC.md) pour la documentation complète des événements : type, payload, déclencheur et destinataires.
 
 ---
 
@@ -376,15 +388,11 @@ Le serveur expose 6 emojis fixes via `GET /reactions/available` :
 
 ## Application desktop (Tauri)
 
-Le client desktop réutilise intégralement le code de `client_web` (export statique Next.js), sans logique métier dupliquée, avec deux comportements natifs additionnels :
+Le client desktop réutilise tel quel le code de `client_web` (export statique Next.js) — aucune logique métier dupliquée. Deux comportements natifs s'ajoutent par-dessus :
 
-### Tray icon
+**Tray icon.** Fermer la fenêtre la cache au lieu de tuer le processus, ce qui laisse la connexion WebSocket ouverte en arrière-plan. Une icône dans la zone de notification système permet de rouvrir la fenêtre (clic gauche, ou "Ouvrir VIGIL" dans le menu contextuel) ou de quitter réellement l'application.
 
-L'application reste active en arrière-plan lorsque la fenêtre est fermée : la fermeture cache la fenêtre au lieu de tuer le processus, ce qui permet à la connexion WebSocket de rester ouverte. Une icône dans la zone de notification système permet de rouvrir la fenêtre (clic gauche ou "Ouvrir VIGIL" dans le menu) ou de quitter réellement l'application ("Quitter").
-
-### Notifications natives
-
-Trois déclencheurs envoient une notification OS via `tauri-plugin-notification`, en plus du toast affiché dans l'interface :
+**Notifications natives.** Trois déclencheurs envoient une notification OS via `tauri-plugin-notification`, en plus du toast affiché dans l'interface :
 
 | Déclencheur                        | Condition exacte                                              |
 |--------------------------------------|-------------------------------------------------------------------|
@@ -398,13 +406,11 @@ La permission système est demandée automatiquement au premier événement rece
 
 ## Variables d'environnement
 
-Copie `.env.example` en `.env` et remplis les valeurs :
+Deux fichiers `.env` distincts sont nécessaires, à ne jamais committer (les deux sont dans `.gitignore`) :
 
-    cp .env.example .env
+### `server/.env` — pour lancer le serveur en local (`cargo run`)
 
-Ne committe jamais le fichier `.env`. Il est listé dans `.gitignore`.
-
-### Variables requises
+    cp server/.env.example server/.env
 
 | Variable      | Description                              |
 |---------------|--------------------------------------------|
@@ -413,6 +419,14 @@ Ne committe jamais le fichier `.env`. Il est listé dans `.gitignore`.
 | SERVER_PORT   | Port du serveur (8080)                   |
 | JWT_SECRET    | Clé secrète pour signer les tokens JWT  |
 | RUST_LOG      | Niveau de logs (debug en développement) |
+
+### `.env` à la racine — pour Docker Compose
+
+Docker Compose ne lit **que** le `.env` placé à la racine du projet, jamais celui de `server/`. Il n'a besoin que d'une seule variable :
+
+    JWT_SECRET=une_valeur_secrete_a_toi
+
+Sans ce fichier, le conteneur `server` démarre puis panique dès la première requête d'authentification (`JWT_SECRET doit être défini`) — c'est la première chose à vérifier si `docker compose up` semble fonctionner mais que l'inscription échoue.
 
 ---
 
@@ -425,7 +439,7 @@ Ne committe jamais le fichier `.env`. Il est listé dans `.gitignore`.
 - Node.js 18+
 - sqlx-cli :
 
-    cargo install sqlx-cli --version "^0.7" --no-default-features --features postgres
+    cargo install sqlx-cli --no-default-features --features postgres
 
 ### Étapes — serveur et client web
 
@@ -433,8 +447,9 @@ Ne committe jamais le fichier `.env`. Il est listé dans `.gitignore`.
     git clone https://github.com/TON_USERNAME/vigil.git
     cd vigil
 
-    # 2. Configurer les variables d'environnement
-    cp .env.example .env
+    # 2. Configurer les variables d'environnement (les deux fichiers, voir ci-dessus)
+    cp server/.env.example server/.env
+    echo "JWT_SECRET=une_valeur_secrete_a_toi" > .env
 
     # 3. Lancer la base de données
     docker compose up -d db
@@ -457,12 +472,20 @@ Ne committe jamais le fichier `.env`. Il est listé dans `.gitignore`.
     sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file \
       libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
 
-    # Lancement en mode développement (serveur + client web doivent déjà tourner) :
+    # Mode développement (serveur + client web doivent déjà tourner) :
     cd client_desktop/src-tauri
     cargo tauri dev
 
     # Build de l'exécutable final :
     cargo tauri build
+
+### Tout lancer via Docker
+
+    docker compose up --build
+
+Construit et démarre les 4 services (`db`, `server`, `client_desktop`, `client_web`). Le service `client_desktop` ne reste pas actif : il compile le binaire `.AppImage`, le dépose dans un volume partagé, puis s'arrête — c'est normal de le voir `Exited (0)` dans `docker compose ps`. Le client web attend que ce build se termine avant de démarrer, pour pouvoir exposer le binaire à `http://localhost:8081/client.AppImage`.
+
+Premier build à prévoir large : le service `client_desktop` compile Rust + toutes les dépendances GTK/WebKit depuis zéro, ça prend facilement 10 à 15 minutes selon la machine.
 
 ---
 
@@ -509,12 +532,22 @@ Coverage :
 
 ---
 
-## Exemptions T-DEV-600
+## Méthodologie
 
-- `repo_cicd` : pipeline CI/CD validé lors du T-DEV-600, exemption déclarée au kickoff.
+Le projet a été découpé selon les 3 phases imposées, en respectant la règle "core avant extended avant phase suivante" plutôt que de picorer des fonctionnalités dans le désordre. Phase 1 validée d'abord dans son intégralité (auth, teams, incidents, WebSocket, reconnexion automatique), puis Phase 2 (moteur de règles, chiffrement des tokens, CI/CD), puis Phase 3 (desktop, notifications, Docker).
+
+Un point notable : plusieurs bugs de Phase 1 — pourtant déjà validée — ont été découverts tardivement en testant les notifications de Phase 3 de bout en bout (impossibilité d'escalader un incident deux fois, blocage automatique de release trop large par rapport à la spec). Ça a confirmé l'intérêt de tester les parcours complets plutôt que fonctionnalité par fonctionnalité isolée, même une fois une phase "terminée".
 
 ---
 
-## État du Docker Compose (Phase 3)
+## Limites connues et choix assumés
 
-Le service `client_desktop` exposant le binaire desktop via `client_web` (port 8081) est en cours de finalisation et n'est pas encore intégré au `docker-compose.yml`. Cette section sera complétée une fois le service ajouté.
+- **Lien Incident ↔ Release** : le lien est manuel, choisi par le Manager dans un menu déroulant au moment de créer l'incident (releases `in_progress` de la même team). Il n'y a pas de suggestion automatique ni de lien à distance après coup — un choix pragmatique pour rester fidèle à la spec (*"an Incident created and linked to an in_progress Release"*) sans complexifier le modèle de données à ce stade.
+- **Contenu des notifications OS** : les messages restent volontairement génériques ("Vous avez été assigné à un incident") car le payload WebSocket `incident_assigned` ne transporte que l'identifiant de l'incident et le nom de l'assigné, pas le titre ni l'auteur de l'action — cohérent avec le format imposé par le sujet.
+- **Tray icon** : implémenté selon l'API standard Tauri v2, testé fonctionnel sur Windows natif. Le rendu visuel n'a pas pu être vérifié dans l'environnement de développement WSL2 initial, qui ne propage pas le protocole de tray Linux vers l'hôte Windows — limitation de l'environnement de dev, pas du code.
+
+---
+
+## Exemptions T-DEV-600
+
+- `repo_cicd` : pipeline CI/CD validé lors du T-DEV-600, exemption déclarée au kickoff.

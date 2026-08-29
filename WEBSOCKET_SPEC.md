@@ -1,5 +1,55 @@
 # WEBSOCKET_SPEC.md
 
+## Vue d'ensemble
+
+VIGIL utilise **une seule connexion WebSocket par client**, ouverte à l'authentification et maintenue pendant toute la session. Cette connexion sert deux usages distincts qui transitent par le même canal : recevoir les événements temps réel émis par le serveur, et signaler au serveur quelles ressources l'utilisateur regarde activement (présence).
+
+### Comment le serveur diffuse les événements
+
+Côté serveur, chaque connexion s'abonne à **deux flux en parallèle** :
+
+- Un **flux global**, partagé par toutes les connexions actives sur le serveur. La quasi-totalité des événements métier (changements d'état d'incident, de release, réactions, modération...) y sont diffusés. Le filtrage par team ne se fait pas au niveau du canal serveur mais côté client : chaque écran ignore les événements qui ne concernent pas les ressources qu'il affiche (via l'`id` de l'incident/release/team porté dans le payload).
+- Un **flux privé**, propre à chaque utilisateur connecté. Seul `private_message_received` y transite — c'est le seul événement qui n'est jamais diffusé à l'ensemble des clients.
+
+Cette distinction explique pourquoi la colonne "Destinataires" de ce document ne prend que deux valeurs : *tous les clients connectés* (flux global) ou *expéditeur et destinataire uniquement* (flux privé).
+
+### Cycle de vie d'une connexion
+
+1. Le client se connecte à `/ws` avec son token JWT.
+2. Le serveur authentifie, enregistre l'utilisateur comme en ligne, puis diffuse `presence_online` avec la liste à jour des utilisateurs connectés.
+3. Pendant la session, le client peut envoyer `watch`/`unwatch` pour signaler qu'il consulte une ressource précise (voir plus bas) ; le serveur répond en diffusant `presence_update`.
+4. À la déconnexion (fermeture d'onglet, perte réseau, logout), le serveur désenregistre l'utilisateur et diffuse un nouveau `presence_online` sans lui.
+5. Le client détecte la coupure via `onclose` et relance une reconnexion automatique (voir section suivante). Une fois reconnecté, tout le cycle reprend au point 2.
+
+### watch / unwatch et présence par ressource
+
+`presence_online` (qui est en ligne, globalement) et `presence_update` (qui regarde *cette* ressource précise) sont deux mécanismes différents qu'il ne faut pas confondre :
+
+- Ouvrir la page de détail d'un incident déclenche un `watch` avec l'`id` de cet incident.
+- Le serveur ajoute ce client à la liste des observateurs de cette ressource et diffuse `presence_update` à tous, avec la liste des observateurs actuels.
+- Quitter la page (navigation, fermeture) déclenche `unwatch`, qui retire le client de cette liste et redéclenche `presence_update`.
+
+C'est ce qui alimente le bandeau "Présents actuellement" visible sur les pages de détail.
+
+### Robustesse de la connexion
+
+**Reconnexion automatique :** le client détecte la fermeture (`onclose`) et relance une tentative avec un backoff exponentiel (1 seconde jusqu'à 30 secondes maximum), réinitialisé dès qu'une reconnexion aboutit.
+
+**Heartbeat :** le client envoie `{ "type": "ping" }` toutes les 25 secondes pour empêcher toute coupure par timeout d'inactivité côté serveur ou proxy intermédiaire.
+
+**Format des timestamps :** tous les champs temporels (`at`, `edited_at`, `until`) sont sérialisés en **ISO 8601** (ex: `"2026-08-04T10:30:00Z"`), et non en timestamp Unix numérique comme illustré à titre d'exemple dans le brief projet — choix fait pour la compatibilité native avec l'objet `Date` en JavaScript/TypeScript côté client, sans conversion manuelle à chaque réception.
+
+### Exemple de flux complet — escalade d'un incident jusqu'à critique
+
+Pour illustrer comment plusieurs événements s'enchaînent en pratique, voici ce que déclenche un Responder qui escalade deux fois de suite le même incident (`medium` → `high` → `critical`) :
+
+1. Premier clic sur "Escalader" : le serveur diffuse `incident_state_changed` (`new_state: "escalated"`) **puis** `incident_escalated` (`new_severity: "high"`) — deux événements distincts car état et sévérité sont deux attributs indépendants qui évoluent tous les deux à ce moment-là.
+2. Deuxième clic : l'état ne change plus (déjà `escalated`), seul `incident_escalated` est diffusé, cette fois avec `new_severity: "critical"`.
+3. Si cet incident est lié à une release `in_progress`, aucun événement release n'est déclenché par l'escalade elle-même — le blocage automatique ne se produit qu'à la **création** du lien (`POST /releases/:id/incidents/:iid`), pas à chaque changement de sévérité.
+4. Côté client desktop, seule l'étape 2 déclenche une notification OS (`new_severity === "critical"`) ; l'étape 1 ne produit qu'un toast dans l'interface.
+
+---
+
 ## Connexion
 
 **Endpoint :** `ws://localhost:8080/ws`
@@ -7,12 +57,6 @@
 **Authentification :** Token JWT transmis via le paramètre de requête `?token=<token>` (ou header `Authorization: Bearer <token>` en repli si le paramètre est absent).
 
 **Une connexion WebSocket par client.**
-
-**Format des timestamps :** Tous les champs temporels (`at`, `edited_at`, `until`) sont sérialisés au format **ISO 8601** (ex: `"2026-08-04T10:30:00Z"`), et non en timestamp Unix numérique comme illustré à titre d'exemple dans le brief projet. Ce choix a été fait pour la lisibilité et la compatibilité native avec l'objet `Date` en JavaScript/TypeScript côté client, évitant une conversion manuelle sur chaque réception d'événement.
-
-**Reconnexion automatique :** Le client détecte la fermeture de la connexion (`onclose`) et relance une nouvelle tentative avec un délai croissant (backoff exponentiel, de 1 seconde jusqu'à 30 secondes maximum), réinitialisé à chaque reconnexion réussie.
-
-**Heartbeat :** Le client envoie un message `{ "type": "ping" }` toutes les 25 secondes pour maintenir la connexion active et éviter les déconnexions par timeout d'inactivité.
 
 ---
 
@@ -69,7 +113,7 @@ Envoyé à la fermeture ou au changement de page, pour retirer ce client de la l
 
 ### incident_escalated
 
-**Déclencheur :** Un incident est escaladé avec une nouvelle sévérité.
+**Déclencheur :** Un incident est escaladé avec une nouvelle sévérité. Peut se déclencher plusieurs fois sur le même incident tant que `critical` n'est pas atteint (voir exemple de flux ci-dessus).
 
 **Destinataires :** Tous les clients connectés.
 
@@ -88,7 +132,7 @@ Envoyé à la fermeture ou au changement de page, pour retirer ce client de la l
 
 **Déclencheur :** Un Manager assigne un Responder à un incident.
 
-**Destinataires :** Tous les clients connectés.
+**Destinataires :** Tous les clients connectés. Le client desktop filtre localement pour ne déclencher une notification OS que si `assigned_to` correspond à l'utilisateur connecté.
 
 ```json
 {
@@ -140,7 +184,7 @@ Envoyé à la fermeture ou au changement de page, pour retirer ce client de la l
 
 ### presence_update
 
-**Déclencheur :** Un client envoie un message `watch` ou `unwatch` sur une ressource (incident ou release).
+**Déclencheur :** Un client envoie un message `watch` ou `unwatch` sur une ressource (incident ou release). Voir "watch / unwatch et présence par ressource" ci-dessus.
 
 **Destinataires :** Tous les clients connectés.
 
@@ -172,7 +216,7 @@ Envoyé à la fermeture ou au changement de page, pour retirer ce client de la l
 
 ### release_state_changed
 
-**Déclencheur :** Une release change d'état (`in_progress`, `completed`, `cancelled`, `blocked`), notamment lorsqu'elle est automatiquement bloquée par un incident actif ou débloquée à sa résolution.
+**Déclencheur :** Une release change d'état (`in_progress`, `completed`, `cancelled`, `blocked`). Le passage à `blocked` se produit quand un incident lui est explicitement lié (`POST /releases/:id/incidents/:iid`) alors qu'elle est `in_progress` ; le retour à `in_progress` se produit quand tous ses incidents liés sont résolus.
 
 **Destinataires :** Tous les clients connectés.
 
@@ -180,9 +224,12 @@ Envoyé à la fermeture ou au changement de page, pour retirer ce client de la l
 {
   "type": "release_state_changed",
   "release_id": "uuid",
-  "new_state": "blocked"
+  "new_state": "blocked",
+  "by": "username"
 }
 ```
+
+`by` vaut `null` pour les transitions sans acteur direct (ex: passage à `completed` déclenché par la validation de la dernière étape).
 
 ---
 
@@ -261,7 +308,7 @@ Envoyé à la fermeture ou au changement de page, pour retirer ce client de la l
 
 **Déclencheur :** Un membre envoie un message privé à un autre membre partageant au moins une team.
 
-**Destinataires :** Uniquement l'expéditeur et le destinataire (envoi ciblé, jamais diffusé à toute la team).
+**Destinataires :** Uniquement l'expéditeur et le destinataire, via le flux privé (voir "Comment le serveur diffuse les événements" ci-dessus) — jamais diffusé à toute la team.
 
 ```json
 {

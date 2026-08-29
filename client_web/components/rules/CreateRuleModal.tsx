@@ -31,7 +31,7 @@ export function CreateRuleModal({
     t("defaultIncidentTitle"),
   );
   const [includeRepoName, setIncludeRepoName] = useState(true);
-  const [incidentSeverity, setIncidentSeverity] = useState("critical");
+  const [incidentSeverity, setIncidentSeverity] = useState("high");
   const [httpUrl, setHttpUrl] = useState("");
   const [creating, setCreating] = useState(false);
 
