@@ -12,11 +12,13 @@ async fn main() {
     let state = AppState::new(pool, broadcaster);
 
     let cors = CorsLayer::new()
-        .allow_origin([
-            "http://localhost:3000".parse::<HeaderValue>().unwrap(),
-            "http://localhost:3005".parse::<HeaderValue>().unwrap(),
-            "http://localhost:8081".parse::<HeaderValue>().unwrap(),
-        ])
+    .allow_origin([
+        "http://localhost:3000".parse::<HeaderValue>().unwrap(),
+        "http://localhost:3005".parse::<HeaderValue>().unwrap(),
+        "http://localhost:8081".parse::<HeaderValue>().unwrap(),
+        "https://tauri.localhost".parse::<HeaderValue>().unwrap(),
+        "http://tauri.localhost".parse::<HeaderValue>().unwrap(),
+    ])
         .allow_methods([
             Method::GET,
             Method::POST,
