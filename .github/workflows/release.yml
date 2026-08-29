@@ -39,7 +39,7 @@ jobs:
           npm ci
           npm run build
 
-         - name: Debug paths
+      - name: Debug paths
         run: |
           echo "=== Racine du repo ==="
           pwd
