@@ -118,7 +118,7 @@ pub async fn gitlab_webhook(
 }
 ```
 
-**Note sur `github_webhook` :** le handler existant contient actuellement une duplication involontaire du bloc de récupération/déchiffrement du secret (les mêmes 4 étapes apparaissent deux fois d'affilée). Ça n'entraîne pas de bug fonctionnel puisque les deux exécutions produisent le même résultat, mais double le travail de déchiffrement pour rien. À nettoyer si tu retouches ce fichier — ne pas reproduire ce doublon dans les nouveaux handlers de webhook.
+**Note sur `github_webhook` :** le handler suit exactement ce modèle (récupération du secret, déchiffrement, vérification de signature, extraction du payload, transmission au moteur de règles) ,reprends la même structure pour tout nouveau service webhook.
 
 ### Étape 2 — Déclarer la route
 
