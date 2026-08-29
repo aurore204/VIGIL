@@ -8,7 +8,7 @@ on:
 jobs:
   build-desktop:
     name: Build desktop binary (Linux AppImage)
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: write
 
@@ -56,7 +56,7 @@ jobs:
 
   build-docker-image:
     name: Build Docker image (server)
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: write
 
