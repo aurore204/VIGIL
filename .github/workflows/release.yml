@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-desktop:
+    name: Build desktop binary (Linux AppImage)
+    runs-on: self-hosted
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev build-essential curl wget file \
+            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2"
+
+      - name: Build client_web (static export)
+        working-directory: client_web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build Tauri AppImage
+        working-directory: client_desktop/src-tauri
+        run: cargo tauri build --bundles appimage
+
+      - name: Rename binary
+        run: |
+          find client_desktop/src-tauri/target/release/bundle/appimage -name "*.AppImage" \
+            -exec cp {} client.AppImage \;
+
+      - name: Upload desktop binary to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: client.AppImage
+          generate_release_notes: true
+
+  build-docker-image:
+    name: Build Docker image (server)
+    runs-on: self-hosted
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build server Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          push: false
+          tags: vigil-server:${{ github.ref_name }}
+          outputs: type=docker,dest=vigil-server-image.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vigil-server-docker-image
+          path: vigil-server-image.tar
