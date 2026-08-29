@@ -39,6 +39,18 @@ jobs:
           npm ci
           npm run build
 
+         - name: Debug paths
+        run: |
+          echo "=== Racine du repo ==="
+          pwd
+          echo "=== Contenu de client_web/out ==="
+          ls -la client_web/out | head -20
+          echo "=== Chemin résolu depuis client_desktop/src-tauri ==="
+          cd client_desktop/src-tauri
+          pwd
+          echo "=== ../../client_web/out ==="
+          ls -la ../../client_web/out 2>&1 | head -20
+
       - name: Build Tauri AppImage
         working-directory: client_desktop/src-tauri
         run: cargo tauri build --bundles appimage
