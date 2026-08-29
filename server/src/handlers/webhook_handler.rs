@@ -89,50 +89,6 @@ pub async fn github_webhook(
         }
     };
 
-    let (nonce_b64, ciphertext_b64) = match stored_secret.split_once(':') {
-        Some(pair) => pair,
-        None => {
-            tracing::error!("Format de secret invalide en base pour team_id={}", team_id);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!(ApiError::new(
-                    "Erreur interne",
-                    "INTERNAL_ERROR"
-                ))),
-            );
-        }
-    };
-
-    let key = match crate::services::crypto_service::load_encryption_key() {
-        Ok(k) => k,
-        Err(_) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!(ApiError::new(
-                    "Erreur de configuration du chiffrement",
-                    "ENCRYPTION_CONFIG_ERROR"
-                ))),
-            );
-        }
-    };
-
-    let secret = match crate::services::crypto_service::decrypt(ciphertext_b64, nonce_b64, &key) {
-        Ok(s) => s,
-        Err(_) => {
-            tracing::error!(
-                "Échec du déchiffrement du secret webhook pour team_id={}",
-                team_id
-            );
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!(ApiError::new(
-                    "Erreur interne",
-                    "INTERNAL_ERROR"
-                ))),
-            );
-        }
-    };
-
     //  Vérifie la signature HMAC AVANT tout traitement
     let signature = match headers
         .get("X-Hub-Signature-256")
