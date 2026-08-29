@@ -38,38 +38,38 @@ export default function IncidentsPage() {
   const tSeverity = useTranslations("severity");
   const tIncidentState = useTranslations("incidentState");
 
-const load = async () => {
-  try {
-    const teamsData = await api.getTeams();
-    setTeams(teamsData);
-    const all: Incident[] = [];
-    const allReleases: Release[] = [];
-    await Promise.all(
-      teamsData.map(async (t) => {
-        try {
-          const inc = await api.getIncidents(t.id);
-          all.push(...inc);
-        } catch {
-          /* ignore */
-        }
-        try {
-          const rel = await api.getReleases(t.id);
-          allReleases.push(...rel.filter((r) => r.state === "in_progress"));
-        } catch {
-          /* ignore */
-        }
-      }),
-    );
-    all.sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    );
-    setIncidents(all);
-    setReleases(allReleases);
-  } finally {
-    setLoading(false);
-  }
-};
+  const load = async () => {
+    try {
+      const teamsData = await api.getTeams();
+      setTeams(teamsData);
+      const all: Incident[] = [];
+      const allReleases: Release[] = [];
+      await Promise.all(
+        teamsData.map(async (t) => {
+          try {
+            const inc = await api.getIncidents(t.id);
+            all.push(...inc);
+          } catch {
+            /* ignore */
+          }
+          try {
+            const rel = await api.getReleases(t.id);
+            allReleases.push(...rel.filter((r) => r.state === "in_progress"));
+          } catch {
+            /* ignore */
+          }
+        }),
+      );
+      all.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+      setIncidents(all);
+      setReleases(allReleases);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const refreshIncident = async (incidentId: string) => {
     try {
@@ -132,25 +132,29 @@ const load = async () => {
 
   const activeCount = incidents.filter((i) => i.state !== "resolved").length;
 
-const handleCreate = async (
-  teamId: string,
-  title: string,
-  severity: IncidentSeverity,
-  description?: string,
-  releaseId?: string,
-) => {
-  try {
-    const incident = await api.createIncident(teamId, { title, severity, description });
-    if (releaseId) {
-      await api.linkIncidentToRelease(releaseId, incident.id);
+  const handleCreate = async (
+    teamId: string,
+    title: string,
+    severity: IncidentSeverity,
+    description?: string,
+    releaseId?: string,
+  ) => {
+    try {
+      const incident = await api.createIncident(teamId, {
+        title,
+        severity,
+        description,
+      });
+      if (releaseId) {
+        await api.linkIncidentToRelease(releaseId, incident.id);
+      }
+      showToast(t("toastCreated"), "success");
+      setShowCreate(false);
+      load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t("toastError"), "error");
     }
-    showToast(t("toastCreated"), "success");
-    setShowCreate(false);
-    load();
-  } catch (err) {
-    showToast(err instanceof Error ? err.message : t("toastError"), "error");
-  }
-};
+  };
 
   const selectStyle: React.CSSProperties = {
     padding: "9px 12px",

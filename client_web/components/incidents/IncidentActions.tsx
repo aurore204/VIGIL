@@ -111,12 +111,13 @@ export function IncidentActions({
   onEdit,
   onAssign,
   onDelete,
-}: IncidentActionsProps)  {
+}: IncidentActionsProps) {
   const [confirmAction, setConfirmAction] = useState<
     "resolve" | "delete" | null
   >(null);
   const noActions =
-    !canAcknowledge && !canEscalate && !canResolve && !canAssign;  const t = useTranslations("incidents.actions");
+    !canAcknowledge && !canEscalate && !canResolve && !canAssign;
+  const t = useTranslations("incidents.actions");
   const tCommon = useTranslations("common");
 
   return (
@@ -185,7 +186,7 @@ export function IncidentActions({
             onClick={onAssign}
           />
         )}
-        
+
         {canEdit && (
           <ActionButton Icon={Pencil} label={t("edit")} onClick={onEdit} />
         )}

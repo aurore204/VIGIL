@@ -21,7 +21,10 @@ async function ensurePermission(): Promise<boolean> {
 
 export async function notifyOS(title: string, body: string) {
   console.log("[DEBUG] notifyOS appelé:", title, body);
-  console.log("[DEBUG] dans Tauri ?", typeof window !== "undefined" && "__TAURI_INTERNALS__" in window);
+  console.log(
+    "[DEBUG] dans Tauri ?",
+    typeof window !== "undefined" && "__TAURI_INTERNALS__" in window,
+  );
 
   if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) {
     console.log("[DEBUG] pas dans Tauri, on arrête");

@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import type { Team, IncidentSeverity,Release } from "@/lib/types";
+import type { Team, IncidentSeverity, Release } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/shared/Modal";
 
 interface CreateIncidentModalProps {
   teams: Team[];
-  releases: Release[];//releases dans la team
+  releases: Release[]; //releases dans la team
   onClose: () => void;
   onSubmit: (
     teamId: string,
@@ -36,22 +36,22 @@ export function CreateIncidentModal({
 
   const teamReleases = releases.filter((r) => r.team_id === teamId);
 
- const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!title.trim() || !teamId) return;
-  setSubmitting(true);
-  try {
-    await onSubmit(
-      teamId,
-      title.trim(),
-      severity,
-      description.trim() || undefined,
-      releaseId || undefined,
-    );
-  } finally {
-    setSubmitting(false);
-  }
-};
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !teamId) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(
+        teamId,
+        title.trim(),
+        severity,
+        description.trim() || undefined,
+        releaseId || undefined,
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const selectStyle: React.CSSProperties = {
     width: "100%",

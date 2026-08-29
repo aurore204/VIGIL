@@ -233,7 +233,7 @@ export const api = {
   startRelease: (releaseId: string) =>
     request<Release>(`/releases/${releaseId}/start`, { method: "PATCH" }),
 
-    cancelRelease: (releaseId: string) =>
+  cancelRelease: (releaseId: string) =>
     request<void>(`/releases/${releaseId}/cancel`, { method: "PATCH" }),
 
   validateStep: (releaseId: string, stepId: string) =>

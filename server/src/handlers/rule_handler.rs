@@ -153,7 +153,6 @@ pub async fn create_webhook_secret(
 
     let encrypted_secret = format!("{}:{}", nonce_b64, ciphertext_b64);
 
-
     match crate::repositories::webhook_repository::upsert_secret(
         &state.pool,
         team_id,
