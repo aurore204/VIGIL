@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import TeamDetailPage from "@/app/[locale]/(app)/teams/[id]/page";
+import TeamDetailPage from "@/app/[locale]/(app)/team-detail/page";
 import { api } from "@/lib/api";
 import { vigilWs } from "@/lib/websocket";
 import { useAuthStore } from "@/lib/store";
@@ -8,7 +8,7 @@ import type { Team, BannedMember } from "@/lib/types";
 
 const mockPush = jest.fn();
 jest.mock("next/navigation", () => ({
-  useParams: () => ({ id: "team-1" }),
+  useSearchParams: () => new URLSearchParams("id=team-1"),
 }));
 jest.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -207,10 +207,10 @@ describe("TeamDetailPage", () => {
 
     render(<TeamDetailPage />);
     await waitFor(() =>
-      expect(screen.getByText("leave-team")).toBeInTheDocument(),
+      expect(screen.getAllByText("leave-team").length).toBeGreaterThan(0),
     );
 
-    await userEvent.click(screen.getByText("leave-team"));
+    await userEvent.click(screen.getAllByText("leave-team")[0]);
     await userEvent.click(screen.getByText("confirmDialog.confirmLabel"));
 
     await waitFor(() => {

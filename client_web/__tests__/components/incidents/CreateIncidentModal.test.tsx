@@ -34,6 +34,7 @@ describe("CreateIncidentModal", () => {
   it("affiche les champs du formulaire", () => {
     render(
       <CreateIncidentModal
+        releases={[]}
         teams={teams}
         onClose={jest.fn()}
         onSubmit={jest.fn()}
@@ -48,6 +49,7 @@ describe("CreateIncidentModal", () => {
     const onClose = jest.fn();
     render(
       <CreateIncidentModal
+        releases={[]}
         teams={teams}
         onClose={onClose}
         onSubmit={jest.fn()}
@@ -63,6 +65,7 @@ describe("CreateIncidentModal", () => {
     const onSubmit = jest.fn().mockResolvedValue(undefined);
     render(
       <CreateIncidentModal
+        releases={[]}
         teams={teams}
         onClose={jest.fn()}
         onSubmit={onSubmit}
@@ -80,6 +83,7 @@ describe("CreateIncidentModal", () => {
       "Panne serveur",
       "medium",
       undefined,
+      undefined,
     );
   });
 
@@ -87,6 +91,7 @@ describe("CreateIncidentModal", () => {
     const onSubmit = jest.fn();
     render(
       <CreateIncidentModal
+        releases={[]}
         teams={teams}
         onClose={jest.fn()}
         onSubmit={onSubmit}

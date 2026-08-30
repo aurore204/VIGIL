@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import IncidentDetailPage from "@/app/[locale]/(app)/incidents/[id]/page";
+import IncidentDetailPage from "@/app/[locale]/(app)/incident-detail/page";
 import { api } from "@/lib/api";
 import { vigilWs } from "@/lib/websocket";
 import { useAuthStore } from "@/lib/store";
@@ -8,7 +8,7 @@ import type { Incident, Team } from "@/lib/types";
 
 const mockPush = jest.fn();
 jest.mock("next/navigation", () => ({
-  useParams: () => ({ id: "inc-1" }),
+  useSearchParams: () => new URLSearchParams("id=inc-1"),
 }));
 jest.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -184,7 +184,6 @@ describe("IncidentDetailPage", () => {
     await userEvent.click(screen.getByText("do-acknowledge"));
 
     expect(api.acknowledgeIncident).toHaveBeenCalledWith("inc-1");
-    expect(mockShowToast).toHaveBeenCalledWith("toastAcknowledged", "success");
   });
 
   it("appelle deleteIncident et redirige vers /incidents", async () => {

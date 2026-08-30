@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState,Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { useAuthStore } from "@/lib/store";
 import { api } from "@/lib/api";
 import { vigilWs } from "@/lib/websocket";
-import type { Incident, Team, WsEvent} from "@/lib/types";
+import type { Incident, Team, WsEvent } from "@/lib/types";
 import { IncidentStateBadge, SeverityBadge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
 import { IncidentTimeline } from "@/components/incidents/IncidentTimeline";
@@ -19,7 +19,7 @@ import { EditIncidentModal } from "@/components/incidents/EditIncidentModal";
 import { Users, FileText, ArrowLeft } from "lucide-react";
 
 function IncidentDetailContent() {
-const searchParams = useSearchParams();
+  const searchParams = useSearchParams();
   const id = searchParams.get("id") ?? "";
   const { user } = useAuthStore();
   const { showToast } = useToast();
@@ -27,7 +27,7 @@ const searchParams = useSearchParams();
   const t = useTranslations("incidents.detailPage");
   const locale = useLocale();
   const dateLocale = locale === "fr" ? "fr-FR" : "en-US";
-  
+
   const [incident, setIncident] = useState<Incident | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,17 +37,17 @@ const searchParams = useSearchParams();
   const [availableReactions, setAvailableReactions] = useState<string[]>([]);
 
   const load = async () => {
-  try {
-    const inc = await api.getIncident(id);
-    setIncident(inc);
-    const t = await api.getTeam(inc.team_id);
-    setTeam(t);
-    const reactions = await api.getAvailableReactions();
-    setAvailableReactions(reactions);
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      const inc = await api.getIncident(id);
+      setIncident(inc);
+      const t = await api.getTeam(inc.team_id);
+      setTeam(t);
+      const reactions = await api.getAvailableReactions();
+      setAvailableReactions(reactions);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     load();
@@ -375,7 +375,8 @@ const searchParams = useSearchParams();
             canAcknowledge={isResponder && incident.state === "open"}
             canEscalate={
               isResponder &&
-              (incident.state === "acknowledged" || incident.state === "escalated") &&
+              (incident.state === "acknowledged" ||
+                incident.state === "escalated") &&
               incident.severity !== "critical"
             }
             canResolve={
@@ -417,7 +418,19 @@ const searchParams = useSearchParams();
 
 export default function IncidentDetailPage() {
   return (
-    <Suspense fallback={<div style={{ padding: "32px", color: "oklch(0.72 0.01 260)", fontSize: "13px" }}>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div
+          style={{
+            padding: "32px",
+            color: "oklch(0.72 0.01 260)",
+            fontSize: "13px",
+          }}
+        >
+          Loading...
+        </div>
+      }
+    >
       <IncidentDetailContent />
     </Suspense>
   );

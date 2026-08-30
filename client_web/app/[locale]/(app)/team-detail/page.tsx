@@ -19,7 +19,7 @@ import type { BannedMember } from "@/lib/types";
 import { shadow } from "@/lib/tokens";
 
 function TeamDetailContent() {
-const searchParams = useSearchParams();
+  const searchParams = useSearchParams();
   const id = searchParams.get("id") ?? "";
   const { user } = useAuthStore();
   const { showToast } = useToast();
@@ -534,7 +534,19 @@ const searchParams = useSearchParams();
 
 export default function TeamDetailPage() {
   return (
-    <Suspense fallback={<div style={{ padding: "32px", color: "oklch(0.72 0.01 260)", fontSize: "13px" }}>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div
+          style={{
+            padding: "32px",
+            color: "oklch(0.72 0.01 260)",
+            fontSize: "13px",
+          }}
+        >
+          Loading...
+        </div>
+      }
+    >
       <TeamDetailContent />
     </Suspense>
   );

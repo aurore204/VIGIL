@@ -102,6 +102,6 @@ describe("IncidentTable", () => {
     );
 
     const link = screen.getByText("Panne serveur").closest("a");
-    expect(link).toHaveAttribute("href", "/incidents/inc-42");
+    expect(link).toHaveAttribute("href", "/incident-detail?id=inc-42");
   });
 });

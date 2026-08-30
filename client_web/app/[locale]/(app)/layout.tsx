@@ -31,7 +31,6 @@ const navItems = [
   { href: "/messages", labelKey: "messages", Icon: MessageCircle },
 ] as const;
 
-
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, token, isAuthenticated, clearAuth, setUser } = useAuthStore();
   const router = useRouter();
@@ -41,17 +40,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const t = useTranslations("nav");
   const tIncidentState = useTranslations("incidentState");
 
-   const userRef = useRef(user);
-    useEffect(() => {
-      userRef.current = user;
-    }, [user]);
-  
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
   useEffect(() => {
     const stored = localStorage.getItem("vigil_sidebar_collapsed");
     // eslint-disable-next-line react-hooks/set-state-in-effect -- lecture ponctuelle de localStorage au montage, pas de boucle de rendu possible
     if (stored === "true") setCollapsed(true);
   }, []);
-
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -85,14 +83,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       if (e.type !== "incident_state_changed") return;
       showToast(`Incident ${tIncidentState(e.new_state)} par ${e.by}`, "info");
     };
-      const onIncidentEscalated = (e: WsEvent) => {
+    const onIncidentEscalated = (e: WsEvent) => {
       if (e.type !== "incident_escalated") return;
       showToast(
         `Incident escaladé en ${e.new_severity} par ${e.by}`,
         "warning",
       );
       if (e.new_severity === "critical") {
-        notifyOS("Incident critique", `Un incident a été escaladé en sévérité critique par ${e.by}`);
+        notifyOS(
+          "Incident critique",
+          `Un incident a été escaladé en sévérité critique par ${e.by}`,
+        );
       }
     };
     const onIncidentAssigned = (e: WsEvent) => {
@@ -110,9 +111,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       if (e.type !== "release_state_changed") return;
       if (e.new_state === "blocked") {
         showToast("Release bloquée par un incident", "error");
-        notifyOS("Release bloquée", "Une release a été bloquée par un incident actif");
-      }
-      else if (e.new_state === "completed")
+        notifyOS(
+          "Release bloquée",
+          "Une release a été bloquée par un incident actif",
+        );
+      } else if (e.new_state === "completed")
         showToast("Release complétée", "success");
       else if (e.new_state === "in_progress")
         showToast("Release débloquée, reprise en cours", "success");

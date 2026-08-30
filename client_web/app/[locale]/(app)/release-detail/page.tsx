@@ -26,7 +26,7 @@ import {
 import { PresenceIndicator } from "@/components/shared/PresenceIndicator";
 
 function ReleaseDetailContent() {
-const searchParams = useSearchParams();
+  const searchParams = useSearchParams();
   const id = searchParams.get("id") ?? "";
   const { user } = useAuthStore();
   const { showToast } = useToast();
@@ -538,7 +538,19 @@ const searchParams = useSearchParams();
 }
 export default function ReleaseDetailPage() {
   return (
-    <Suspense fallback={<div style={{ padding: "32px", color: "oklch(0.72 0.01 260)", fontSize: "13px" }}>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div
+          style={{
+            padding: "32px",
+            color: "oklch(0.72 0.01 260)",
+            fontSize: "13px",
+          }}
+        >
+          Loading...
+        </div>
+      }
+    >
       <ReleaseDetailContent />
     </Suspense>
   );
