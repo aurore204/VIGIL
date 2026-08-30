@@ -8,6 +8,7 @@ use axum::{
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::models::response::ApiError;
 use crate::repositories::user_repository;
 use crate::services::auth_service::verify_token;
 
@@ -21,7 +22,6 @@ pub async fn require_auth(
     mut request: Request,
     next: Next,
 ) -> impl IntoResponse {
-    // Récupérer le header Authorization
     let auth_header = request
         .headers()
         .get("Authorization")
@@ -32,66 +32,69 @@ pub async fn require_auth(
         _ => {
             return (
                 StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({
-                    "error": "Token manquant ou invalide"
-                })),
+                Json(serde_json::json!(ApiError::new(
+                    "Token manquant ou invalide",
+                    "MISSING_TOKEN"
+                ))),
             )
                 .into_response();
         }
     };
 
-    // Vérifier et décoder le token
     let claims = match verify_token(token) {
         Ok(c) => c,
         Err(_) => {
             return (
                 StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({
-                    "error": "Token invalide ou expiré"
-                })),
+                Json(serde_json::json!(ApiError::new(
+                    "Token invalide ou expiré",
+                    "INVALID_TOKEN"
+                ))),
             )
                 .into_response();
         }
     };
 
-    // Parser l'id utilisateur
     let user_id = match Uuid::parse_str(&claims.sub) {
         Ok(id) => id,
         Err(_) => {
             return (
                 StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({
-                    "error": "Token invalide"
-                })),
+                Json(serde_json::json!(ApiError::new(
+                    "Token invalide",
+                    "INVALID_TOKEN"
+                ))),
             )
                 .into_response();
         }
     };
 
-    // Vérifier que le token n'a pas été invalidé par un logout
     match user_repository::is_token_valid(&pool, user_id, claims.iat).await {
         Ok(true) => {}
         Ok(false) => {
             return (
                 StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({
-                    "error": "Token révoqué, veuillez vous reconnecter"
-                })),
+                Json(serde_json::json!(ApiError::new(
+                    "Token révoqué, veuillez vous reconnecter",
+                    "TOKEN_REVOKED"
+                ))),
             )
                 .into_response();
         }
         Err(_) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({
-                    "error": "Erreur interne du serveur"
-                })),
+                Json(serde_json::json!(ApiError::new(
+                    "Erreur interne du serveur",
+                    "INTERNAL_ERROR"
+                ))),
             )
                 .into_response();
         }
     }
 
-    // Injecter l'utilisateur dans les extensions de la requête
-    request.extensions_mut().insert(AuthenticatedUser { id: user_id });
+    request
+        .extensions_mut()
+        .insert(AuthenticatedUser { id: user_id });
     next.run(request).await
 }

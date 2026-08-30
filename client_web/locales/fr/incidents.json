@@ -1,0 +1,109 @@
+{
+  "assignModal": {
+    "title": "Assigner un Responder",
+    "empty": "Aucun Responder dans cette team",
+    "cancel": "Annuler",
+    "submit": "Assigner"
+  },
+  "presence": {
+    "title": "Présents actuellement",
+    "empty": "Personne d'autre ne regarde cet incident"
+  },
+  "table": {
+    "empty": "Aucun incident trouvé",
+    "unassigned": "Non assigné"
+  },
+  "actions": {
+    "availableActions": "Actions disponibles",
+    "acknowledge": "Acquitter",
+    "escalate": "Escalader",
+    "assign": "Assigner un intervenant",
+    "edit": "Modifier l'incident",
+    "noActions": "Aucune action disponible",
+    "resolve": "Résoudre",
+    "delete": "Supprimer l'incident",
+    "confirmResolveTitle": "Résoudre l'incident",
+    "confirmResolveDescription": "Confirmer la résolution de \"{title}\" ?",
+    "confirmResolveLabel": "Résoudre",
+    "confirmDeleteTitle": "Supprimer l'incident",
+    "confirmDeleteDescription": "Supprimer définitivement \"{title}\" ? Cette action est irréversible.",
+    "confirmDeleteLabel": "Supprimer",
+    "linkRelease": "Lier à une release"
+  },
+  "timeline": {
+    "title": "Timeline",
+    "empty": "Aucune entrée dans la timeline",
+    "edited": "(modifié)",
+    "editButton": "Modifier",
+    "save": "Sauvegarder",
+    "cancel": "Annuler",
+    "placeholder": "Ajouter une entrée à la timeline...",
+    "send": "Envoyer"
+  },
+  "createModal": {
+    "title": "Créer un incident",
+    "team": "Team",
+    "teamPlaceholder": "Sélectionner une team",
+    "titleLabel": "Titre",
+    "titlePlaceholder": "Ex: API de paiement inaccessible",
+    "severity": "Sévérité",
+    "description": "Description (optionnelle)",
+    "descriptionPlaceholder": "Décrivez le problème...",
+    "cancel": "Annuler",
+    "submit": "Créer l'incident",
+    "linkRelease": "Lier à une release (optionnel)",
+    "linkReleaseNone": "Aucune"
+  },
+  "editModal": {
+    "title": "Modifier l'incident",
+    "titleLabel": "Titre",
+    "severity": "Sévérité",
+    "description": "Description",
+    "cancel": "Annuler",
+    "submit": "Enregistrer"
+  },
+  "info": {
+    "title": "Informations",
+    "assignedTo": "Assigné à",
+    "unassigned": "Non assigné",
+    "team": "Team",
+    "createdAt": "Créé le",
+    "resolvedAt": "Résolu le"
+  },
+  "listPage": {
+    "title": "Incidents",
+    "online": "en ligne",
+    "create": "+ Créer un incident",
+    "search": "Rechercher",
+    "searchPlaceholder": "Titre de l'incident...",
+    "severityLabel": "Sévérité",
+    "stateLabel": "État",
+    "severityAll": "Toutes",
+    "stateAll": "Tous",
+    "loading": "Chargement...",
+    "columns": {
+      "incident": "Incident",
+      "severity": "Sévérité",
+      "state": "État",
+      "team": "Team",
+      "assignee": "Assigné",
+      "date": "Date"
+    },
+    "toastCreated": "Incident créé avec succès",
+    "toastError": "Erreur"
+  },
+  "detailPage": {
+    "back": "Retour",
+    "createdOn": "Créé le",
+    "description": "Description",
+    "loading": "Chargement...",
+    "toastAcknowledged": "Incident acquitté",
+    "toastEscalated": "Incident escaladé",
+    "toastResolved": "Incident résolu",
+    "toastDeleted": "Incident supprimé",
+    "toastAssigned": "Responder assigné",
+    "toastEdited": "Incident modifié",
+    "toastEntryEdited": "Entrée modifiée",
+    "toastError": "Erreur"
+  }
+}

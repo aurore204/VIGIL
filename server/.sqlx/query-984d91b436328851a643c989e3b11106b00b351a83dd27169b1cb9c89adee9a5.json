@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            tb.user_id,\n            u.username,\n            u.email,\n            tb.banned_by,\n            banner.username as banned_by_username,\n            tb.expires_at,\n            tb.reason,\n            tb.created_at\n        FROM team_bans tb\n        JOIN users u ON u.id = tb.user_id\n        JOIN users banner ON banner.id = tb.banned_by\n        WHERE tb.team_id = $1\n        AND (tb.expires_at IS NULL OR tb.expires_at > NOW())\n        ORDER BY tb.created_at DESC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "banned_by",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "banned_by_username",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "expires_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "reason",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "984d91b436328851a643c989e3b11106b00b351a83dd27169b1cb9c89adee9a5"
+}

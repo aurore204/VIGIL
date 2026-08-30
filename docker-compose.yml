@@ -10,6 +10,58 @@ services:
       - "5433:5432"
     volumes:
       - vigil_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vigil"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: vigil-server
+    environment:
+      DATABASE_URL: ${DATABASE_URL_DOCKER}
+      SERVER_HOST: ${SERVER_HOST}
+      SERVER_PORT: ${SERVER_PORT}
+      JWT_SECRET: ${JWT_SECRET}
+      RUST_LOG: ${RUST_LOG}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  client_desktop:
+    build:
+      context: .
+      dockerfile: client_desktop/Dockerfile
+    container_name: vigil-client-desktop
+    volumes:
+      - vigil_desktop_bin:/output
+
+  client_web:
+    build:
+      context: ./client_web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL}
+    container_name: vigil-client-web
+    environment:
+      PORT: ${CLIENT_WEB_PORT}
+    ports:
+      - "8081:8081"
+    depends_on:
+      server:
+        condition: service_started
+      client_desktop:
+        condition: service_completed_successfully
+    volumes:
+      - vigil_desktop_bin:/desktop-bin:ro
 
 volumes:
   vigil_db_data:
+  vigil_desktop_bin:

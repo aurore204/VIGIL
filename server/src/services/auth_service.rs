@@ -8,15 +8,17 @@ use sqlx::PgPool;
 use std::env;
 use uuid::Uuid;
 
-use crate::models::user::{AuthResponse, LoginRequest, RegisterRequest, UserPublic};
+use crate::models::user::{
+    AuthResponse, LoginRequest, RegisterRequest, UpdateProfileRequest, UserPublic,
+};
 use crate::repositories::user_repository;
 
 // Structure des claims du token JWT
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,  // id de l'utilisateur
-    pub iat: i64,     // date d'émission du token
-    pub exp: usize,   // date d'expiration
+    pub sub: String,
+    pub iat: i64, // date d'émission du token
+    pub exp: usize,
 }
 
 // Erreurs possibles du service auth
@@ -24,6 +26,7 @@ pub struct Claims {
 pub enum AuthError {
     EmailAlreadyExists,
     InvalidCredentials,
+    CurrentPasswordRequired,
     DatabaseError(sqlx::Error),
     HashError,
     TokenError,
@@ -31,10 +34,7 @@ pub enum AuthError {
 }
 
 // Inscription d'un nouvel utilisateur
-pub async fn register(
-    pool: &PgPool,
-    req: RegisterRequest,
-) -> Result<AuthResponse, AuthError> {
+pub async fn register(pool: &PgPool, req: RegisterRequest) -> Result<AuthResponse, AuthError> {
     let existing = user_repository::find_by_email(pool, &req.email)
         .await
         .map_err(AuthError::DatabaseError)?;
@@ -60,21 +60,18 @@ pub async fn register(
 }
 
 // Connexion d'un utilisateur existant
-pub async fn login(
-    pool: &PgPool,
-    req: LoginRequest,
-) -> Result<AuthResponse, AuthError> {
+pub async fn login(pool: &PgPool, req: LoginRequest) -> Result<AuthResponse, AuthError> {
     let user = user_repository::find_by_email(pool, &req.email)
         .await
         .map_err(AuthError::DatabaseError)?
         .ok_or(AuthError::InvalidCredentials)?;
 
-    let password_hash = user.password_hash
+    let password_hash = user
+        .password_hash
         .as_ref()
         .ok_or(AuthError::InvalidCredentials)?;
 
-    let parsed_hash = PasswordHash::new(password_hash)
-        .map_err(|_| AuthError::HashError)?;
+    let parsed_hash = PasswordHash::new(password_hash).map_err(|_| AuthError::HashError)?;
 
     Argon2::default()
         .verify_password(req.password.as_bytes(), &parsed_hash)
@@ -90,23 +87,86 @@ pub async fn login(
 
     let token = generate_token(&user_public.id)?;
 
-    Ok(AuthResponse { token, user: user_public })
+    Ok(AuthResponse {
+        token,
+        user: user_public,
+    })
 }
 
-// Déconnexion : invalide tous les tokens de l'utilisateur
-pub async fn logout(
-    pool: &PgPool,
-    user_id: Uuid,
-) -> Result<(), AuthError> {
+//  invalide tous les tokens de l'utilisateur
+pub async fn logout(pool: &PgPool, user_id: Uuid) -> Result<(), AuthError> {
     user_repository::invalidate_tokens(pool, user_id)
         .await
         .map_err(AuthError::DatabaseError)
 }
 
+pub async fn update_profile(
+    pool: &PgPool,
+    user_id: Uuid,
+    req: UpdateProfileRequest,
+) -> Result<UserPublic, AuthError> {
+    // Vérification d'unicité de l'email si celui-ci change
+    if let Some(ref new_email) = req.email {
+        if let Some(existing) = user_repository::find_by_email(pool, new_email)
+            .await
+            .map_err(AuthError::DatabaseError)?
+        {
+            if existing.id != user_id {
+                return Err(AuthError::EmailAlreadyExists);
+            }
+        }
+    }
+
+    // Si un nouveau mot de passe est demandé, on vérifie l'ancien avant de re-hasher
+    let new_password_hash: Option<String> = if let Some(new_password) = req.new_password {
+        let current_password = req
+            .current_password
+            .ok_or(AuthError::CurrentPasswordRequired)?;
+
+        let full_user = user_repository::find_full_by_id(pool, user_id)
+            .await
+            .map_err(AuthError::DatabaseError)?
+            .ok_or(AuthError::InvalidCredentials)?;
+
+        let stored_hash = full_user
+            .password_hash
+            .as_ref()
+            .ok_or(AuthError::InvalidCredentials)?;
+
+        let parsed_hash = PasswordHash::new(stored_hash).map_err(|_| AuthError::HashError)?;
+
+        Argon2::default()
+            .verify_password(current_password.as_bytes(), &parsed_hash)
+            .map_err(|_| AuthError::InvalidCredentials)?;
+
+        let salt = SaltString::generate(&mut OsRng);
+        let hashed = Argon2::default()
+            .hash_password(new_password.as_bytes(), &salt)
+            .map_err(|_| AuthError::HashError)?
+            .to_string();
+
+        Some(hashed)
+    } else {
+        None
+    };
+
+    let updated = user_repository::update_user(
+        pool,
+        user_id,
+        req.username.as_deref(),
+        req.email.as_deref(),
+        new_password_hash.as_deref(),
+        req.language.as_deref(),
+    )
+    .await
+    .map_err(AuthError::DatabaseError)?;
+
+    Ok(updated)
+}
+
 // Génère un token JWT pour un utilisateur
 fn generate_token(user_id: &Uuid) -> Result<String, AuthError> {
-    let secret = env::var("JWT_SECRET")
-        .expect("JWT_SECRET doit être défini dans .env");
+    let secret = env::var("JWT_SECRET").expect("JWT_SECRET doit être défini dans .env");
 
     let now = chrono::Utc::now();
     let iat = now.timestamp();
@@ -131,8 +191,7 @@ fn generate_token(user_id: &Uuid) -> Result<String, AuthError> {
 
 // Vérifie et décode un token JWT
 pub fn verify_token(token: &str) -> Result<Claims, AuthError> {
-    let secret = env::var("JWT_SECRET")
-        .expect("JWT_SECRET doit être défini dans .env");
+    let secret = env::var("JWT_SECRET").expect("JWT_SECRET doit être défini dans .env");
 
     jsonwebtoken::decode::<Claims>(
         token,

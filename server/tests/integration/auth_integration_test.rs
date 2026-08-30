@@ -5,8 +5,7 @@ use vigil_server::services::auth_service;
 
 async fn setup_pool() -> PgPool {
     dotenv::dotenv().ok();
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL doit être défini");
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL doit être défini");
 
     PgPool::connect(&database_url)
         .await

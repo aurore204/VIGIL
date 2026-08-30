@@ -1,9 +1,9 @@
-use vigil_server::services::auth_service::{verify_token, Claims};
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
 };
 use jsonwebtoken::{encode, EncodingKey, Header};
+use vigil_server::services::auth_service::{verify_token, Claims};
 
 #[test]
 fn test_password_hashing_produces_valid_hash() {

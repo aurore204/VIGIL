@@ -41,3 +41,12 @@ pub struct UserPublic {
     pub language: String,
     pub created_at: DateTime<Utc>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateProfileRequest {
+    pub username: Option<String>,
+    pub email: Option<String>,
+    pub current_password: Option<String>,
+    pub new_password: Option<String>,
+    pub language: Option<String>,
+}

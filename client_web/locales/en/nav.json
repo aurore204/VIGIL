@@ -1,0 +1,45 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "incidents": "Incidents",
+    "releases": "Releases",
+    "rules": "Rules",
+    "teams": "Teams",
+    "messages": "Messages",
+    "logout": "Log out",
+    "connected": "Connected",
+    "expand": "Expand navigation bar",
+    "collapse": "Collapse navigation bar",
+    "profile": "Profile"
+  },
+
+  "incidentState": {
+    "open": "Open",
+    "acknowledged": "Acknowledged",
+    "escalated": "Escalated",
+    "resolved": "Resolved"
+  },
+  "severity": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "critical": "Critical"
+  },
+  "releaseState": {
+    "created": "Created",
+    "in_progress": "In progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "blocked": "Blocked"
+  },
+  "common": {
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "create": "Create",
+    "edit": "Edit",
+    "search": "Search"
+  }
+}

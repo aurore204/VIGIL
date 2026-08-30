@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT COUNT(*) as count\n        FROM team_bans\n        WHERE team_id = $1 \n        AND user_id = $2\n        AND (expires_at IS NULL OR expires_at > NOW())\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "3f215f37ce96f278af259b9c57c426ae3d18d6f47fe4482b55a5241d0ec85e67"
+}
